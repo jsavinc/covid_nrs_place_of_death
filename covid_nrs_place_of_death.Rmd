@@ -42,11 +42,14 @@ endpoint <- "http://statistics.gov.scot/sparql.json"
 # Import data
 
 ```{r}
+# ods_all_datasets() %>% View()
+# ods_structure("deaths")
+
+
 # checking out structure
 ods_structure("deaths-involving-coronavirus-covid-19")
 ods_schemes("deaths-involving-coronavirus-covid-19")
 ods_print_query("deaths-involving-coronavirus-covid-19")
-
 
 data_raw <- ods_dataset("deaths-involving-coronavirus-covid-19",geography = "sc")
 
@@ -61,6 +64,40 @@ cv_data_main <- cv_data_raw %>%
   select(date_code, sex, age, cause_of_death, location_of_death, measurement, value, 
          -feature_code, -units) %>% 
   arrange(date_code, sex, age, cause_of_death, location_of_death, measurement)
+
+
+## load past deaths for calculating averages
+temp_file <- tempfile()
+past_deaths_source <- "https://www.nrscotland.gov.uk/files/statistics/covid19/weekly-deaths-by-location-2015-2019.csv"
+past_deaths_file <- curl_download(url = past_deaths_source, destfile = temp_file, quiet = FALSE)
+
+
+past_deaths <- 
+  read_csv(past_deaths_file, skip = 2) %>%
+  rename(year_of_death = 1) %>%  # rename first column
+  mutate(
+    place_of_death = if_else(is.na(`1`), true = year_of_death, NA_character_)
+  ) %>%
+  fill(place_of_death, .direction="down") %>%  # LOCF on place_of_death
+  drop_na(`1`) %>%
+  pivot_longer(cols = all_of(as.character(1:53)), values_to = "value", names_to = "week_number") %>%
+  mutate(week_number=as.integer(week_number))
+
+past_deaths %>% filter(week_number %in% 52:53) %>% count(year_of_death, week_number)
+
+past_deaths_summarised <-
+  past_deaths %>%
+  filter(year_of_death!="average") %>%  # remove averages
+  group_by(year_of_death, week_number) %>%  # remove week 53 if it was 0 for all places  - this means there was no week 53!
+  filter(!all(value==0 & week_number==53)) %>%
+  ungroup %>%
+  group_by(week_number,place_of_death) %>%
+  summarise(across(value, .fns = list(mean=mean,min=min,max=max)),  # having removed 0s for week 53 where it didn't exist, we average over years for week 53 that had that week only
+    .groups = "drop"
+  ) %>% rename_all(~str_replace_all(.x, pattern = "value", replacement = "deaths"))
+
+# TODO: show that only 2015 had week 53 and deal with this somehow - combine next years week 1 and previous week 52 instead?
+week_53_text <- "Due to the way ISO 8601 counts weeks, only 2015 in the 2015-2019 period had 53 weeks."
 ```
 
 
@@ -120,6 +157,42 @@ data_main %>% count(ref_period, date_w_c) %>% slice(1:3, (nrow(.) - 3):nrow(.)) 
 ```
 
 
+## Recoding place of death
+
+```{r}
+## recoding place of death
+data_main %>% count(location_of_death)
+past_deaths %>% count(place_of_death)
+
+# datapasta::tribble_paste(input_table = tibble(location_of_death = sort(unique(data_main$location_of_death)), place_of_death = sort(unique(past_deaths$place_of_death))))
+tbl_recoded_place_of_death <- tibble::tribble(
+  ~location_of_death,           ~place_of_death,   ~place_of_death_recoded,
+  "all",                        "All locations",   "All",
+  "care-home",                      "Care Home",   "Care home",
+  "-non-institution", "Home and other non-institution",   "Home",
+  "hospital",                       "Hospital",   "Hospital",
+  "other-institution",    "Other institution3",   "Other"
+     )
+```
+
+
+## Merged data
+
+```{r}
+## check whether there's an issue with week 52/53
+# 
+
+merged_data <-
+  data_main %>%
+  left_join(tbl_recoded_place_of_death) %>%
+  left_join(past_deaths %>% mutate(sex = "all", age = "all", cause_of_death = "all-causes"),  # only merge for aggregated data b/c that's all we have!
+            by = c("place_of_death", "week_number", "sex", "age", "cause_of_death")) %>% 
+  select(-c(location_of_death,place_of_death))
+  
+  
+```
+
+
 # Visualisations
 
 ## Number of deaths by age group
@@ -146,4 +219,24 @@ data_main %>%
        caption = "Source: National Records of Scotland\nDeaths where COVID-19 mentioned on the death certificate.")
 ```
 
-## 
+## Deaths over time
+
+```{r, fig.width=12, fig.height=9}
+
+data_main %>% 
+  # filter(sex == "all" & location_of_death == "all" & cause_of_death == "covid-19-related") %>% 
+  # filter(age != "all") %>% 
+  group_by(age) %>% 
+  summarise(n = sum(value)) %>%
+  mutate(pct = round(n/sum(n), 3)) %>% 
+  ggplot(aes(age, n)) +
+  geom_col(fill = "#4477AA") +
+  geom_text(aes(label = scales::percent(pct, accuracy = 0.1), y = n + 80)) +
+  theme_minimal() +
+  labs(x = "",
+       y = "",
+       title = "Deaths Associated with COVID-19 by Age Group",
+       subtitle = date_range_text,
+       caption = "Source: National Records of Scotland\nDeaths where COVID-19 mentioned on the death certificate.")
+```
+
