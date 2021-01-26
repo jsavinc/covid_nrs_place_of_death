@@ -41,6 +41,13 @@ endpoint <- "http://statistics.gov.scot/sparql.json"
 
 # Import data
 
+We're importing the following datasets:
+
+* deaths involving COVID-19 from Scottish gov't open data service
+* weekly deaths grouped by location 2015-2019
+
+Although COVID-19 related deaths included a 5-year weekly average number of deaths, they don't include the minima or maxima for each week - this is why we also import past weekly deaths.
+
 ```{r}
 # ods_all_datasets() %>% View()
 # ods_structure("deaths")
@@ -83,21 +90,27 @@ past_deaths <-
   pivot_longer(cols = all_of(as.character(1:53)), values_to = "value", names_to = "week_number") %>%
   mutate(week_number=as.integer(week_number))
 
-past_deaths %>% filter(week_number %in% 52:53) %>% count(year_of_death, week_number)
+# past_deaths %>% filter(week_number %in% 52:53) %>% count(year_of_death, week_number)
 
 past_deaths_summarised <-
   past_deaths %>%
   filter(year_of_death!="average") %>%  # remove averages
   group_by(year_of_death, week_number) %>%  # remove week 53 if it was 0 for all places  - this means there was no week 53!
   filter(!all(value==0 & week_number==53)) %>%
+  (function (data_tbl) {
+    bind_rows(
+      data_tbl,
+      data_tbl %>% filter(year_of_death %in% 2016:2019 & week_number==52) %>% mutate(week_number=53)  # copy records for week 52 in years 2016-2019 and count them as if they were week 53
+    )
+  }) %>%
   ungroup %>%
-  group_by(week_number,place_of_death) %>%
+  group_by(week_number,place_of_death) %>% 
   summarise(across(value, .fns = list(mean=mean,min=min,max=max)),  # having removed 0s for week 53 where it didn't exist, we average over years for week 53 that had that week only
     .groups = "drop"
   ) %>% rename_all(~str_replace_all(.x, pattern = "value", replacement = "deaths"))
 
-# TODO: show that only 2015 had week 53 and deal with this somehow - combine next years week 1 and previous week 52 instead?
-week_53_text <- "Due to the way ISO 8601 counts weeks, only 2015 in the 2015-2019 period had 53 weeks."
+
+week_53_text <- "Due to the way ISO 8601 counts weeks, only 2015 in the 2015-2019 period had 53 weeks; averages for week 53 were computed from figures for week 53 in 2015 and week 52 for 2016-2019."
 ```
 
 
@@ -167,29 +180,53 @@ past_deaths %>% count(place_of_death)
 # datapasta::tribble_paste(input_table = tibble(location_of_death = sort(unique(data_main$location_of_death)), place_of_death = sort(unique(past_deaths$place_of_death))))
 tbl_recoded_place_of_death <- tibble::tribble(
   ~location_of_death,           ~place_of_death,   ~place_of_death_recoded,
-  "all",                        "All locations",   "All",
+  "hospital",                       "Hospital",   "Hospital",
   "care-home",                      "Care Home",   "Care home",
   "-non-institution", "Home and other non-institution",   "Home",
-  "hospital",                       "Hospital",   "Hospital",
-  "other-institution",    "Other institution3",   "Other"
-     )
+  "other-institution",    "Other institution3",   "Other",
+  "all",                        "All locations",   "All"
+     ) %>% mutate(place_of_death_recoded = factor(place_of_death_recoded, levels = place_of_death_recoded))
 ```
 
 
 ## Merged data
 
 ```{r}
-## check whether there's an issue with week 52/53
-# 
-
 merged_data <-
   data_main %>%
+  filter(cause_of_death!="all-causes-average-of-corresponding-week-over-previous-5-years") %>%
+  pivot_wider(names_prefix = "deaths_", names_from=cause_of_death, values_from=value) %>%
+  clean_names() %>%
+  mutate(deaths_non_covid_related = deaths_all_causes - deaths_covid_19_related) %>%
   left_join(tbl_recoded_place_of_death) %>%
-  left_join(past_deaths %>% mutate(sex = "all", age = "all", cause_of_death = "all-causes"),  # only merge for aggregated data b/c that's all we have!
-            by = c("place_of_death", "week_number", "sex", "age", "cause_of_death")) %>% 
-  select(-c(location_of_death,place_of_death))
-  
-  
+  left_join(past_deaths_summarised %>% mutate(sex = "all", age = "all"),  # only merge for aggregated data b/c that's all we have!
+            by = c("place_of_death", "week_number", "sex", "age")) %>% 
+  select(-c(location_of_death,place_of_death)) %>%
+  mutate(
+    week_number_run_over = if_else(ref_year == 2021, 53 + week_number, week_number)  # invent a "run-over" week number - weeks 54+ are in 2021
+  )
+
+
+```
+
+
+### Check averages against previously computed data
+
+```{r}
+data_main %>%
+  left_join(tbl_recoded_place_of_death) %>%
+  left_join(past_deaths_summarised %>% mutate(sex = "all", age = "all", cause_of_death = "all-causes"),  # only merge for aggregated data b/c that's all we have!
+            by = c("place_of_death", "week_number", "sex", "age", "cause_of_death")) %>%
+# merged_data %>%
+  filter(cause_of_death=="all-causes-average-of-corresponding-week-over-previous-5-years" | (place_of_death_recoded=="All" & !is.na(deaths_mean))) %>%
+  select(ref_year,week_number,cause_of_death,value,deaths_mean) %>%
+  mutate(value = if_else(cause_of_death=="all-causes", NA_real_, value)) %>%  # make NA the 2020/2021 value
+  pivot_longer(cols=c(value,deaths_mean), names_to="computation", values_to="average", values_drop_na=TRUE) %>%
+  select(-cause_of_death) %>%
+  pivot_wider(values_from=average,names_from=computation) %>%
+  rename(nrs_average = value, my_average = deaths_mean) %>%
+  filter(round(nrs_average)!=round(my_average)) %>% 
+  knitr::kable(caption = "Subset of weekly deaths where calculate mean deaths 2015-2019 differed between the COVID-19 related deaths file and the weekly deaths file. Week 53 was computed as the average of deaths in week 53 in 2015 and week 52 in 2016-2019. For all the other datasets the mean deaths computed agree!")
 ```
 
 
@@ -201,6 +238,8 @@ merged_data <-
 ## graph format copied from: https://github.com/davidhen/nrs_covid_stats/
 
 date_range_text <- glue::glue("Data from w/c {format(min(data_main$date_w_c), '%d %B %Y')} to w/c {format(max(data_main$date_w_c), '%d %B %Y')} (inclusive).") 
+
+source_nrs_text <- "Source: National Records of Scotland"
 
 data_main %>% 
   filter(sex == "all" & location_of_death == "all" & cause_of_death == "covid-19-related") %>% 
@@ -216,27 +255,53 @@ data_main %>%
        y = "",
        title = "Deaths Associated with COVID-19 by Age Group",
        subtitle = date_range_text,
-       caption = "Source: National Records of Scotland\nDeaths where COVID-19 mentioned on the death certificate.")
+       caption = paste0(c(date_range_text,source_nrs_text), collapse="\n")
+  )
 ```
 
-## Deaths over time
+## Figure 6: Recorded deaths in Scotland, by week number & location
 
 ```{r, fig.width=12, fig.height=9}
+vertical_line_text <- "Vertical dotted line at week number 54 represents start of 2021."
 
-data_main %>% 
-  # filter(sex == "all" & location_of_death == "all" & cause_of_death == "covid-19-related") %>% 
-  # filter(age != "all") %>% 
-  group_by(age) %>% 
-  summarise(n = sum(value)) %>%
-  mutate(pct = round(n/sum(n), 3)) %>% 
-  ggplot(aes(age, n)) +
-  geom_col(fill = "#4477AA") +
-  geom_text(aes(label = scales::percent(pct, accuracy = 0.1), y = n + 80)) +
+removed_other_category_text <- glue::glue("Excluding 'Other' institutional place of death, N={merged_data %>% filter(sex == 'all' & age == 'all' & place_of_death_recoded == 'Other') %>% .$deaths_all_causes %>% sum} for weeks 1-{max(merged_data %>% filter(ref_year==2020) %>% .$week_number)} in 2020 and 1-{max(merged_data %>% filter(ref_year==2021) %>% .$week_number)} in 2021.")
+
+annotations_figure_6 <-
+# datapasta::tribble_paste(tbl_recoded_place_of_death %>% select(place_of_death_recoded))
+  tibble::tribble(
+    ~place_of_death_recoded, ~x, ~y, ~label,
+                 "Hospital", 35L, 800, "Hospital deaths dipped below historical minimum and remained low until Winter.",
+                 "Hospital", 35L, 250, "Shaded area shows range of deaths 2015-2019 dashed line shows weekly average",
+                "Care home", 35L, 500, "After initial peak, deaths returned to historical range; non-Covid deaths remained low.",
+                     "Home", 35L, 500, "The gap between historical\nhigh and both types of death\nat home was high throughout."
+                  )
+
+merged_data %>% 
+  filter(sex == "all" & age == "all") %>%
+  filter(!place_of_death_recoded %in% c("All","Other")) %>%
+  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid_related), 
+               names_to = "deaths_type", values_to = "deaths") %>% 
+  ggplot(aes(x = week_number_run_over)) +
+  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
+  geom_line(aes(y = deaths, colour = deaths_type)) +
+  # geom_line(aes(y = deaths_all_causes)) +
+  # geom_line(aes(y = deaths_non_covid_related), colour = "red") +
+  geom_line(aes(y = deaths_mean), linetype = "dashed", size = 0.2) +
+  geom_vline(xintercept = 54, linetype = "dotted") +
+  geom_text(data = annotations_figure_6, aes(x=x,y=y, label=label)) +
+  scale_x_continuous(breaks = seq(0,60,by=10)) +
+  facet_grid(~place_of_death_recoded) +
   theme_minimal() +
-  labs(x = "",
-       y = "",
-       title = "Deaths Associated with COVID-19 by Age Group",
+  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+                      labels = c("All deaths", 
+                                 "Non Covid-19 deaths"),
+                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+                      ) +
+  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
+  labs(x = "Week number",
+       y = "Deaths (N)",
        subtitle = date_range_text,
-       caption = "Source: National Records of Scotland\nDeaths where COVID-19 mentioned on the death certificate.")
+       caption = paste0(c(vertical_line_text, removed_other_category_text, source_nrs_text), collapse="\n")
+       )
 ```
 
