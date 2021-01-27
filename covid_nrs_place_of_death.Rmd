@@ -274,9 +274,10 @@ annotations_figure_6 <-
                  "Hospital", 35L, 250, "Shaded area shows range of deaths 2015-2019 dashed line shows weekly average",
                 "Care home", 35L, 500, "After initial peak, deaths returned to historical range; non-Covid deaths remained low.",
                      "Home", 35L, 500, "The gap between historical\nhigh and both types of death\nat home was high throughout."
-                  )
+                  ) %>% 
+  mutate(place_of_death_recoded = factor(place_of_death_recoded, levels = levels(tbl_recoded_place_of_death$place_of_death_recoded)))  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!
 
-merged_data %>% 
+merged_data %>%
   filter(sex == "all" & age == "all") %>%
   filter(!place_of_death_recoded %in% c("All","Other")) %>%
   pivot_longer(cols = c(deaths_all_causes, deaths_non_covid_related), 
@@ -284,8 +285,6 @@ merged_data %>%
   ggplot(aes(x = week_number_run_over)) +
   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
   geom_line(aes(y = deaths, colour = deaths_type)) +
-  # geom_line(aes(y = deaths_all_causes)) +
-  # geom_line(aes(y = deaths_non_covid_related), colour = "red") +
   geom_line(aes(y = deaths_mean), linetype = "dashed", size = 0.2) +
   geom_vline(xintercept = 54, linetype = "dotted") +
   geom_text(data = annotations_figure_6, aes(x=x,y=y, label=label)) +
