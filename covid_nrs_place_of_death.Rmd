@@ -232,6 +232,7 @@ data_main %>%
 
 # Visualisations
 
+
 ## Number of deaths by age group
 
 ```{r, fig.width=12, fig.height=9}
@@ -259,6 +260,7 @@ data_main %>%
   )
 ```
 
+
 ## Figure 6: Recorded deaths in Scotland, by week number & location
 
 ```{r, fig.width=12, fig.height=9}
@@ -273,11 +275,15 @@ annotations_figure_6 <-
                  "Hospital", 35L, 800, "Hospital deaths dipped below historical minimum and remained low until Winter.",
                  "Hospital", 35L, 250, "Shaded area shows range of deaths 2015-2019 dashed line shows weekly average",
                 "Care home", 35L, 500, "After initial peak, deaths returned to historical range; non-Covid deaths remained low.",
-                     "Home", 35L, 500, "The gap between historical\nhigh and both types of death\nat home was high throughout."
+                     "Home", 35L, 500, "The gap between historical high and both types of death at home was high throughout."
                   ) %>% 
-  mutate(place_of_death_recoded = factor(place_of_death_recoded, levels = levels(tbl_recoded_place_of_death$place_of_death_recoded)))  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!
+  mutate(
+    place_of_death_recoded = factor(place_of_death_recoded, levels = levels(tbl_recoded_place_of_death$place_of_death_recoded)),  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!
+    label = str_wrap(label, width = 40)
+    )
 
-merged_data %>%
+figure_6_location_of_death <-
+  merged_data %>%
   filter(sex == "all" & age == "all") %>%
   filter(!place_of_death_recoded %in% c("All","Other")) %>%
   pivot_longer(cols = c(deaths_all_causes, deaths_non_covid_related), 
@@ -300,7 +306,15 @@ merged_data %>%
   labs(x = "Week number",
        y = "Deaths (N)",
        subtitle = date_range_text,
-       caption = paste0(c(vertical_line_text, removed_other_category_text, source_nrs_text), collapse="\n")
+       caption = paste0(c(vertical_line_text, removed_other_category_text, source_nrs_text), collapse="\n"),
+       colour = "Cause of death"
        )
+
+map(
+  .x = c(".pdf",".svg",".png"),
+  .f = ~ggsave(filename = paste0("./outputs/figure_6_location_of_death",.x), plot = figure_6_location_of_death, width = 12, height = 9, dpi = 300)
+)
+
+figure_6_location_of_death
 ```
 
