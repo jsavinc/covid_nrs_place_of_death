@@ -505,7 +505,7 @@ map2_dfr(
   }
 ) %>% 
   pivot_wider(names_from=year,values_from=total) %>%
-  knitr::kable(caption = "Number of deaths by year as calculated from different datasets. The overall dataset and age/sex breakdown agree in figures, and the HB and LA breakdowns agree, but the two pairs differ from each other. The difference is in both directions, some years there are more deaths recorded in one pair, and some years in the other. Health Board and Local Authority figures include non-residents. Deaths are allocated to areas based on the usual residence of the deceased. If the deceased was not a Scottish resident, the death is allocated to the area where the death occurred.")
+  knitr::kable(caption = "Number of historical deaths by year as calculated from different datasets. The overall dataset and age/sex breakdown agree in figures, and the HB and LA breakdowns agree, but the two pairs differ from each other. The difference is in both directions, some years there are more deaths recorded in one pair, and some years in the other. This may be due to the following (verbatim from data description online): Health Board and Local Authority figures include non-residents. Deaths are allocated to areas based on the usual residence of the deceased. If the deceased was not a Scottish resident, the death is allocated to the area where the death occurred.")
 ```
 
 
@@ -616,7 +616,7 @@ historical_average_age <-
     .groups = "drop"
   )
 
-historical_aversex_age <-
+historical_average_sex <-
   past_deaths_sex_age %>%
   create_week_53_data_for_years_with_52_weeks() %>%
   group_by(
@@ -647,13 +647,11 @@ weekly_deaths_overall %>%
 
 ```{r}
 merged_data_overall <-
-  weekly_deaths_sex_age %>%
+  weekly_deaths_overall %>%
   filter(sex=="all" & age=="all") %>%
   inner_join(historical_average_overall %>% mutate(sex = "all", age = "all"),  # only merge for aggregated data b/c that's all we have!
             by = c("place_of_death", "week_number", "sex", "age"))
 
-
-# TODO: complete these for age & sex also
 merged_deaths_hb <-
   weekly_deaths_hb %>%
   inner_join(historical_average_hb, by = c("week_number","ref_area"="health_board","place_of_death"))
@@ -666,26 +664,18 @@ merged_data_sex_age <-
   weekly_deaths_sex_age %>%
   inner_join(historical_average_sex_age, by = c("place_of_death", "week_number", "sex", "age"))
 
+merged_data_sex <-
+  weekly_deaths_sex_age %>%
+  group_by(week_number, week_number_run_over, year, date_w_c, sex, place_of_death) %>%
+  summarise(across(starts_with("deaths_"), ~sum(.x)), .groups = "drop") %>%
+  inner_join(historical_average_sex, by = c("place_of_death", "week_number", "sex"))
 
-# merged_deaths_by_sex_age <-
-#   deaths_by_cause %>%
-#   split_deaths_due_to_covid_and_not %>%
-#   left_join(historical_range_by_sex_age) %>%
-#   compute_run_over_week_for_2021
-# 
-# merged_deaths_by_age <-
-#   deaths_by_cause %>%
-#   split_deaths_due_to_covid_and_not %>%
-#   left_join(historical_range_by_age) %>%
-#   compute_run_over_week_for_2021
-# 
-# merged_deaths_by_sex <-
-#   deaths_by_cause %>%
-#   split_deaths_due_to_covid_and_not %>%
-#   left_join(historical_range_by_sex) %>%
-#   compute_run_over_week_for_2021
+merged_data_age <-
+  weekly_deaths_sex_age %>%
+  group_by(week_number, week_number_run_over, year, date_w_c, age, place_of_death) %>%
+  summarise(across(starts_with("deaths_"), ~sum(.x)), .groups = "drop") %>%
+  inner_join(historical_average_age, by = c("place_of_death", "week_number", "age"))
 ```
-
 
 
 # Visualisations
@@ -693,26 +683,25 @@ merged_data_sex_age <-
 ## Common elements
 
 ```{r}
-date_range_text <- glue::glue("Data from w/c {format(min(deaths_by_cause$date_w_c), '%d %B %Y')} to w/c {format(max(deaths_by_cause$date_w_c), '%d %B %Y')} (inclusive).") 
+date_range_text <- glue::glue("Data from w/c {format(min(weekly_deaths_overall$date_w_c), '%d %B %Y')} to w/c {format(max(weekly_deaths_overall$date_w_c), '%d %B %Y')} (inclusive).") 
 
 source_nrs_text <- "Source: National Records of Scotland"
 ```
-
 
 
 ## Number of deaths by age group
 
 ```{r, fig.width=12, fig.height=9}
 ## graph format copied from: https://github.com/davidhen/nrs_covid_stats/
-deaths_by_cause %>% 
-  filter(sex == "all" & place_of_death == "all" & cause_of_death == "covid-19-related") %>% 
-  filter(age != "all") %>% 
+weekly_deaths_overall %>% 
+  filter(sex == "all" & place_of_death == "All") %>% 
+  filter(age != "all") %>%
   group_by(age) %>% 
-  summarise(n = sum(number_of_deaths)) %>%
+  summarise(n = sum(deaths_all_causes)) %>%
   mutate(pct = round(n/sum(n), 3)) %>% 
   ggplot(aes(age, n)) +
   geom_col(fill = "#4477AA") +
-  geom_text(aes(label = scales::percent(pct, accuracy = 0.1), y = n + 80)) +
+  geom_text(aes(label = scales::percent(pct, accuracy = 0.1), y = n + 1000)) +
   theme_minimal() +
   labs(x = "",
        y = "",
@@ -728,27 +717,27 @@ deaths_by_cause %>%
 ```{r, fig.width=12, fig.height=9}
 vertical_line_text <- "Vertical dotted line at week number 54 represents start of 2021."
 
-removed_other_category_text <- glue::glue("Excluding 'Other' institutional place of death, N={merged_data_overall %>% filter(sex == 'all' & age == 'all' & place_of_death_recoded == 'Other') %>% .$deaths_all_causes %>% sum} for weeks 1-{max(merged_data_overall %>% filter(year==2020) %>% .$week_number)} in 2020 and 1-{max(merged_data_overall %>% filter(year==2021) %>% .$week_number)} in 2021.")
+removed_other_category_text <- glue::glue("Excluding 'Other' institutional place of death, N={merged_data_overall %>% filter(sex == 'all' & age == 'all' & place_of_death == 'Other') %>% .$deaths_all_causes %>% sum} for weeks 1-{max(merged_data_overall %>% filter(year==2020) %>% .$week_number)} in 2020 and 1-{max(merged_data_overall %>% filter(year==2021) %>% .$week_number)} in 2021.")
 
 annotations_figure_6 <-
-# datapasta::tribble_paste(tbl_recoded_place_of_death %>% select(place_of_death_recoded))
+# datapasta::tribble_paste(merged_data_overall %>% select(place_of_death))
   tibble::tribble(
-    ~place_of_death_recoded, ~x, ~y, ~label,
+    ~place_of_death, ~x, ~y, ~label,
                  "Hospital", 20L, 850, "Shaded area shows range of 2015-2019 deaths; dashed line shows weekly average",
                  "Hospital", 25L, 250, "Hospital deaths dipped below historical minimum and remained low until Winter.",
                 "Care home", 35L, 500, "After initial peak, deaths returned to historical range; non-Covid deaths remained low.",
-                     "Home", 35L, 500, "The gap between historical high and both types of death at home was high throughout."
+                     "Home & other non-institution", 35L, 500, "The gap between historical high and both types of death at home was high throughout."
                   ) %>% 
   mutate(
-    place_of_death_recoded = factor(place_of_death_recoded, levels = levels(tbl_recoded_place_of_death$place_of_death_recoded)),  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!
+    place_of_death = factor(place_of_death, levels = levels(merged_data_overall$place_of_death)),  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!
     label = str_wrap(label, width = 40)
     )
 
-# figure_6_location_of_death <-
+figure_6_location_of_death <-
   merged_data_overall %>%
   filter(sex == "all" & age == "all") %>%
-  filter(!place_of_death_recoded %in% c("All","Other")) %>%
-  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid_related), 
+  filter(!place_of_death %in% c("All","Other")) %>%
+  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
                names_to = "deaths_type", values_to = "deaths") %>% 
   ggplot(aes(x = week_number_run_over)) +
   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
@@ -757,7 +746,7 @@ annotations_figure_6 <-
   geom_vline(xintercept = 54, linetype = "dotted") +
   geom_text(data = annotations_figure_6, aes(x=x,y=y, label=label)) +
   scale_x_continuous(breaks = seq(0,60,by=10)) +
-  facet_grid(~place_of_death_recoded) +
+  facet_grid(~place_of_death) +
   theme_minimal() +
   scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
                       labels = c("All deaths", 
@@ -772,7 +761,7 @@ annotations_figure_6 <-
        colour = "Cause of death"
        )
 
-map(
+walk(
   .x = c(".pdf",".svg",".png"),
   .f = ~ggsave(filename = paste0("./outputs/figure_6_location_of_death",.x), plot = figure_6_location_of_death, width = 12, height = 9, dpi = 300)
 )
@@ -781,11 +770,45 @@ figure_6_location_of_death
 ```
 
 
-## Figure 7: deaths at home
+## Figure 7: deaths at home, all of Scotland
 
-```{r}
-# TODO
+```{r, fig.width=12, fig.height=9}
+# TODO: add start of lockdowns 1-3?
+# TODO: what is that dip at week 38/39? not obvious - start of september was tier 4 restrictions in big LAs
+figure_7_deaths_at_home <-
+  merged_data_overall %>%
+  filter(sex == "all" & age == "all") %>%
+  filter(place_of_death %in% c("Home & other non-institution")) %>%
+  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
+               names_to = "deaths_type", values_to = "deaths") %>% 
+  ggplot(aes(x = week_number_run_over)) +
+  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
+  geom_line(aes(y = deaths, colour = deaths_type)) +
+  geom_line(aes(y = deaths_mean), linetype = "dashed", size = 0.2) +
+  geom_vline(xintercept = 54, linetype = "dotted") +
+  # geom_text(data = annotations_figure_6, aes(x=x,y=y, label=label)) +
+  scale_x_continuous(breaks = seq(0,60,by=10)) +
+  facet_grid(~place_of_death) +
+  theme_minimal() +
+  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+                      labels = c("All deaths", 
+                                 "Non Covid-19 deaths"),
+                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+                      ) +
+  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
+  labs(x = "Week number",
+       y = "Deaths (N)",
+       subtitle = date_range_text,
+       caption = paste0(c(vertical_line_text, source_nrs_text), collapse="\n"),
+       colour = "Cause of death"
+       )
 
+walk(
+  .x = c(".pdf",".svg",".png"),
+  .f = ~ggsave(filename = paste0("./outputs/figure_7_deaths_at_home",.x), plot = figure_7_deaths_at_home, width = 12, height = 9, dpi = 300)
+)
+
+figure_7_deaths_at_home
 ```
 
 
@@ -857,7 +880,7 @@ merged_deaths_la %>%
 ```{r}
 merged_deaths_by_sex %>%
   filter(sex != "all" & age == "all") %>%
-  filter(place_of_death_recoded == "Home & other non-institution") %>%
+  filter(place_of_death == "Home & other non-institution") %>%
   pivot_longer(cols = c(deaths_all_causes, deaths_non_covid_related), 
                names_to = "deaths_type", values_to = "deaths") %>% 
   ggplot(aes(x = week_number_run_over)) +
