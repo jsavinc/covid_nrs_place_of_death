@@ -422,7 +422,12 @@ past_deaths_hb <-
   mutate(
     week_number = as.integer(week_number)
   ) %>%
-  recode_place_of_death()
+  tidyr::complete(
+    nesting(week_number,year),  # unique combinations that we don't want to combinatorily explode
+    health_board, place_of_death,  # fill in missing combinations of hb & pod with 0 deaths
+    fill = list(number_of_deaths = 0)
+  ) %>% 
+  recode_place_of_death()  # recode place of death after completing missing combinations, otherwise the factor level "All" gets exploded also
 
 past_deaths_la <-
   readxl::read_excel(past_deaths_council_area_file, sheet = 2, skip = 2, col_names = TRUE) %>%  # first two rows are empty, row 3 has headers
@@ -435,7 +440,12 @@ past_deaths_la <-
   mutate(
     week_number = as.integer(week_number)
   ) %>%
-  recode_place_of_death()
+  tidyr::complete(
+    nesting(week_number,year),  # unique combinations that we don't want to combinatorily explode
+    council_area, place_of_death,  # fill in missing combinations of la & pod with 0 deaths
+    fill = list(number_of_deaths = 0)
+  ) %>% 
+  recode_place_of_death()  # recode place of death after completing missing combinations, otherwise the factor level "All" gets exploded also
 
 past_deaths_age_sex <-  # structure here is a bit more complicated - headers in row 3, but sex & age headers in row 4
   readxl::read_excel(past_deaths_age_sex_file, sheet = 2, skip = 4, col_names = c("year","week_number","place_of_death","sex","age","number_of_deaths"), guess_max = 1e5) %>%
@@ -444,6 +454,11 @@ past_deaths_age_sex <-  # structure here is a bit more complicated - headers in 
     year = 2000L + as.integer(year),
     week_number = as.integer(week_number)
   ) %>%
+  tidyr::complete(
+    nesting(week_number,year),  # unique combinations that we don't want to combinatorily explode
+    sex, age, place_of_death,  # fill in missing combinations of age, sex, pod, with 0 deaths
+    fill = list(number_of_deaths = 0)
+  ) %>% 
   recode_place_of_death()
 
 ## check that the results are the same as overall deaths
@@ -759,7 +774,7 @@ merged_deaths_hb %>%
   geom_vline(xintercept = 54, linetype = "dotted") +
   # geom_text(data = annotations_figure_6, aes(x=x,y=y, label=label)) +
   scale_x_continuous(breaks = seq(0,60,by=10)) +
-  facet_wrap(~ref_area) +
+  facet_wrap(~ref_area, scales = "free_y") +
   theme_minimal() +
   scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
                       labels = c("All deaths", 
