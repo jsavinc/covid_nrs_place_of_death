@@ -45,6 +45,11 @@ endpoint <- "http://statistics.gov.scot/sparql.json"
 All data used for this study were obtained from the National Records Scotland (NRS) and are © Crown copyright, 2020; the details of the licence can be viewed on the [Open Government Licence website](http://www.nationalarchives.gov.uk/doc/open-government-licence/open-government-licence.htm)
 
 
+# Context of lockdowns
+
+A recent timeline of COVID-19 events in Scotland is [available here](https://spice-spotlight.scot/2021/01/29/timeline-of-coronavirus-covid-19-in-scotland/). Including these might help in the interpreration fo the figures, though the figures are already pretty busy. This is a potential future TODO!
+
+
 # Import & wrangle data
 
 We're importing two kinds of data:
@@ -144,6 +149,8 @@ This involves pivotting the number of deaths variable into wide format based on 
 
 The first COVID-19-related deaths were reported from week 12 onwards. In some of the datasets, a missing/omitted value represents 0 cases in that category, when a 0 should have been recorded. E.g. deaths in "Other institutions" are very low, and if a record is missing for that category, we should assume 0 deaths.
 
+On 3 Februrary 2021 as I was updating the script, the weekly figures started distinguishing cause of death: COVID-19 can be a contributory factor, or an underlying cause of death. For the purposes of this study, COVID-19 deaths are in the minority, and we will disregard this distinction for now.
+
 
 ```{r}
 ## helper function to make consistently coded cause of death
@@ -155,20 +162,33 @@ recode_cause_of_death <- function(data_tbl) {
         cause_of_death == "all-causes-average-of-corresponding-week-over-previous-5-years" ~ "deaths_nrs_past_average_all_causes",
         cause_of_death == "covid-19-related" ~ "deaths_covid_related",
         cause_of_death == "COVID-19 mentioned" ~ "deaths_covid_related",
+        cause_of_death == "COVID-19 contributory factor" ~ "deaths_covid_related",
+        cause_of_death == "COVID-19 underlying cause" ~ "deaths_covid_related",
         cause_of_death == "Non-COVID-19" ~ "deaths_non_covid",
         TRUE ~ NA_character_
       )
     )
 }
 
+# TODO:  still too complicated to safely use as a function...
 ## find which combinations of geographic area, cause of death, and place of death are missing and set the number of deaths to 0 for them
-complete_weekly_deaths_with_implicit_zeros <- function(data_tbl) {
+# complete_weekly_deaths_with_implicit_zeros <- function(data_tbl) {
+#   data_tbl %>%
+#   tidyr::complete(
+#       nesting(year, week_number, week_number_run_over, date_w_c),  # these are 'identifying' variables that shouldn't be combinatorily exploded
+#       ref_area, cause_of_death, place_of_death,  # these are the variables we want to have all combinations of, and missing combinations are set to 0 deaths
+#       fill = list(number_of_deaths = 0)
+#       )
+# }
+
+## calculate number of deaths after recoding cause of death -
+## recoding results in two entries for covid-related deaths, so we need to sum over them
+## this is achieved by grouping over all variables other than number of deaths
+recalculate_number_of_deaths_after_recoding_cause_of_death <- function(data_tbl) {
   data_tbl %>%
-  tidyr::complete(
-      nesting(year, week_number, week_number_run_over, date_w_c),  # these are 'identifying' variables that shouldn't be combinatorily exploded
-      ref_area, cause_of_death, place_of_death,  # these are the variables we want to have all combinations of, and missing combinations are set to 0 deaths
-      fill = list(number_of_deaths = 0)
-      )
+  group_by_all %>% 
+  ungroup(number_of_deaths) %>%  # this is done by grouping over everything except the number of deaths
+  summarise(number_of_deaths = sum(number_of_deaths), .groups = "drop")  # recompute the sum of deaths
 }
 
 ## covid death reporting started in week 12, 2020 - before then it doesn't make sense to distunguish between covid and non-covid deaths, and only the all cause death figure should be kept
@@ -313,6 +333,7 @@ weekly_deaths_overall <-
   select(-c(measure_type)) %>%  #  measure_type is count for all data
   recode_place_of_death() %>%
   recode_cause_of_death() %>%
+  recalculate_number_of_deaths_after_recoding_cause_of_death %>%  # not needed here probably, but no harm in including it
   pivot_wider(names_from = cause_of_death, values_from = number_of_deaths) %>%  # this dataset is well-formatted and has no implicit missing values!
   mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related)  # compute non-covid deaths from the other two figures - will be NA where either is missing
   
@@ -332,7 +353,8 @@ weekly_deaths_sex_age <-  # structure here is a bit more complicated - headers i
     week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)  # invent a "run-over" week number - weeks 54+ are in 2021
   ) %>%
   recode_cause_of_death() %>%
-  tidyr::complete(
+  recalculate_number_of_deaths_after_recoding_cause_of_death %>%  # recompute the sum of deaths
+  tidyr::complete(  # complete implicit missing entries and make them 0
     nesting(week_number,week_number_run_over,date_w_c,year),
     age,sex,place_of_death,cause_of_death,
     fill = list(number_of_deaths = 0)
@@ -360,7 +382,13 @@ weekly_deaths_la <-
     week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)  # invent a "run-over" week number - weeks 54+ are in 2021
   ) %>%
   recode_cause_of_death() %>%
-  complete_weekly_deaths_with_implicit_zeros() %>%
+  recalculate_number_of_deaths_after_recoding_cause_of_death %>%  # recompute the sum of deaths
+  tidyr::complete(
+      nesting(year, week_number, week_number_run_over, date_w_c),  # these are 'identifying' variables that shouldn't be combinatorily exploded
+      ref_area, cause_of_death, place_of_death,  # these are the variables we want to have all combinations of, and missing combinations are set to 0 deaths
+      fill = list(number_of_deaths = 0)
+      ) %>%
+  # complete_weekly_deaths_with_implicit_zeros() %>%
   recode_place_of_death() %>%  # this needs to be done before recoding cause of death, otherwise we also include the "all" figure which isn't included in this dataset
   pivot_wider(names_from = cause_of_death, values_from = number_of_deaths) %>%   # make separate columns for causes of death figures
   mutate(deaths_all_causes = deaths_non_covid + deaths_covid_related) %>%  # compute all cause deaths from the other two figures reported
@@ -384,7 +412,13 @@ weekly_deaths_hb <-
     week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)  # invent a "run-over" week number - weeks 54+ are in 2021
   ) %>%
   recode_cause_of_death() %>%
-  complete_weekly_deaths_with_implicit_zeros() %>%
+  recalculate_number_of_deaths_after_recoding_cause_of_death %>%  # recompute the sum of deaths
+  tidyr::complete(
+      nesting(year, week_number, week_number_run_over, date_w_c),  # these are 'identifying' variables that shouldn't be combinatorily exploded
+      ref_area, cause_of_death, place_of_death,  # these are the variables we want to have all combinations of, and missing combinations are set to 0 deaths
+      fill = list(number_of_deaths = 0)
+      ) %>%
+  # complete_weekly_deaths_with_implicit_zeros() %>%
   recode_place_of_death() %>%  # this needs to be done before recoding cause of death, otherwise we also include the "all" figure which isn't included in this dataset
   pivot_wider(names_from = cause_of_death, values_from = number_of_deaths) %>%  # make separate columns for causes of death figures
   mutate(deaths_all_causes = deaths_non_covid + deaths_covid_related) %>%  # compute all cause deaths from the other two figures reported
@@ -606,6 +640,9 @@ historical_average_sex_age <-
 historical_average_age <-
   past_deaths_sex_age %>%
   create_week_53_data_for_years_with_52_weeks() %>%
+  group_by_all %>%
+  ungroup(sex, number_of_deaths) %>%  # this is done by grouping over everything except the number of deaths & sex
+  summarise(number_of_deaths = sum(number_of_deaths), .groups = "drop") %>%  # recompute the sum of deaths over sexes
   group_by(
     week_number, place_of_death, age
   ) %>%
@@ -619,6 +656,9 @@ historical_average_age <-
 historical_average_sex <-
   past_deaths_sex_age %>%
   create_week_53_data_for_years_with_52_weeks() %>%
+  group_by_all %>%
+  ungroup(age, number_of_deaths) %>%  # this is done by grouping over everything except the number of deaths & age
+  summarise(number_of_deaths = sum(number_of_deaths), .groups = "drop") %>%  # recompute the sum of deaths over ages
   group_by(
     week_number, place_of_death, sex
   ) %>%
@@ -666,12 +706,14 @@ merged_data_sex_age <-
 
 merged_data_sex <-
   weekly_deaths_sex_age %>%
+  filter(age!="all") %>%
   group_by(week_number, week_number_run_over, year, date_w_c, sex, place_of_death) %>%
   summarise(across(starts_with("deaths_"), ~sum(.x)), .groups = "drop") %>%
   inner_join(historical_average_sex, by = c("place_of_death", "week_number", "sex"))
 
 merged_data_age <-
   weekly_deaths_sex_age %>%
+  filter(sex!="all") %>%
   group_by(week_number, week_number_run_over, year, date_w_c, age, place_of_death) %>%
   summarise(across(starts_with("deaths_"), ~sum(.x)), .groups = "drop") %>%
   inner_join(historical_average_age, by = c("place_of_death", "week_number", "age"))
@@ -842,8 +884,10 @@ merged_deaths_hb %>%
        # caption = paste0(c(vertical_line_text, removed_other_category_text, source_nrs_text), collapse="\n"),
        colour = "Cause of death"
        )
+```
 
 
+```{r}
 merged_deaths_la %>%
   # filter(sex == "all" & age == "all") %>%
   filter(place_of_death == "Home & other non-institution") %>%
@@ -878,10 +922,11 @@ merged_deaths_la %>%
 ## Figure 10: deaths at home by sex
 
 ```{r}
-merged_deaths_by_sex %>%
-  filter(sex != "all" & age == "all") %>%
-  filter(place_of_death == "Home & other non-institution") %>%
-  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid_related), 
+# TODO: check the sex-disaggregated data, the historical figures look wrong
+merged_data_sex %>%
+  # filter(sex == "all" & age == "all") %>%
+  filter(place_of_death %in% c("Home & other non-institution")) %>%
+  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
                names_to = "deaths_type", values_to = "deaths") %>% 
   ggplot(aes(x = week_number_run_over)) +
   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
@@ -890,7 +935,7 @@ merged_deaths_by_sex %>%
   geom_vline(xintercept = 54, linetype = "dotted") +
   # geom_text(data = annotations_figure_6, aes(x=x,y=y, label=label)) +
   scale_x_continuous(breaks = seq(0,60,by=10)) +
-  facet_wrap(~sex) +
+  facet_grid(~sex) +
   theme_minimal() +
   scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
                       labels = c("All deaths", 
@@ -901,7 +946,7 @@ merged_deaths_by_sex %>%
   labs(x = "Week number",
        y = "Deaths (N)",
        subtitle = date_range_text,
-       # caption = paste0(c(vertical_line_text, removed_other_category_text, source_nrs_text), collapse="\n"),
+       caption = paste0(c(vertical_line_text, source_nrs_text), collapse="\n"),
        colour = "Cause of death"
        )
 ```
