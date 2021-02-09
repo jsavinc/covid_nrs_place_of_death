@@ -431,6 +431,20 @@ weekly_deaths_hb <-
   pivot_wider(names_from = cause_of_death, values_from = number_of_deaths) %>%  # make separate columns for causes of death figures
   mutate(deaths_all_causes = deaths_non_covid + deaths_covid_related) %>%  # compute all cause deaths from the other two figures reported
   set_covid_and_non_covid_deaths_to_zero_before_reporting_started()
+
+## compute weekly data for sex and age separately
+## sum over sex or age, respectively
+weekly_deaths_sex <-
+  weekly_deaths_sex_age %>%
+  filter(age!="all") %>%
+  group_by(week_number, week_number_run_over, year, date_w_c, sex, place_of_death) %>%
+  summarise(across(starts_with("deaths_"), ~sum(.x)), .groups = "drop")
+
+weekly_deaths_age <-
+  weekly_deaths_sex_age %>%
+  filter(sex!="all") %>%
+  group_by(week_number, week_number_run_over, year, date_w_c, age, place_of_death) %>%
+  summarise(across(starts_with("deaths_"), ~sum(.x)), .groups = "drop")
 ```
 
 
@@ -487,16 +501,17 @@ past_deaths_hb <-
   readxl::read_excel(past_deaths_hb_file, sheet = 2, skip = 2, col_names = TRUE) %>%  # first two rows are empty, row 3 has headers
   clean_names() %>%
   drop_na(number_of_deaths) %>%  # remove empty rows & one row where it's just the copyright notice
-  rename(
-    week_number = week_of_occurrence,
-    place_of_death = location
+  rename(  # same format as current data
+    week_number = matches("week"),
+    place_of_death = matches("location"),
+    ref_area = health_board
   ) %>%
   mutate(
     week_number = as.integer(week_number)
   ) %>%
   tidyr::complete(
     nesting(week_number,year),  # unique combinations that we don't want to combinatorily explode
-    health_board, place_of_death,  # fill in missing combinations of hb & pod with 0 deaths
+    ref_area, place_of_death,  # fill in missing combinations of hb & pod with 0 deaths
     fill = list(number_of_deaths = 0)
   ) %>% 
   recode_place_of_death()  # recode place of death after completing missing combinations, otherwise the factor level "All" gets exploded also
@@ -505,16 +520,17 @@ past_deaths_la <-
   readxl::read_excel(past_deaths_la_file, sheet = 2, skip = 2, col_names = TRUE) %>%  # first two rows are empty, row 3 has headers
   clean_names() %>%
   drop_na(number_of_deaths) %>%  # remove empty rows & one row where it's just the copyright notice
-  rename(
-    week_number = week,
-    place_of_death = location_of_death
+  rename(  # same format as current data
+    week_number = matches("week"),
+    place_of_death = matches("location"),
+    ref_area = council_area
   ) %>%
   mutate(
     week_number = as.integer(week_number)
   ) %>%
   tidyr::complete(
     nesting(week_number,year),  # unique combinations that we don't want to combinatorily explode
-    council_area, place_of_death,  # fill in missing combinations of la & pod with 0 deaths
+    ref_area, place_of_death,  # fill in missing combinations of la & pod with 0 deaths
     fill = list(number_of_deaths = 0)
   ) %>% 
   recode_place_of_death()  # recode place of death after completing missing combinations, otherwise the factor level "All" gets exploded also
@@ -533,6 +549,25 @@ past_deaths_sex_age <-  # structure here is a bit more complicated - headers in 
   ) %>% 
   recode_place_of_death()
 
+## compute weekly data for sex and age separately
+## sum over sex or age, respectively
+past_deaths_sex <-
+  past_deaths_sex_age %>%
+  group_by_all %>%
+  ungroup(age, number_of_deaths) %>%  # this is done by grouping over everything except the number of deaths & sex
+  summarise(number_of_deaths = sum(number_of_deaths), .groups = "drop")
+
+past_deaths_age <-
+  past_deaths_sex_age %>%
+  group_by_all %>%
+  ungroup(sex, number_of_deaths) %>%  # this is done by grouping over everything except the number of deaths & sex
+  summarise(number_of_deaths = sum(number_of_deaths), .groups = "drop")
+```
+
+
+### Do we get the same number of deaths between datasets?
+
+```{r}
 ## check that the results are the same as overall deaths
 map2_dfr(
   .x = list(past_deaths_overall, past_deaths_hb, past_deaths_hb, past_deaths_sex_age),
@@ -581,28 +616,6 @@ unzipped <- tempfile()
 #   coord_map()
 
 ```
-
-
-# Calculate data averaged over multiple weeks
-
-Once data are broken down by region there are very small figures on a weekly basis, so we can compute a moving average over several weeks instead. This is different to merging figures into 2-week chunks, for example, as information from consecutive weeks will overlap.
-
-The average will be computed to the "left" of the current value (a week's moving average is the average of values at this week + n-1 past weeks)
-
-```{r}
-weeks_to_average <- 2
-
-
-# TODO: implement rolling averages also - I think this needs to be applied at source tbls first (i.e. max of sum over two weeks rather than mean of maxes?)
-  # group_by(ref_area, sex, age, place_of_death) %>% 
-  # mutate(across(.cols = matches("deaths_"), .fns = ~zoo::rollmean(x = .x, k = 2, align = "right", fill = NA)))
-
-
-# weekly_deaths_sex_age
-# weekly_deaths_hb %>%
-#   group_by(year, week_number, )
-```
-
 
 
 # Calculate historical averages, minima & maxima
@@ -664,7 +677,7 @@ historical_average_hb <-
   past_deaths_hb %>%
   create_week_53_data_for_years_with_52_weeks() %>%
   group_by(
-    week_number, place_of_death, health_board
+    week_number, place_of_death, ref_area
   ) %>%
   summarise(
     deaths_mean = mean(number_of_deaths),
@@ -677,7 +690,7 @@ historical_average_la <-
   past_deaths_la %>%
   create_week_53_data_for_years_with_52_weeks() %>%
   group_by(
-    week_number, place_of_death, council_area
+    week_number, place_of_death, ref_area
   ) %>%
   summarise(
     deaths_mean = mean(number_of_deaths),
@@ -700,11 +713,8 @@ historical_average_sex_age <-
   )
 
 historical_average_age <-
-  past_deaths_sex_age %>%
+  past_deaths_age %>%
   create_week_53_data_for_years_with_52_weeks() %>%
-  group_by_all %>%
-  ungroup(sex, number_of_deaths) %>%  # this is done by grouping over everything except the number of deaths & sex
-  summarise(number_of_deaths = sum(number_of_deaths), .groups = "drop") %>%  # recompute the sum of deaths over sexes
   group_by(
     week_number, place_of_death, age
   ) %>%
@@ -716,11 +726,8 @@ historical_average_age <-
   )
 
 historical_average_sex <-
-  past_deaths_sex_age %>%
+  past_deaths_sex %>%
   create_week_53_data_for_years_with_52_weeks() %>%
-  group_by_all %>%
-  ungroup(age, number_of_deaths) %>%  # this is done by grouping over everything except the number of deaths & age
-  summarise(number_of_deaths = sum(number_of_deaths), .groups = "drop") %>%  # recompute the sum of deaths over ages
   group_by(
     week_number, place_of_death, sex
   ) %>%
@@ -745,6 +752,103 @@ weekly_deaths_overall %>%
 ```
 
 
+# Calculate data averaged over multiple weeks
+
+Once data are broken down by region there are very small figures on a weekly basis, so we can compute a moving average over several weeks instead. This is different to merging figures into 2-week chunks, for example, as information from consecutive weeks will overlap.
+
+The average will be computed to the "left" of the current value (a week's moving average is the average of values at this week + n-1 past weeks, or "right" aligned).
+
+Moving averages for historical data will be computed over the previously computed weekly means & ranges. Computing moving averages over historical ranges produces wider spread data than computing ranges of moving averages (see `order_of_min_max_rolling_mean.R`).
+
+
+```{r}
+weeks_to_average <- 2
+
+## compute moving average over weekly data, using average over k weeks
+## using historical data to compute the moving average in the first few weeks of current data
+## Note: historical data needs to be the non-summarised (raw) data!
+## to compute moving average in first few week(s) of year, we add in the previous years' data and code the weeks so that they retain the right order
+## i.e. in 2020 the week_number_run_over starts at 1, and the last week of 2019 is coded as 0, the 2nd last as -1, etc.
+## once the moving average has been computed, we remove the past data;
+## this approach works for 2021 data seamlessly, using the last weeks of 2020 for the moving average in 2021!
+compute_moving_average_for_current_data <- function(current_data, historical_data) {
+  bind_rows(
+    historical_data %>%  # add historical data and format it so that it matches current data
+      filter(year == 2019) %>%  # keep only last year before 2020
+      rename(deaths_all_causes = number_of_deaths) %>%  # in historical deaths there is no split between covid/non-covid so we rename to all cause deaths
+      mutate(week_number_run_over = -(52-week_number)),
+    current_data
+  ) %>%
+    arrange(week_number_run_over) %>%  # just in case the order got messed up, re-order by week_number_run_over for the computation
+    group_by_all() %>% ungroup(matches("^deaths_|week|date|year")) %>%  # clever way of getting grouping by ref_area, sex, age, whatever is available
+    mutate(across(
+        .cols = matches("^deaths_"), 
+        .fns = ~zoo::rollmean(.x, k=weeks_to_average, fill=NA, align="right"), 
+        .names = "ma{weeks_to_average}w_{.col}"
+        )
+    ) %>%
+    ungroup %>%
+    filter(year > 2019)  # keep only current data
+}
+
+rolling_deaths_hb <-
+  compute_moving_average_for_current_data(current_data = weekly_deaths_hb, historical_data = past_deaths_hb)
+
+rolling_deaths_la <-
+  compute_moving_average_for_current_data(current_data = weekly_deaths_la, historical_data = past_deaths_la)
+
+rolling_deaths_sex_age <-
+  compute_moving_average_for_current_data(current_data = weekly_deaths_sex_age, historical_data = past_deaths_sex_age)
+
+rolling_deaths_age <-
+  compute_moving_average_for_current_data(current_data = weekly_deaths_age, historical_data = past_deaths_age)
+
+rolling_deaths_sex <-
+  compute_moving_average_for_current_data(current_data = weekly_deaths_sex, historical_data = past_deaths_sex)
+
+
+
+## inspect the calculations  
+rolling_deaths_la %>% filter(week_number_run_over %in% c(1:3,52:54) & str_detect(ref_area,"Glasgow") & place_of_death=="Hospital") %>% select(year, week_number_run_over, ref_area, place_of_death, deaths_all_causes, ma2w_deaths_all_causes) %>% knitr::kable(caption="Showing how rolling average was computed: week 1 is average of week 52 of 2019 (not shown) and week 1 of 2020; week 2 is average of weeks 1 & 2, etc.")
+
+rolling_deaths_sex_age %>% filter(week_number_run_over %in% c(1:3,52:54) & str_detect(sex,"F") & age == "65-74" & place_of_death=="Hospital") %>% select(year, week_number_run_over, sex, age, place_of_death, deaths_all_causes, ma2w_deaths_all_causes) %>% knitr::kable(caption = "Showing how rolling average was computed: week 1 is average of week 52 of 2019 (not shown) and week 1 of 2020; week 2 is average of weeks 1 & 2, etc.")
+
+
+
+## helper function that takes historical data and computes a moving average over k weeks
+## with the additional trick of using the last week of all the years as the week prior to the first week
+## strictly speaking we should be using the last week(s) of 2014 to compute the moving average for the first week(s) in 2015, depending on k; and we shouldn't be using the last week of 2019 in the computation either
+## however, the overall effect of this is small since we're averaging over the entire 2015-2019 period
+## the inaccuracy of this approach increases with increasing k
+## the solution for fixing this is straightforward - just download 2014 data as well, and merge the "current" data and the historical data, and then perform the moving average calculation as usual
+compute_moving_average_for_historical_data <- function(historical_data) {
+  last_week_in_previous_year_required <- 53 + 2 - weeks_to_average  # this computes the last week needed from the previous year: if averaging over 2 weeks, we need week 3, if over 3 weeks, the lat week needed is 52, etc.
+  bind_rows(
+    historical_data %>%  # keep last week from all years and convert it to week 0
+      filter(week_number %in% last_week_in_previous_year_required:53) %>% 
+      mutate(week_number = week_number - 53),  # set week number for data in previous to negative numbers but retaining order 
+    historical_data
+  ) %>%
+  arrange(week_number) %>%  # sort in ascending order of week_number
+  group_by_all() %>% ungroup(matches("^deaths_"),week_number) %>%
+  mutate(across(
+      .cols = matches("^deaths_"), 
+      .fns = ~zoo::rollmean(.x, k=weeks_to_average, fill=NA, align="right"), 
+      .names = "ma{weeks_to_average}w_{.col}"
+      )
+  ) %>%
+  ungroup %>%
+  filter(week_number!=0)
+}
+
+historical_average_hb <- compute_moving_average_for_historical_data(historical_average_hb)
+historical_average_la <- compute_moving_average_for_historical_data(historical_average_la)
+historical_average_sex_age <- compute_moving_average_for_historical_data(historical_average_sex_age)
+historical_average_sex <- compute_moving_average_for_historical_data(historical_average_sex)
+historical_average_age <- compute_moving_average_for_historical_data(historical_average_age)
+```
+
+
 # Merge weekly COVID/non-COVID-related deaths in 2020/2021 with historic death rates
 
 ```{r}
@@ -757,29 +861,26 @@ merged_data_overall <-
             by = c("place_of_death", "week_number", "sex", "age"))
 
 merged_deaths_hb <-
-  weekly_deaths_hb %>%
-  inner_join(historical_average_hb, by = c("week_number","ref_area"="health_board","place_of_death"))
+  # weekly_deaths_hb %>%
+  rolling_deaths_hb %>%  # use data with rolling movingincluded
+  inner_join(historical_average_hb, by = c("week_number","ref_area","place_of_death"))
 
 merged_deaths_la <-
-  weekly_deaths_la %>%
-  inner_join(historical_average_la, by = c("week_number","ref_area"="council_area","place_of_death"))
+  # weekly_deaths_la %>%
+  rolling_deaths_la %>%  # use data with rolling movingincluded
+  inner_join(historical_average_la, by = c("week_number","ref_area","place_of_death"))
 
 merged_data_sex_age <-
-  weekly_deaths_sex_age %>%
+  # weekly_deaths_sex_age %>%
+  rolling_deaths_sex_age %>%  # use data with rolling movingincluded
   inner_join(historical_average_sex_age, by = c("place_of_death", "week_number", "sex", "age"))
 
 merged_data_sex <-
-  weekly_deaths_sex_age %>%
-  filter(age!="all") %>%
-  group_by(week_number, week_number_run_over, year, date_w_c, sex, place_of_death) %>%
-  summarise(across(starts_with("deaths_"), ~sum(.x)), .groups = "drop") %>%
+  rolling_deaths_sex %>%
   inner_join(historical_average_sex, by = c("place_of_death", "week_number", "sex"))
 
 merged_data_age <-
-  weekly_deaths_sex_age %>%
-  filter(sex!="all") %>%
-  group_by(week_number, week_number_run_over, year, date_w_c, age, place_of_death) %>%
-  summarise(across(starts_with("deaths_"), ~sum(.x)), .groups = "drop") %>%
+  rolling_deaths_age %>%
   inner_join(historical_average_age, by = c("place_of_death", "week_number", "age"))
 ```
 
