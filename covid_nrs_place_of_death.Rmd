@@ -610,11 +610,9 @@ unzipped <- tempfile()
 #   geom_sf()
 # 
 
-
 # ggplot(data = map_data(map = "world", region = "UK"), aes(x=long, y = lat, group = group)) +
 #   geom_polygon() +
 #   coord_map()
-
 ```
 
 
@@ -1059,6 +1057,48 @@ figure_deaths_at_home_by_health_board
 ```
 
 
+
+## Deaths at home with 2-week moving average, by health board
+
+```{r, fig.width=12, fig.height=9, warning=FALSE}
+moving_average_text <- "All figures represent deaths averaged over past 2 weeks; this includes historical range and historical mean."
+
+figure_deaths_at_home_2week_average_by_health_board <-
+  merged_deaths_hb %>%
+  filter(place_of_death == "Home & other non-institution") %>%
+  pivot_longer(cols = c(ma2w_deaths_all_causes, ma2w_deaths_non_covid), 
+               names_to = "deaths_type", values_to = "ma2w_deaths") %>% 
+  ggplot(aes(x = week_number_run_over)) +
+  geom_ribbon(aes(ymin = ma2w_deaths_min, ymax = ma2w_deaths_max), fill = "#4477aa", alpha = 0.5) +
+  geom_line(aes(y = ma2w_deaths, colour = deaths_type)) +
+  geom_line(aes(y = ma2w_deaths_mean), linetype = "dashed", size = 0.2) +
+  geom_vline(xintercept = 54, linetype = "dotted") +
+  scale_x_continuous(breaks = seq(0,60,by=10)) +
+  facet_wrap(~ref_area, scales = "free_y") +
+  theme_minimal() +
+  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+                      labels = c("All deaths", 
+                                 "Non Covid-19 deaths"),
+                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+                      ) +
+  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
+  labs(x = "Week number",
+       y = "Deaths (N)",
+       subtitle = date_range_text,
+       caption = paste0(c(moving_average_text, vertical_line_text, vertical_scale_differs_between_panels_text, source_nrs_text), collapse="\n"),
+       colour = "Cause of death"
+       )
+
+walk(
+  .x = c(".pdf",".svg",".png"),
+  .f = ~ggsave(filename = paste0("./outputs/figure_deaths_at_home_2week_average_by_health_board",.x), plot = figure_deaths_at_home_2week_average_by_health_board, width = 12, height = 9, dpi = 300)
+)
+
+figure_deaths_at_home_2week_average_by_health_board
+```
+
+
+
 ## Deaths at home, by local authority
 
 ```{r, fig.width=12, fig.height=9, warning=FALSE}
@@ -1088,18 +1128,56 @@ figure_deaths_at_home_by_local_authority <-
        colour = "Cause of death"
        )
 
-merged_deaths_la %>%
+# merged_deaths_la %>%
+#   filter(place_of_death == "Home & other non-institution") %>%
+#   filter(ref_area %in% c("Moray","Highland", "Fife", "Glasgow City")) %>%
+#   pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
+#                names_to = "deaths_type", values_to = "deaths") %>% 
+#   ggplot(aes(x = week_number_run_over)) +
+#   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
+#   geom_line(aes(y = deaths, colour = deaths_type)) +
+#   geom_line(aes(y = deaths_mean), linetype = "dashed", size = 0.2) +
+#   geom_vline(xintercept = 54, linetype = "dotted") +
+#   scale_x_continuous(breaks = seq(0,60,by=10)) +
+#   facet_wrap(~ref_area, scales = "free_y", nrow = 2) +
+#   theme_minimal() +
+#   scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+#                       labels = c("All deaths", 
+#                                  "Non Covid-19 deaths"),
+#                       guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+#                       ) +
+#   theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
+#   labs(x = "Week number",
+#        y = "Deaths (N)",
+#        subtitle = date_range_text,
+#        caption = paste0(c(vertical_line_text, vertical_scale_differs_between_panels_text, source_nrs_text), collapse="\n"),
+#        colour = "Cause of death"
+#        )
+
+walk(
+  .x = c(".pdf",".svg",".png"),
+  .f = ~ggsave(filename = paste0("./outputs/figure_deaths_at_home_by_local_authority",.x), plot = figure_deaths_at_home_by_local_authority, width = 12, height = 9, dpi = 300)
+)
+
+figure_deaths_at_home_by_local_authority
+```
+
+
+## Deaths at home with 2-week moving average, by local authority
+
+```{r, fig.width=12, fig.height=9, warning=FALSE}
+figure_deaths_at_home_2week_average_by_local_authority <-
+  merged_deaths_la %>%
   filter(place_of_death == "Home & other non-institution") %>%
-  filter(ref_area %in% c("Moray","Highland", "Fife", "Glasgow City")) %>%
-  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
-               names_to = "deaths_type", values_to = "deaths") %>% 
+  pivot_longer(cols = c(ma2w_deaths_all_causes, ma2w_deaths_non_covid), 
+               names_to = "deaths_type", values_to = "ma2w_deaths") %>% 
   ggplot(aes(x = week_number_run_over)) +
-  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
-  geom_line(aes(y = deaths, colour = deaths_type)) +
-  geom_line(aes(y = deaths_mean), linetype = "dashed", size = 0.2) +
+  geom_ribbon(aes(ymin = ma2w_deaths_min, ymax = ma2w_deaths_max), fill = "#4477aa", alpha = 0.5) +
+  geom_line(aes(y = ma2w_deaths, colour = deaths_type)) +
+  geom_line(aes(y = ma2w_deaths_mean), linetype = "dashed", size = 0.2) +
   geom_vline(xintercept = 54, linetype = "dotted") +
   scale_x_continuous(breaks = seq(0,60,by=10)) +
-  facet_wrap(~ref_area, scales = "free_y", nrow = 2) +
+  facet_wrap(~ref_area, scales = "free_y") +
   theme_minimal() +
   scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
                       labels = c("All deaths", 
@@ -1110,16 +1188,42 @@ merged_deaths_la %>%
   labs(x = "Week number",
        y = "Deaths (N)",
        subtitle = date_range_text,
-       caption = paste0(c(vertical_line_text, vertical_scale_differs_between_panels_text, source_nrs_text), collapse="\n"),
+       caption = paste0(c(moving_average_text, vertical_line_text, vertical_scale_differs_between_panels_text, source_nrs_text), collapse="\n"),
        colour = "Cause of death"
        )
+# 
+# merged_deaths_la %>%
+#   filter(place_of_death == "Home & other non-institution") %>%
+#   filter(ref_area %in% c("Moray","Highland", "Fife", "Glasgow City")) %>%
+#   pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
+#                names_to = "deaths_type", values_to = "deaths") %>% 
+#   ggplot(aes(x = week_number_run_over)) +
+#   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
+#   geom_line(aes(y = deaths, colour = deaths_type)) +
+#   geom_line(aes(y = deaths_mean), linetype = "dashed", size = 0.2) +
+#   geom_vline(xintercept = 54, linetype = "dotted") +
+#   scale_x_continuous(breaks = seq(0,60,by=10)) +
+#   facet_wrap(~ref_area, scales = "free_y", nrow = 2) +
+#   theme_minimal() +
+#   scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+#                       labels = c("All deaths", 
+#                                  "Non Covid-19 deaths"),
+#                       guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+#                       ) +
+#   theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
+#   labs(x = "Week number",
+#        y = "Deaths (N)",
+#        subtitle = date_range_text,
+#        caption = paste0(c(vertical_line_text, vertical_scale_differs_between_panels_text, source_nrs_text), collapse="\n"),
+#        colour = "Cause of death"
+#        )
 
 walk(
   .x = c(".pdf",".svg",".png"),
-  .f = ~ggsave(filename = paste0("./outputs/figure_deaths_at_home_by_local_authority",.x), plot = figure_deaths_at_home_by_local_authority, width = 12, height = 9, dpi = 300)
+  .f = ~ggsave(filename = paste0("./outputs/figure_deaths_at_home_2week_average_by_local_authority",.x), plot = figure_deaths_at_home_2week_average_by_local_authority, width = 12, height = 9, dpi = 300)
 )
 
-figure_deaths_at_home_by_local_authority
+figure_deaths_at_home_2week_average_by_local_authority
 ```
 
 
@@ -1201,5 +1305,23 @@ walk(
 )
 
 figure_deaths_at_home_by_sex
+```
+
+
+## Overall deaths at home 2020 by cause of death
+
+```{r}
+# TODO: add yearly range for all deaths
+# TODO: split data by covid-underlying cause of desath & covid-factor in death
+merged_data_overall %>%
+  filter(sex=="all", age=="all") %>%
+  filter(year==2020) %>%
+  filter(place_of_death == "Home & other non-institution") %>%
+  group_by(ref_area, year) %>%
+  summarise(
+    deaths_all_causes = sum(deaths_all_causes, na.rm=TRUE),
+    deaths_covid_related = sum(deaths_covid_related, na.rm=TRUE),
+    deaths_non_covid = sum(deaths_non_covid, na.rm=TRUE)
+  )
 ```
 
