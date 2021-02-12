@@ -11,7 +11,9 @@ editor_options:
   chunk_output_type: console
 params:
   data_sources: '`r tibble()`'
+  historical_data_sources: '`r tibble()`'
 ---
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -77,20 +79,30 @@ For both of these, we'll also look at crosstabulated figures for:
 * Local Authority
 * Sex
 * Age
-* ~~Ethnicity~~ Note: not sure this is available
+* ~~Ethnicity~~ *Note: not sure this is available*
 
 There are two ways of obtaining the data:
 
-1. Using their SPARQL-based API ("data cube"), which can be accessed using the `opendatascot` package in R; the data can be seen on [the Scottish Gov't open data website](https://statistics.gov.scot/data/deaths-involving-coronavirus-covid-19)
-2. There are a number of dataset, including the demographic/geographic crosstabulations available on the "Related Statistics" section of the [deaths involving COVID-19 website]( https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/vital-events/general-publications/weekly-and-monthly-data-on-births-and-deaths/deaths-involving-coronavirus-covid-19-in-scotland)
+1. ~~Using their SPARQL-based API ("data cube"), which can be accessed using the `opendatascot` package in R; the data can be seen on [the Scottish Gov't open data website](https://statistics.gov.scot/data/deaths-involving-coronavirus-covid-19)~~
+    - Update: it's difficult to keep track of data updates using the API - it's simpler to query the .xlsx/.csv files (next bullet point) for when they were last modified and download the weekly update once it's been released!
+2. There are a number of datasets, including the demographic/geographic crosstabulations available on the "Related Statistics" section of the [deaths involving COVID-19 website]( https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/vital-events/general-publications/weekly-and-monthly-data-on-births-and-deaths/deaths-involving-coronavirus-covid-19-in-scotland), under the *Ad-hoc queries section*. They are updated weekly, and also contain historical figures.
 
 Note that the [*About* tab of the "data cube" interface](https://statistics.gov.scot/resource?uri=http%3A%2F%2Fstatistics.gov.scot%2Fdata%2Fdeaths-involving-coronavirus-covid-19) says the following about Health Board & Local Authority figures:
 
 >Health Board and Local Authority figures include non-residents. Deaths are allocated to areas based on the usual residence of the deceased. If the deceased was not a Scottish resident, the death is allocated to the area where the death occurred.
 
-This means we'll need to download those figures from the website rather than using the API
+This means we'll need to download those figures from the website rather than using the API!
 
 Note that the weekly deaths due to COVID-19 in 2020 & 2021 also include a weekly average 2015-2019, but for the purposes of showing the range of deaths (weekly minima & maxima), we need the weekly figures for individual years & the appropriate cross-tabulations.
+
+```{r}
+# "unpack" the data source tables
+table_of_data_sources <- params$data_sources
+table_of_historical_data_sources <- params$historical_data_sources
+
+table_of_data_sources %>%
+  kable(caption = "Latest data used in this report.")
+```
 
 
 ## Parsing week numbers
@@ -303,7 +315,7 @@ Smaller health boards were merged... TODO!
 download_dir <- "./downloaded_data"
 if (!dir.exists(download_dir)) dir.create(download_dir)  # create download dir if it doesn't exist
 
-
+files_weekly_deaths <- set_names(x = as.list(table_of_data_sources$path_latest), nm = table_of_data_sources$short_name)
 
 # checking out structure
 
@@ -363,13 +375,14 @@ weekly_deaths_overall <-
   mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related)  # compute non-covid deaths from the other two figures - will be NA where either is missing
   
 
-weekly_deaths_sex_age_file <-
-  curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-age-sex.xlsx",
-                destfile = tempfile(),
-                quiet = FALSE)
+# weekly_deaths_sex_age_file <-
+#   curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-age-sex.xlsx",
+#                 destfile = tempfile(),
+#                 quiet = FALSE)
+
 
 weekly_deaths_sex_age <-  # structure here is a bit more complicated - headers in row 3, but sex & age headers in row 4
-  readxl::read_excel(weekly_deaths_sex_age_file, sheet = 2, skip = 4, col_names = c("week_number","place_of_death","sex","age","cause_of_death","number_of_deaths"), guess_max = 1e5) %>%
+  readxl::read_excel(files_weekly_deaths$sex_age, sheet = 2, skip = 4, col_names = c("week_number","place_of_death","sex","age","cause_of_death","number_of_deaths"), guess_max = 1e5) %>%
   drop_na(number_of_deaths) %>%    # remove empty rows & one row where it's just the copyright notice
   mutate(
     year = 2000L + parse_integer(str_sub(week_number, 1, 2)),
@@ -389,14 +402,14 @@ weekly_deaths_sex_age <-  # structure here is a bit more complicated - headers i
   mutate(deaths_all_causes = deaths_non_covid + deaths_covid_related) %>%  # compute all cause deaths from the other two figures reported
   set_covid_and_non_covid_deaths_to_zero_before_reporting_started()
 
-
-weekly_deaths_la_file <-
-  curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-council-area-location.xlsx",
-                destfile = tempfile(),
-                quiet = FALSE)
+# 
+# weekly_deaths_la_file <-
+#   curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-council-area-location.xlsx",
+#                 destfile = tempfile(),
+#                 quiet = FALSE)
 
 weekly_deaths_la <- 
-  read_excel(weekly_deaths_la_file, sheet = 2, skip = 2) %>% 
+  read_excel(files_weekly_deaths$la, sheet = 2, skip = 2) %>% 
   clean_names %>%
   rename(week_number = week_of_occurrence, ref_area = council, place_of_death = location_of_death, number_of_deaths = deaths) %>%
   filter(!is.na(number_of_deaths)) %>%  # remove blank rows & copyright entry
@@ -420,13 +433,13 @@ weekly_deaths_la <-
   set_covid_and_non_covid_deaths_to_zero_before_reporting_started()
 
 
-weekly_deaths_hb_file <-
-  curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-health-board-location.xlsx",
-                destfile = tempfile(),
-                quiet = FALSE)
+# weekly_deaths_hb_file <-
+#   curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-health-board-location.xlsx",
+#                 destfile = tempfile(),
+#                 quiet = FALSE)
 
 weekly_deaths_hb <- 
-  read_excel(weekly_deaths_hb_file, sheet = 2, skip = 2) %>% 
+  read_excel(files_weekly_deaths$hb, sheet = 2, skip = 2) %>% 
   clean_names %>%
   rename(week_number = week_of_occurrence, ref_area = health_board, place_of_death = location_of_death, number_of_deaths = deaths) %>%
   filter(!is.na(number_of_deaths)) %>%  # remove blank rows & copyright entry
@@ -481,29 +494,32 @@ weekly_deaths_overall %>%
 The format of the .xlsx files is that sheet 1 is a table of contents, sheet 2 contains the data, and sheet 3 is a pivot table for subsetting data.
 
 ```{r, warning=FALSE}
+files_historical_deaths <- set_names(x = as.list(table_of_historical_data_sources$path_latest), nm = table_of_historical_data_sources$short_name)
+
+
 ## overall file - where did I get the link from? it's not obviously available from the website...
-past_deaths_overall_file <-
-  curl_download(url = "https://www.nrscotland.gov.uk/files/statistics/covid19/weekly-deaths-by-location-2015-2019.csv",
-                destfile = tempfile(),
-                quiet = FALSE)
-
-past_deaths_hb_file <-
-  curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-health-board-location-15-19.xlsx",
-                destfile = tempfile(),
-                quiet = FALSE)
-
-past_deaths_la_file <-
-  curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-council-areas.xlsx",
-                destfile = tempfile(),
-                quiet = FALSE)
-
-past_deaths_sex_age_file <-
-  curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-age-group-sex-15-19.xlsx",
-                destfile = tempfile(),
-                quiet = FALSE)
+# past_deaths_overall_file <-
+#   curl_download(url = "https://www.nrscotland.gov.uk/files/statistics/covid19/weekly-deaths-by-location-2015-2019.csv",
+#                 destfile = tempfile(),
+#                 quiet = FALSE)
+# 
+# past_deaths_hb_file <-
+#   curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-health-board-location-15-19.xlsx",
+#                 destfile = tempfile(),
+#                 quiet = FALSE)
+# 
+# past_deaths_la_file <-
+#   curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-council-areas.xlsx",
+#                 destfile = tempfile(),
+#                 quiet = FALSE)
+# 
+# past_deaths_sex_age_file <-
+#   curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-age-group-sex-15-19.xlsx",
+#                 destfile = tempfile(),
+#                 quiet = FALSE)
 
 past_deaths_overall <- 
-  read_csv(past_deaths_overall_file, skip = 2) %>%
+  read_csv(files_historical_deaths$overall, skip = 2) %>%
   rename(year = 1) %>%  # rename first column
   mutate(
     place_of_death = if_else(is.na(`1`), true = year, NA_character_)
@@ -515,7 +531,7 @@ past_deaths_overall <-
   recode_place_of_death()
 
 past_deaths_hb <- 
-  readxl::read_excel(past_deaths_hb_file, sheet = 2, skip = 2, col_names = TRUE) %>%  # first two rows are empty, row 3 has headers
+  readxl::read_excel(files_historical_deaths$hb, sheet = 2, skip = 2, col_names = TRUE) %>%  # first two rows are empty, row 3 has headers
   clean_names() %>%
   drop_na(number_of_deaths) %>%  # remove empty rows & one row where it's just the copyright notice
   rename(  # same format as current data
@@ -534,7 +550,7 @@ past_deaths_hb <-
   recode_place_of_death()  # recode place of death after completing missing combinations, otherwise the factor level "All" gets exploded also
 
 past_deaths_la <-
-  readxl::read_excel(past_deaths_la_file, sheet = 2, skip = 2, col_names = TRUE) %>%  # first two rows are empty, row 3 has headers
+  readxl::read_excel(files_historical_deaths$la, sheet = 2, skip = 2, col_names = TRUE) %>%  # first two rows are empty, row 3 has headers
   clean_names() %>%
   drop_na(number_of_deaths) %>%  # remove empty rows & one row where it's just the copyright notice
   rename(  # same format as current data
@@ -553,7 +569,7 @@ past_deaths_la <-
   recode_place_of_death()  # recode place of death after completing missing combinations, otherwise the factor level "All" gets exploded also
 
 past_deaths_sex_age <-  # structure here is a bit more complicated - headers in row 3, but sex & age headers in row 4
-  readxl::read_excel(past_deaths_sex_age_file, sheet = 2, skip = 4, col_names = c("year","week_number","place_of_death","sex","age","number_of_deaths"), guess_max = 1e5) %>%
+  readxl::read_excel(files_historical_deaths$sex_age, sheet = 2, skip = 4, col_names = c("year","week_number","place_of_death","sex","age","number_of_deaths"), guess_max = 1e5) %>%
   drop_na(number_of_deaths) %>%    # remove empty rows & one row where it's just the copyright notice
   mutate(
     year = 2000L + as.integer(year),
