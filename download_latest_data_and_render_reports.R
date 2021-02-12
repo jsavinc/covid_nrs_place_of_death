@@ -112,17 +112,43 @@ for (x in 1:nrow(table_of_historical_data_sources)) {
 write_csv(table_of_data_sources, file = file_data_sources)
 write_csv(table_of_historical_data_sources, file = file_historical_data_sources)
 
-# Pass latest data to analysis function -----------------------------------
+# Download map data -------------------------------------------------------
+
+dir_map_data <- "./map_data"
+if (!dir.exists(dir_map_data)) dir.create(dir_map_data)
+
+download_shapefile <- function(url, directory, subdirectory) {
+  zip_file <- tempfile()
+  downloaded_zip <- curl_download(url = url, destfile = zip_file, quiet = FALSE) 
+  unzip(zipfile = zip_file, exdir = file.path(directory, subdirectory), overwrite = TRUE)
+  return(TRUE)
+}
+
+health_boards_shapefile_url <- "https://maps.gov.scot/ATOM/shapefiles/SG_NHS_HealthBoards_2019.zip"  # massive resolution
+health_boards_uk_wide_url <- "https://github.com/tomwhite/covid-19-uk-data/files/4563933/UK_covid_reporting_regions.zip"
+# https://geoportal.statistics.gov.uk/datasets/local-authority-districts-may-2020-boundaries-uk-buc
+la_shapefile_url <- "https://opendata.arcgis.com/datasets/910f48f3c4b3400aa9eb0af9f8989bbe_0.zip?outSR=%7B%22latestWkid%22%3A27700%2C%22wkid%22%3A27700%7D"
+
+
+download_shapefile(url = health_boards_shapefile_url, directory = dir_map_data, subdirectory = "hb")
+download_shapefile(url = la_shapefile_url, directory = dir_map_data, subdirectory = "la")
+download_shapefile(url = health_boards_uk_wide_url, directory = dir_map_data, subdirectory = "hb_uk_wide")
+
+# Render report with latest data ------------------------------------------
 
 dir_reports <- "./reports"
 if (!dir.exists(dir_reports)) dir.create(dir_reports)
 
+## this line is also useful for testing - just run it and it pre-populates the
+## params list for the rmd!
+params <- list( # pass the table of data sources
+  data_sources = table_of_data_sources,
+  historical_data_sources = table_of_historical_data_sources
+)
+
 render(
   input = "./covid_nrs_place_of_death.Rmd",
-  output_format = paste0("covid_nrs_place_of_death_",today()),
+  output_file = paste0("covid_nrs_place_of_death_",today()),
   output_dir = dir_reports,
-  params = list( # pass the table of data sources
-    data_sources = table_of_data_sources,
-    historical_data_sources = table_of_historical_data_sources
-    ) 
+  params = params
 )

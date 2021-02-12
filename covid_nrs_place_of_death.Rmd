@@ -36,7 +36,6 @@ library(lubridate)  # dealing with dates
 library(janitor)  # for cleaning column names
 library(ISOweek)  # for computing date from ISO week number + year
 library(sf)  # for mapping
-library(maps)
 ```
 
 
@@ -60,6 +59,7 @@ All data used for this study were obtained from the National Records Scotland (N
 From NRS website:
 
 > All routine vital events information we publish is based on the date of registration, not the date on which the event occurred. Inevitably, of course, there are delays between the occurrence of an event and its registration.
+
 
 # Context of lockdowns
 
@@ -620,87 +620,35 @@ map2_dfr(
 
 ## Load map data with `sf`
 
-TODO: figure out which boundaries in Scotland correspond to council areas!
+I previously downloaded shapefiles for:
 
-~~To get council areas in Scotland we need NUTS 2 level map data~~, and the most appropriate level of detail to use is likely the BUC - Ultra Generalised Clipped
+* Local Authority Districts (LAD) for 2020 (BUC-level resolution): https://geoportal.statistics.gov.uk/datasets/local-authority-districts-may-2020-boundaries-uk-buc
+* Health Boards https://data.gov.uk/dataset/27d0fe5f-79bb-4116-aec9-a8e565ff756a/nhs-health-boards
+  - Note: this is a fairly high resolution, don't need this much detail!
+  - I found a discussion of this on [a github covid-related project](https://github.com/tomwhite/covid-19-uk-data/issues/18#issuecomment-622353841), and user **robchallen** produced a zip file containing [UK-wide health board boundaries](https://github.com/tomwhite/covid-19-uk-data/files/4563933/UK_covid_reporting_regions.zip)
 
-https://geoportal.statistics.gov.uk/datasets/nuts-level-2-january-2018-ultra-generalised-clipped-boundaries-in-the-united-kingdom
-
-https://geoportal.statistics.gov.uk/datasets/nuts-level-2-january-2018-ultra-generalised-clipped-boundaries-in-the-united-kingdom?geometry=-12.122%2C55.353%2C4.566%2C57.479
-
-health board boundaries April 2019, BUC
-https://opendata.arcgis.com/datasets/def40bdc98a9457aa108eb3a5fb052b1_0.zip?outSR=%7B%22latestWkid%22%3A27700%2C%22wkid%22%3A27700%7D
-
-
-
-
-getting error trying to use shapefile with ggplot:
-> Error in CPL_transform(x, crs, aoi, pipeline, reverse) : 
-  crs not found: is it missing?
-
-explicitly setting crs on shapefile fails,
-
-version fo sf 0.9-7:
-> Linking to GEOS 3.8.0, GDAL 3.0.4, PROJ 6.3.1
 
 ```{r}
-# TODO: learn how to use maps etc.
-zip_file <- tempfile()
-unzipped <- tempfile()
+# shapefile_hb <- st_read(dsn = "./map_data/hb")  # too detailed!
+shapefile_hb_uk_wide <- st_read(dsn = "./map_data/hb_uk_wide/UK_covid_reporting_regions")
+shapefile_la <- st_read(dsn = "./map_data/la")
 
-## Scottish LAU 2011 level 1
-# curl_download(url = "https://borders.ukdataservice.ac.uk/ukborders/easy_download/prebuilt/shape/Scotland_laulevel1_2011.zip", destfile = zip_file, quiet = FALSE)  # download file from ONS
-# name <- list.files(unzipped, pattern=".shp")
-# shapefile <- st_read(file.path(unzipped, name))
-
-## below fails, saying cannot allocate vector of size XX MB/GB
-# curl_download(url = "https://opendata.arcgis.com/datasets/7f83b82ef6ce46d3a5635d371e8a3e7c_0.zip?outSR=%7B%22latestWkid%22%3A27700%2C%22wkid%22%3A27700%7D", destfile = zip_file, quiet = FALSE)  # download file from ONS
-
-download_and_import_shapefile <- function(url) {
-  zip_file <- tempfile()
-  unzipped <- tempfile()
-  downloaded_zip <- curl_download(url = url, destfile = zip_file, quiet = FALSE) 
-  unzip(zipfile = zip_file, exdir = unzipped)
-  name <- list.files(unzipped, pattern=".shp$")
-  shapefile <- st_read(file.path(unzipped, name))
-  return(shapefile)
-}
-
-health_boards_shapefile_url <- "https://maps.gov.scot/ATOM/shapefiles/SG_NHS_HealthBoards_2019.zip"
-la_shapefile_url <- "https://opendata.arcgis.com/datasets/3a4fa2ce68f642e399b4de07643eeed3_0.zip?outSR=%7B%22latestWkid%22%3A27700%2C%22wkid%22%3A27700%7D"
-
-
-shapefile_hb <- download_and_import_shapefile(url = health_boards_shapefile_url)
-shapefile_la <- download_and_import_shapefile(url = la_shapefile_url)
-
-# shapefile %>%
-#   ggplot(aes(geometry = geometry)) +
+# merged_deaths_la %>%
+#   filter(week_number==53 & place_of_death=="Home & other non-institution") %>%
+#   left_join(shapefile_la,by=c("ref_area"="lad19nm")) %>%
+#   ggplot(aes(fill = deaths_all_causes, geometry = geometry, group=ref_area)) +
 #   geom_sf()
-
-# shapefile_la %>%
-#   inner_join(merged_deaths_la, by = c("lad19nm"="ref_area"))
-
-# shapefile_hb %>%
-#   inner_join(merged_deaths_hb, by = c("HBName"="ref_area"))
-
-# TODO: summarise data by LA/HB so it can be shown on a map
-# otherwise it loads forever because we're re-plotting the same regional boundary for each row!!
-
-merged_deaths_la %>%
-  filter(week_number==53 & place_of_death=="Home & other non-institution") %>%
-  left_join(shapefile_la,by=c("ref_area"="lad19nm")) %>%
-  ggplot(aes(fill = deaths_all_causes, geometry = geometry)) +
-  geom_sf()
-
-# ggplot(data = shapefile_hb, aes(geometry=geometry)) + geom_sf()
-  
+# 
 # merged_deaths_hb %>%
-#   left_join(shapefile_hb,by=c("ref_area"="HBName")) %>%
-#   ggplot(aes(fill = deaths_mean, geometry = geometry)) +
-#   geom_sf()
+#   filter(week_number==53 & place_of_death=="Home & other non-institution") %>%
+#   left_join(shapefile_hb_uk_wide,by=c("ref_area"="name")) %>%
+#   ggplot(aes(fill = deaths_all_causes, geometry = geometry)) +
+#   geom_sf() +
+#   theme(aspect.ratio = 1.3)
 
-
-
+# ggplot(data = shapefile_hb_uk_wide, aes(geometry=geometry)) + geom_sf()
+  
+## simple UK map
 # ggplot(data = map_data(map = "world", region = "UK"), aes(x=long, y = lat, group = group)) +
 #   geom_polygon() +
 #   coord_map()
@@ -826,6 +774,43 @@ historical_average_sex <-
     deaths_max = max(number_of_deaths),
     .groups = "drop"
   )
+
+compute_historical_annual_average_deaths <- function(data_tbl, ...) {
+  grouping_vars <- enquos(...)
+  data_tbl %>%
+    group_by(year, place_of_death, !!!grouping_vars) %>%
+    summarise(  # calculate annual totals first...
+    number_of_deaths = sum(number_of_deaths), 
+    .groups = "keep"
+  ) %>%
+  ungroup(year) %>%  # remove year as grouping to average over year now
+  summarise(
+    annual_deaths_mean = mean(number_of_deaths),
+    annual_deaths_min = min(number_of_deaths),
+    annual_deaths_max = max(number_of_deaths),
+    .groups = "drop"
+  )
+}
+
+historical_annual_average_hb <-
+  past_deaths_hb %>%
+  compute_historical_annual_average_deaths(ref_area)
+
+historical_annual_average_la <-
+  past_deaths_la %>%
+  compute_historical_annual_average_deaths(ref_area)
+
+historical_annual_average_sex_age <-
+  past_deaths_sex_age %>%
+  compute_historical_annual_average_deaths(sex, age)
+
+historical_annual_average_sex <-
+  past_deaths_sex %>%
+  compute_historical_annual_average_deaths(sex)
+
+historical_annual_average_age <-
+  past_deaths_age %>%
+  compute_historical_annual_average_deaths(age)
 ```
 
 
@@ -942,35 +927,79 @@ historical_average_age <- compute_moving_average_for_historical_data(historical_
 
 ```{r}
 ## compute rolling average
-
-merged_data_overall <-
+merged_deaths_overall <-
   weekly_deaths_overall %>%
   filter(sex=="all" & age=="all") %>%
   inner_join(historical_average_overall %>% mutate(sex = "all", age = "all"),  # only merge for aggregated data b/c that's all we have!
             by = c("place_of_death", "week_number", "sex", "age"))
 
 merged_deaths_hb <-
-  # weekly_deaths_hb %>%
   rolling_deaths_hb %>%  # use data with rolling movingincluded
   inner_join(historical_average_hb, by = c("week_number","ref_area","place_of_death"))
 
 merged_deaths_la <-
-  # weekly_deaths_la %>%
   rolling_deaths_la %>%  # use data with rolling movingincluded
   inner_join(historical_average_la, by = c("week_number","ref_area","place_of_death"))
 
-merged_data_sex_age <-
-  # weekly_deaths_sex_age %>%
+merged_deaths_sex_age <-
   rolling_deaths_sex_age %>%  # use data with rolling movingincluded
   inner_join(historical_average_sex_age, by = c("place_of_death", "week_number", "sex", "age"))
 
-merged_data_sex <-
+merged_deaths_sex <-
   rolling_deaths_sex %>%
   inner_join(historical_average_sex, by = c("place_of_death", "week_number", "sex"))
 
-merged_data_age <-
+merged_deaths_age <-
   rolling_deaths_age %>%
   inner_join(historical_average_age, by = c("place_of_death", "week_number", "age"))
+```
+
+
+# Summarise annual deaths for 2020 & 2021
+
+For visualising data using maps, we need to compute data for the entire year. Note: the non-covid and covid-related deaths in 2020 don't add up to all cause deaths due to the covid status only starting in week 12!
+
+```{r}
+compute_total_deaths_in_year <- function(data_tbl, ...) {
+  grouping_vars <- enquos(...)
+  data_tbl %>%
+    group_by(year, place_of_death, !!!grouping_vars) %>%
+    summarise(across(.cols = c(deaths_all_causes, deaths_covid_related, deaths_non_covid), .fns = ~sum(.x,na.rm=TRUE)), .groups = "drop") %>%
+    mutate(deaths_all_causes_since_covid = deaths_covid_related + deaths_non_covid)
+}
+
+compute_ratio_of_annual_deaths_to_historical <- function(data_tbl) {
+  data_tbl %>%
+    mutate(
+      ratio_annual_deaths_to_historical_mean = deaths_all_causes / annual_deaths_mean,
+      ratio_annual_deaths_to_historical_min = deaths_all_causes / annual_deaths_min,
+      ratio_annual_deaths_to_historical_max = deaths_all_causes / annual_deaths_max
+    )
+}
+
+total_deaths_la <-
+  merged_deaths_la %>%
+  compute_total_deaths_in_year(ref_area) %>%
+  left_join(historical_annual_average_la, by = c("place_of_death", "ref_area")) %>%
+  compute_ratio_of_annual_deaths_to_historical
+
+total_deaths_hb <-
+  merged_deaths_hb %>%
+  compute_total_deaths_in_year(ref_area) %>%
+  left_join(historical_annual_average_hb, by = c("place_of_death", "ref_area")) %>%
+  compute_ratio_of_annual_deaths_to_historical
+
+total_deaths_sex <-
+  merged_deaths_sex %>%
+  compute_total_deaths_in_year(sex) %>%
+  left_join(historical_annual_average_sex, by = c("place_of_death", "sex")) %>%
+  compute_ratio_of_annual_deaths_to_historical
+
+total_deaths_age <-
+  merged_deaths_age %>%
+  compute_total_deaths_in_year(age) %>%
+  left_join(historical_annual_average_age, by = c("place_of_death", "age")) %>%
+  compute_ratio_of_annual_deaths_to_historical
 ```
 
 
@@ -980,6 +1009,8 @@ merged_data_age <-
 
 ```{r}
 date_range_text <- glue::glue("Data from w/c {format(min(weekly_deaths_overall$date_w_c), '%d %B %Y')} to w/c {format(max(weekly_deaths_overall$date_w_c), '%d %B %Y')} (inclusive).") 
+
+only_2020_text <- glue::glue("Data from 2020 included, starting with w/c {format(min(merged_deaths_age$date_w_c))}.")
 
 source_nrs_text <- "Source: National Records of Scotland"
 
@@ -1012,13 +1043,52 @@ weekly_deaths_overall %>%
 ```
 
 
+## Total deaths in 2020 by age group & place of death
+
+```{r, fig.width=12, fig.height=7, warning=FALSE}
+bar_and_error_bars_2020_text <- "Bars are 2020 all-cause deaths, point and bars shows annual mean and range 2015-2019"
+excluded_other_place_2020 <- glue::glue("Excluding records with 'Other' place of death, N={total_deaths_age %>% filter(year==2020 & place_of_death=='Other') %>% .$deaths_all_causes %>% sum}")
+
+light_shaded_area_shows_difference <- "Lighter area in the top of bar shows difference between 2020 deaths and historical maximum 2015-2019"
+
+# TODO: make the distinction max vs 2020 figures clearer! maybe annotate?
+
+figure_annual_deaths_by_age_group_2020 <-
+  total_deaths_age %>% 
+  filter(year==2020) %>%
+  filter(place_of_death != "Other") %>%
+  ggplot(aes(x = age, y = deaths_all_causes)) +
+  # geom_col(fill = "#4477AA", alpha = 0.5, colour = "grey10") +
+  geom_col(fill = "grey20", colour = "grey10", alpha = 0.5) +
+  geom_col(aes(x=age, y=annual_deaths_max), fill = "#4477AA", colour = "grey10", alpha = 0.5) +  # historical maximum over the actual figure
+  geom_point(aes(x=age, y=annual_deaths_mean)) +
+  geom_errorbar(aes(x = age, ymin = annual_deaths_min, ymax = annual_deaths_max)) +
+  facet_wrap(~place_of_death) +
+  scale_y_continuous(labels = function(x) format(x,big.mark=",")) +
+  theme_minimal() +
+  labs(x = "Age",
+       y = "Deaths (N)",
+       title = "Deaths in 2020 by age group & place of death",
+       subtitle = paste0(c(only_2020_text,light_shaded_area_shows_difference),collapse="\n"),
+       caption = paste0(c(excluded_other_place_2020,bar_and_error_bars_2020_text,death_registrations_text,source_nrs_text), collapse="\n")
+  )
+  
+walk(
+  .x = c(".pdf",".svg",".png"),
+  .f = ~ggsave(filename = paste0("./outputs/figure_annual_deaths_by_age_group_2020",.x), plot = figure_annual_deaths_by_age_group_2020, width = 12, height = 7, dpi = 300)
+)
+
+figure_annual_deaths_by_age_group_2020
+```
+
+
 ## Recorded deaths in Scotland, by week number & location
 
 ```{r, fig.width=12, fig.height=9, warning=FALSE}
-removed_other_category_text <- glue::glue("Excluding 'Other' institutional place of death, N={merged_data_overall %>% filter(sex == 'all' & age == 'all' & place_of_death == 'Other') %>% .$deaths_all_causes %>% sum} for weeks 1-{max(merged_data_overall %>% filter(year==2020) %>% .$week_number)} in 2020 and 1-{max(merged_data_overall %>% filter(year==2021) %>% .$week_number)} in 2021.")
+removed_other_category_text <- glue::glue("Excluding 'Other' institutional place of death, N={merged_deaths_overall %>% filter(sex == 'all' & age == 'all' & place_of_death == 'Other') %>% .$deaths_all_causes %>% sum} for weeks 1-{max(merged_deaths_overall %>% filter(year==2020) %>% .$week_number)} in 2020 and 1-{max(merged_deaths_overall %>% filter(year==2021) %>% .$week_number)} in 2021.")
 
 annotations_figure_place_of_death <-
-# datapasta::tribble_paste(merged_data_overall %>% select(place_of_death))
+# datapasta::tribble_paste(merged_deaths_overall %>% select(place_of_death))
   tibble::tribble(
     ~place_of_death, ~x, ~y, ~label,
                  "Hospital", 20L, 850, "Shaded area shows range of 2015-2019 deaths; dashed line shows weekly average",
@@ -1027,12 +1097,12 @@ annotations_figure_place_of_death <-
                      "Home & other non-institution", 35L, 500, "The gap between historical high and both types of death at home was high throughout."
                   ) %>% 
   mutate(
-    place_of_death = factor(place_of_death, levels = levels(merged_data_overall$place_of_death)),  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!
+    place_of_death = factor(place_of_death, levels = levels(merged_deaths_overall$place_of_death)),  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!
     label = str_wrap(label, width = 40)
     )
 
 figure_place_of_death <-
-  merged_data_overall %>%
+  merged_deaths_overall %>%
   filter(sex == "all" & age == "all") %>%
   filter(!place_of_death %in% c("All","Other")) %>%
   pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
@@ -1074,7 +1144,7 @@ figure_place_of_death
 # TODO: add start of lockdowns 1-3?
 # TODO: what is that dip at week 38/39? not obvious - start of september was tier 4 restrictions in big LAs
 figure_deaths_at_home <-
-  merged_data_overall %>%
+  merged_deaths_overall %>%
   filter(sex == "all" & age == "all") %>%
   filter(place_of_death %in% c("Home & other non-institution")) %>%
   pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
@@ -1113,7 +1183,7 @@ figure_deaths_at_home
 
 ```{r, fig.width=12, fig.height=9, warning=FALSE}
 figure_deaths_at_home_2020 <-
-  merged_data_overall %>%
+  merged_deaths_overall %>%
   filter(sex == "all" & age == "all") %>%
   filter(place_of_death %in% c("Home & other non-institution")) %>%
   filter(year == 2020) %>%
@@ -1365,10 +1435,10 @@ figure_deaths_at_home_2week_average_by_local_authority
 ## Deaths at home by age
 
 ```{r, fig.width=12, fig.height=9, warning=FALSE}
-removed_under_15_text <- glue::glue("Excluding individuals aged <15 at death, total N={merged_data_age %>% filter(age %in% c('0','1-14') & place_of_death == 'Home & other non-institution') %>% .$deaths_all_causes %>% sum} for weeks 1-{max(merged_data_age %>% filter(year==2020) %>% .$week_number)} in 2020 and 1-{max(merged_data_age %>% filter(year==2021) %>% .$week_number)} in 2021.")
+removed_under_15_text <- glue::glue("Excluding individuals aged <15 at death, total N={merged_deaths_age %>% filter(age %in% c('0','1-14') & place_of_death == 'Home & other non-institution') %>% .$deaths_all_causes %>% sum} for weeks 1-{max(merged_deaths_age %>% filter(year==2020) %>% .$week_number)} in 2020 and 1-{max(merged_deaths_age %>% filter(year==2021) %>% .$week_number)} in 2021.")
 
 figure_deaths_at_home_by_age <-
-  merged_data_age %>%
+  merged_deaths_age %>%
   filter(place_of_death %in% c("Home & other non-institution")) %>%
   filter(!age %in% c('0','1-14')) %>%
   pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
@@ -1408,7 +1478,7 @@ figure_deaths_at_home_by_age
 
 ```{r, fig.width=12, fig.height=9, warning=FALSE}
 figure_deaths_at_home_by_sex <-
-  merged_data_sex %>%
+  merged_deaths_sex %>%
   mutate(sex = if_else(sex=="F", "Female", "Male")) %>%
   filter(place_of_death %in% c("Home & other non-institution")) %>%
   pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
@@ -1448,7 +1518,7 @@ figure_deaths_at_home_by_sex
 ```{r}
 # TODO: add yearly range for all deaths
 # TODO: split data by covid-underlying cause of desath & covid-factor in death
-merged_data_overall %>%
+merged_deaths_overall %>%
   filter(sex=="all", age=="all") %>%
   filter(year==2020) %>%
   filter(place_of_death == "Home & other non-institution") %>%
@@ -1458,5 +1528,85 @@ merged_data_overall %>%
     deaths_covid_related = sum(deaths_covid_related, na.rm=TRUE),
     deaths_non_covid = sum(deaths_non_covid, na.rm=TRUE)
   )
+```
+
+# Map-based visualisations
+
+## Ratio of 2020 home deaths to historical home deaths by LA
+
+```{r}
+areas_relatively_higher_number_home_deaths <- "Lighter areas represent areas with relatively higher number of home deaths in 2020 compared to historical mean"
+home_deaths_ratio <- "Ratio computed from total home deaths in 2020 divided by mean annual home deaths 2015-2019"
+
+## max/min used for setting scale of fill colour so it's consistent between plots!
+maximum_ratio_between_hb_and_la_home_deaths <-
+  bind_rows(
+    total_deaths_la,
+    total_deaths_hb
+  ) %>%
+  filter(year==2020 & place_of_death == "Home & other non-institution") %>%
+  .$ratio_annual_deaths_to_historical_mean %>%
+  max
+
+minimum_ratio_between_hb_and_la_home_deaths <-
+  bind_rows(
+    total_deaths_la,
+    total_deaths_hb
+  ) %>%
+  filter(year==2020 & place_of_death == "Home & other non-institution") %>%
+  .$ratio_annual_deaths_to_historical_mean %>%
+  min %>%
+  round(digits=1)
+
+# TODO: work out the size of these plots
+
+figure_map_ratio_home_deaths_2020_to_historical_la <-
+  total_deaths_la %>%
+  filter(
+    year == 2020 & place_of_death == "Home & other non-institution"
+  ) %>%
+  left_join(shapefile_la, by=c("ref_area"="LAD20NM")) %>%
+  ggplot(aes(geometry=geometry, fill=ratio_annual_deaths_to_historical_mean), colour="grey10") +
+  geom_sf(colour="grey10") +
+  scale_fill_viridis_b(limits = c(minimum_ratio_between_hb_and_la_home_deaths, maximum_ratio_between_hb_and_la_home_deaths)) +
+  theme_minimal() +
+  theme(axis.text = element_blank()) +
+  labs(x="", y="",
+       subtitle = "Ratio of home deaths in 2020 to historical mean 2015-2019, by Local Authority",
+       caption = paste0(c(areas_relatively_higher_number_home_deaths, home_deaths_ratio, source_nrs_text), collapse="\n"),
+       fill = "Ratio"
+       ) +
+  NULL
+
+
+walk(
+  .x = c(".pdf",".svg",".png"),
+  .f = ~ggsave(filename = paste0("./outputs/figure_map_ratio_home_deaths_2020_to_historical_la",.x), plot = figure_map_ratio_home_deaths_2020_to_historical_la, width = 12, height = 15, dpi = 300)
+)
+
+figure_map_ratio_home_deaths_2020_to_historical_hb <-
+  total_deaths_hb %>%
+  filter(
+    year == 2020 & place_of_death == "Home & other non-institution"
+  ) %>%
+  left_join(shapefile_hb_uk_wide, by=c("ref_area"="name")) %>%
+  ggplot(aes(geometry=geometry, fill=ratio_annual_deaths_to_historical_mean), colour="grey10") +
+  geom_sf(colour="grey10") +
+  scale_fill_viridis_b(limits = c(minimum_ratio_between_hb_and_la_home_deaths, maximum_ratio_between_hb_and_la_home_deaths)) +
+  theme_minimal() +
+  theme(axis.text = element_blank(), aspect.ratio = 1.4) +
+  labs(x="", y="",
+       subtitle = "Ratio of home deaths in 2020 to historical mean 2015-2019, by Health Board",
+       caption = paste0(c(areas_relatively_higher_number_home_deaths, home_deaths_ratio, source_nrs_text), collapse="\n"),
+       fill = "Ratio"
+       ) +
+  NULL
+
+
+walk(
+  .x = c(".pdf",".svg",".png"),
+  .f = ~ggsave(filename = paste0("./outputs/figure_map_ratio_home_deaths_2020_to_historical_hb",.x), plot = figure_map_ratio_home_deaths_2020_to_historical_hb, width = 12, height = 15, dpi = 300)
+)
+
 ```
 
