@@ -2,9 +2,15 @@
 title: "Place of death in NRS COVID-19 deaths"
 author: "Jan Savinc"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
-output: html_document
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
 editor_options: 
   chunk_output_type: console
+params:
+  data_sources: '`r tibble()`'
 ---
 
 ```{r setup, include=FALSE}
@@ -46,6 +52,12 @@ endpoint <- "http://statistics.gov.scot/sparql.json"
 
 All data used for this study were obtained from the National Records Scotland (NRS) and are © Crown copyright, 2020; the details of the licence can be viewed on the [Open Government Licence website](http://www.nationalarchives.gov.uk/doc/open-government-licence/open-government-licence.htm)
 
+
+# Dates represent event registration, not occurrence!
+
+From NRS website:
+
+> All routine vital events information we publish is based on the date of registration, not the date on which the event occurred. Inevitably, of course, there are delays between the occurrence of an event and its registration.
 
 # Context of lockdowns
 
@@ -288,6 +300,11 @@ Smaller health boards were merged... TODO!
 ~~Using `opendatascot` to load weekly deaths the level of geography can be specified, so we can have more or less granular data~~ Choosing a more granular level than Scotland-wide data means place of death is collapsed to the 'all' category only, see note above! Even for the Scotland-wide data, place of death is collapsed to 'All' for the granular sex & age categories, actually.
 
 ```{r}
+download_dir <- "./downloaded_data"
+if (!dir.exists(download_dir)) dir.create(download_dir)  # create download dir if it doesn't exist
+
+
+
 # checking out structure
 
 # ods_all_datasets() %>% View()
@@ -587,7 +604,28 @@ map2_dfr(
 
 ## Load map data with `sf`
 
-To get council areas in Scotland we need NUTS 2 level map data.q
+TODO: figure out which boundaries in Scotland correspond to council areas!
+
+~~To get council areas in Scotland we need NUTS 2 level map data~~, and the most appropriate level of detail to use is likely the BUC - Ultra Generalised Clipped
+
+https://geoportal.statistics.gov.uk/datasets/nuts-level-2-january-2018-ultra-generalised-clipped-boundaries-in-the-united-kingdom
+
+https://geoportal.statistics.gov.uk/datasets/nuts-level-2-january-2018-ultra-generalised-clipped-boundaries-in-the-united-kingdom?geometry=-12.122%2C55.353%2C4.566%2C57.479
+
+health board boundaries April 2019, BUC
+https://opendata.arcgis.com/datasets/def40bdc98a9457aa108eb3a5fb052b1_0.zip?outSR=%7B%22latestWkid%22%3A27700%2C%22wkid%22%3A27700%7D
+
+
+
+
+getting error trying to use shapefile with ggplot:
+> Error in CPL_transform(x, crs, aoi, pipeline, reverse) : 
+  crs not found: is it missing?
+
+explicitly setting crs on shapefile fails,
+
+version fo sf 0.9-7:
+> Linking to GEOS 3.8.0, GDAL 3.0.4, PROJ 6.3.1
 
 ```{r}
 # TODO: learn how to use maps etc.
@@ -596,19 +634,56 @@ unzipped <- tempfile()
 
 ## Scottish LAU 2011 level 1
 # curl_download(url = "https://borders.ukdataservice.ac.uk/ukborders/easy_download/prebuilt/shape/Scotland_laulevel1_2011.zip", destfile = zip_file, quiet = FALSE)  # download file from ONS
-# unzip(zipfile = zip_file, exdir = unzipped)
 # name <- list.files(unzipped, pattern=".shp")
 # shapefile <- st_read(file.path(unzipped, name))
 
 ## below fails, saying cannot allocate vector of size XX MB/GB
 # curl_download(url = "https://opendata.arcgis.com/datasets/7f83b82ef6ce46d3a5635d371e8a3e7c_0.zip?outSR=%7B%22latestWkid%22%3A27700%2C%22wkid%22%3A27700%7D", destfile = zip_file, quiet = FALSE)  # download file from ONS
 
+download_and_import_shapefile <- function(url) {
+  zip_file <- tempfile()
+  unzipped <- tempfile()
+  downloaded_zip <- curl_download(url = url, destfile = zip_file, quiet = FALSE) 
+  unzip(zipfile = zip_file, exdir = unzipped)
+  name <- list.files(unzipped, pattern=".shp$")
+  shapefile <- st_read(file.path(unzipped, name))
+  return(shapefile)
+}
 
-# merged_deaths_la %>%
-#   left_join(shapefile,by=c("ref_area"="name")) %>%
+health_boards_shapefile_url <- "https://maps.gov.scot/ATOM/shapefiles/SG_NHS_HealthBoards_2019.zip"
+la_shapefile_url <- "https://opendata.arcgis.com/datasets/3a4fa2ce68f642e399b4de07643eeed3_0.zip?outSR=%7B%22latestWkid%22%3A27700%2C%22wkid%22%3A27700%7D"
+
+
+shapefile_hb <- download_and_import_shapefile(url = health_boards_shapefile_url)
+shapefile_la <- download_and_import_shapefile(url = la_shapefile_url)
+
+# shapefile %>%
+#   ggplot(aes(geometry = geometry)) +
+#   geom_sf()
+
+# shapefile_la %>%
+#   inner_join(merged_deaths_la, by = c("lad19nm"="ref_area"))
+
+# shapefile_hb %>%
+#   inner_join(merged_deaths_hb, by = c("HBName"="ref_area"))
+
+# TODO: summarise data by LA/HB so it can be shown on a map
+# otherwise it loads forever because we're re-plotting the same regional boundary for each row!!
+
+merged_deaths_la %>%
+  filter(week_number==53 & place_of_death=="Home & other non-institution") %>%
+  left_join(shapefile_la,by=c("ref_area"="lad19nm")) %>%
+  ggplot(aes(fill = deaths_all_causes, geometry = geometry)) +
+  geom_sf()
+
+# ggplot(data = shapefile_hb, aes(geometry=geometry)) + geom_sf()
+  
+# merged_deaths_hb %>%
+#   left_join(shapefile_hb,by=c("ref_area"="HBName")) %>%
 #   ggplot(aes(fill = deaths_mean, geometry = geometry)) +
 #   geom_sf()
-# 
+
+
 
 # ggplot(data = map_data(map = "world", region = "UK"), aes(x=long, y = lat, group = group)) +
 #   geom_polygon() +
@@ -892,6 +967,8 @@ date_range_text <- glue::glue("Data from w/c {format(min(weekly_deaths_overall$d
 
 source_nrs_text <- "Source: National Records of Scotland"
 
+death_registrations_text <- "Note: all figures are based on date of registration."
+
 vertical_line_text <- "Vertical dotted line at week number 54 represents start of 2021."
 ```
 
@@ -1003,7 +1080,7 @@ figure_deaths_at_home <-
   labs(x = "Week number",
        y = "Deaths (N)",
        subtitle = date_range_text,
-       caption = paste0(c(vertical_line_text, source_nrs_text), collapse="\n"),
+       caption = paste0(c(vertical_line_text, death_registrations_text, source_nrs_text), collapse="\n"),
        colour = "Cause of death"
        )
 
@@ -1014,6 +1091,48 @@ walk(
 
 figure_deaths_at_home
 ```
+
+
+## Deaths at home in 2020, all of Scotland
+
+```{r, fig.width=12, fig.height=9, warning=FALSE}
+figure_deaths_at_home_2020 <-
+  merged_data_overall %>%
+  filter(sex == "all" & age == "all") %>%
+  filter(place_of_death %in% c("Home & other non-institution")) %>%
+  filter(year == 2020) %>%
+  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
+               names_to = "deaths_type", values_to = "deaths") %>% 
+  ggplot(aes(x = week_number_run_over)) +
+  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
+  geom_line(aes(y = deaths, colour = deaths_type)) +
+  geom_line(aes(y = deaths_mean), linetype = "dashed", size = 0.2) +
+  scale_x_continuous(breaks = seq(0,60,by=10)) +
+  facet_grid(~place_of_death) +
+  theme_minimal() +
+  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+                      labels = c("All deaths", 
+                                 "Non Covid-19 deaths"),
+                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+                      ) +
+  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
+  labs(x = "Week number",
+       y = "Deaths (N)",
+       # subtitle = date_range_text,
+       subtitle = "Data from 2020 shown, starting with w/c 30 Dec 2019.",
+       caption = paste0(c(death_registrations_text, source_nrs_text), collapse="\n"),
+       colour = "Cause of death"
+       )
+
+walk(
+  .x = c(".pdf",".svg",".png"),
+  .f = ~ggsave(filename = paste0("./outputs/figure_deaths_at_home_2020",.x), plot = figure_deaths_at_home_2020, width = 12, height = 9, dpi = 300)
+)
+
+figure_deaths_at_home_2020
+```
+
+
 
 
 ## Deaths at home, by health board
