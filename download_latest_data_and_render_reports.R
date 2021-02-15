@@ -10,6 +10,7 @@
 # Load packages -----------------------------------------------------------
 
 library(tidyverse)
+library(lubridate)  # dealing with dates
 library(curl)
 library(knitr)
 library(rmarkdown)
@@ -150,5 +151,6 @@ render(
   input = "./covid_nrs_place_of_death.Rmd",
   output_file = paste0("covid_nrs_place_of_death_",today()),
   output_dir = dir_reports,
-  params = params
+  params = params, 
+  envir = new.env()
 )
