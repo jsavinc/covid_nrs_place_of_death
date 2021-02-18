@@ -19,6 +19,7 @@ library(rmarkdown)
 
 file_data_sources <- "./table_of_data_sources.csv"
 file_historical_data_sources <- "./table_of_historical_data_sources.csv"
+file_case_trends_data_sources <- "./table_of_case_trends_data_sources.csv"
 
 download_dir <- "./downloaded_data"
 if (!dir.exists(download_dir)) dir.create(download_dir)  # create download dir if it doesn't exist
@@ -61,6 +62,24 @@ if (file.exists(file_historical_data_sources)) {
   )
 }
 
+
+if (file.exists(file_case_trends_data_sources)) {
+  table_of_case_trends_data_sources <- read_csv(file = file_case_trends_data_sources)
+} else {
+  table_of_case_trends_data_sources <- tibble(
+    short_name = c("la","hb"),
+    url = c(
+      "https://www.opendata.nhs.scot/datastore/dump/427f9a25-db22-4014-a3bc-893b68243055?bom=True",
+      "https://www.opendata.nhs.scot/datastore/dump/2dd8534b-0a6f-4744-9253-9565d62f96c2?bom=True"
+    )
+  ) %>% mutate(
+    filename = c("trend_ca.csv","trend_hb.csv"),
+    # last_modified = ymd_hms("2020-01-01_01:01:01"),  # start with a date in the past
+    path_latest = NA_character_  
+  )
+}
+
+
 # Function to download latest data if available ---------------------------
 
 download_file_if_newer_available <- function(url, filename, last_modified, directory, record_tbl) {
@@ -81,6 +100,17 @@ download_file_if_newer_available <- function(url, filename, last_modified, direc
     message("We already have the most recent file! No download needed.")
   }
   message("...")
+  return(record_tbl)
+}
+
+download_file_regardless <- function(url, filename, directory, record_tbl) {
+  todays_date_string <- today()
+  todays_filename <- paste0(todays_date_string, "_", filename)
+  file_path <- file.path(directory,todays_filename)
+  message(paste0("Downloading file: ",todays_filename))
+  curl_download(url = url, destfile = file_path, quiet = FALSE)
+  message(paste0("Downloaded file to: ",file_path))
+  record_tbl$path_latest[which(record_tbl$filename == filename)] <- file_path
   return(record_tbl)
 }
 
@@ -108,10 +138,24 @@ for (x in 1:nrow(table_of_historical_data_sources)) {
     )
 }
 
+## for the daily case trends data, just download anyway
+
+for (x in 1:nrow(table_of_case_trends_data_sources)) {
+  table_of_case_trends_data_sources <- 
+    download_file_regardless(
+      url = table_of_case_trends_data_sources$url[x],
+      filename = table_of_case_trends_data_sources$filename[x],
+      # last_modified = table_of_case_trends_data_sources$last_modified[x],
+      directory = download_dir, 
+      record_tbl = table_of_case_trends_data_sources
+    )
+}
+
 # Save the table with updated latest data info ----------------------------
 
 write_csv(table_of_data_sources, file = file_data_sources)
 write_csv(table_of_historical_data_sources, file = file_historical_data_sources)
+write_csv(table_of_case_trends_data_sources, file = file_case_trends_data_sources)
 
 # Download map data -------------------------------------------------------
 
@@ -144,7 +188,8 @@ if (!dir.exists(dir_reports)) dir.create(dir_reports)
 ## params list for the rmd!
 params <- list( # pass the table of data sources
   data_sources = table_of_data_sources,
-  historical_data_sources = table_of_historical_data_sources
+  historical_data_sources = table_of_historical_data_sources,
+  case_trends_data_sources = table_of_case_trends_data_sources
 )
 
 render(

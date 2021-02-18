@@ -12,6 +12,7 @@ editor_options:
 params:
   data_sources: '`r tibble()`'
   historical_data_sources: '`r tibble()`'
+  case_trends_data_sources: '`r tibble()`'
 ---
 
 
@@ -46,6 +47,7 @@ To access the latest NRS data using their API, we first setup a SPARQL query.
 
 ```{r}
 endpoint <- "http://statistics.gov.scot/sparql.json"
+endpoint <- "http://statistics.gov.scot/sparql"
 ```
 
 
@@ -99,6 +101,7 @@ Note that the weekly deaths due to COVID-19 in 2020 & 2021 also include a weekly
 # "unpack" the data source tables
 table_of_data_sources <- params$data_sources
 table_of_historical_data_sources <- params$historical_data_sources
+table_of_case_trends_data_sources <- params$case_trends_data_sources
 
 table_of_data_sources %>%
   kable(caption = "Latest data used in this report.")
@@ -307,9 +310,11 @@ Smaller health boards were merged... TODO!
 
 > "Note: Orkney, Shetland, & Western health boards were merged into 'Island HBs'; Borders & Dumfries and Galloway health boards were merged into 'B,D&G HB'"
 
+
 ## Load weekly COVID-19 related deaths
 
 ~~Using `opendatascot` to load weekly deaths the level of geography can be specified, so we can have more or less granular data~~ Choosing a more granular level than Scotland-wide data means place of death is collapsed to the 'all' category only, see note above! Even for the Scotland-wide data, place of death is collapsed to 'All' for the granular sex & age categories, actually.
+
 
 ```{r}
 download_dir <- "./downloaded_data"
@@ -319,8 +324,49 @@ files_weekly_deaths <- set_names(x = as.list(table_of_data_sources$path_latest),
 
 # checking out structure
 
-# ods_all_datasets() %>% View()
-# ods_structure("deaths")  # can we import all deaths-related data this way?
+ods_all_datasets() %>% View()
+ods_structure("deaths")  # can we import all deaths-related data this way?
+ods_structure("coronavirus-covid-19-management-information")
+
+
+ods_dataset("coronavirus-covid-19-management-information", geography = "hb") %>%
+  filter(variable == "testing-new-cases-reported")
+
+
+ods_dataset("coronavirus-covid-19-management-information", geography = "hb", variable = "testing-new-cases-reported")
+ods_dataset("coronavirus-covid-19-management-information", geography = "la", variable = "testing-new-cases-reported")
+ods_dataset("coronavirus-covid-19-management-information", variable = "testing-new-cases-reported")
+
+ods_print_query(dataset = "coronavirus-covid-19-management-information", geography = "hb", variable = "testing-new-cases-reported") %>% dput
+ods_print_query(dataset = "coronavirus-covid-19-management-information", variable = "testing-new-cases-reported") %>% dput
+  
+modified_query <- "PREFIX qb: <http://purl.org/linked-data/cube#>                 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>                 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> select   ?refArea ?refPeriod ?measureType ?variable ?value where { ?data qb:dataSet <http://statistics.gov.scot/data/coronavirus-covid-19-management-information>. ?data <http://purl.org/linked-data/sdmx/2009/dimension#refArea> ?refArea. ?data <http://purl.org/linked-data/sdmx/2009/dimension#refPeriod> ?refPeriod. ?data <http://purl.org/linked-data/cube#measureType> ?measureType. ?data <http://statistics.gov.scot/def/dimension/variable> ?variable. ?data ?measureType ?value.  filter (regex(str(?variable ), 'testing-new-cases-reported'))  } order by ?refPeriod ?refArea"
+
+modified_query %>%
+  opendatascot:::ods_query_database(endpoint, query = .) %>%
+  opendatascot:::pre_process_data()
+
+
+query <- ""
+
+
+library(ckanr)
+ckanr_setup(url = "https://www.opendata.nhs.scot/")
+# package_list(as = "table")
+# tag_list(as = "table")
+package_search(q = 'daily', rows = 2, as = 'table') %>% str
+
+
+download_data_from_opendata_via_ckan_api <- function(resource_id) {
+  ckan <- ckanr::src_ckan("https://www.opendata.nhs.scot/")
+  dplyr::tbl(src = ckan$con, from = resource_id_daily_case_trends_la, ) %>% 
+  as_tibble()
+}
+
+resource_id_daily_case_trends_la <- "427f9a25-db22-4014-a3bc-893b68243055"
+
+resource_show(id = resource_id_daily_case_trends_la, as = "table")
+
 # ods_print_query("deaths")
 
 # ods_structure("deaths-involving-coronavirus-covid-19")
@@ -481,8 +527,8 @@ weekly_deaths_age <-
 ### Checking week number coding
 
 ```{r}
-weekly_deaths_overall %>% 
-  count(ref_period, date_w_c, week_number, week_number_run_over) %>% 
+weekly_deaths_sex_age %>% 
+  count(year, date_w_c, week_number, week_number_run_over) %>% 
   slice(1:3, (nrow(.) - 3):nrow(.)) %>% 
   select(-n) %>% 
   knitr::kable(caption = "Checking the computation of dates from week numbers - note how the 1st week of 2020 started in 2019.")
@@ -653,6 +699,74 @@ shapefile_la <- st_read(dsn = "./map_data/la")
 #   geom_polygon() +
 #   coord_map()
 ```
+
+
+## Load COVID case counts by LA/HB
+
+```{r}
+files_case_counts <- set_names(x = as.list(table_of_case_trends_data_sources$path_latest), nm = table_of_case_trends_data_sources$short_name)
+
+cases_hb <- read_csv(
+  files_case_counts$hb, 
+  col_types = 
+    cols(
+    .default = col_double(),
+    `_id` = col_skip(),
+    DailyDeaths = col_skip(),  # not needed, we get this elsewhere!
+    Date = col_date(format = "%Y%m%d"),
+    HB = col_character(),
+    HBName = col_character(),
+    HospitalAdmissionsQF = col_character(),
+    ICUAdmissionsQF = col_character()
+    ),
+  ) %>% clean_names() %>%
+  rename(ref_area = hb_name) %>%
+  mutate(
+    year = parse_integer(str_sub(ISOweek(date), start = 1, end = 4)),  # parse ISO year, otherwise the first few days of 2021 will belong to 2021 erroneously!
+    week_number = parse_integer(str_sub(ISOweek(date), start = 7, end = 8))
+    )
+
+cases_la <- read_csv(
+  file = files_case_counts$la, 
+  col_types = 
+    cols(
+    .default = col_double(),
+    `_id` = col_skip(),
+    DailyDeaths = col_skip(),  # not needed, we get this elsewhere!
+    Date = col_date(format = "%Y%m%d"),
+    CA = col_character(),
+    CAName = col_character()
+  )
+) %>% clean_names() %>%
+  rename(ref_area = ca_name) %>%
+  mutate(
+    year = parse_integer(str_sub(ISOweek(date), start = 1, end = 4)),  # parse ISO year, otherwise the first few days of 2021 will belong to 2021 erroneously!
+    week_number = parse_integer(str_sub(ISOweek(date), start = 7, end = 8))
+    )
+```
+
+
+# Calculate cumulative case counts at weekly deaths
+
+Note: the cumulative case counts have already been calculated, we just need to subset them to match the weeks. This is not trivial - the death counts cover an entire week starting from the "w/c date"; the cumulative cases for that week could be taken either at the start, the end of the week, or the start of the following week even!
+However, when calculating weekly positive cases we can simply take the maximum of that week's cumulative count - that will be the cumulative count at the end of the week!
+
+```{r}
+weekly_covid_cases_hb <-
+  cases_hb %>%
+  group_by(year, week_number, ref_area) %>%
+  summarise(
+    weekly_positive = sum(daily_positive),
+    cumulative_positive = max(cumulative_positive),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
+    week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)
+    )
+  
+```
+
 
 
 # Calculate historical averages, minima & maxima
@@ -955,7 +1069,7 @@ merged_deaths_age <-
 ```
 
 
-# Summarise annual deaths for 2020 & 2021
+# Annual deaths for 2020 & 2021
 
 For visualising data using maps, we need to compute data for the entire year. Note: the non-covid and covid-related deaths in 2020 don't add up to all cause deaths due to the covid status only starting in week 12!
 
