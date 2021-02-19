@@ -37,6 +37,8 @@ library(lubridate)  # dealing with dates
 library(janitor)  # for cleaning column names
 library(ISOweek)  # for computing date from ISO week number + year
 library(sf)  # for mapping
+library(ggrepel)  # for 'mapping'repelling' labels/texst in ggplot
+library(patchwork)  # for assembling plots
 ```
 
 
@@ -66,6 +68,18 @@ From NRS website:
 # Context of lockdowns
 
 A recent timeline of COVID-19 events in Scotland is [available here](https://spice-spotlight.scot/2021/01/29/timeline-of-coronavirus-covid-19-in-scotland/). Including these might help in the interpreration fo the figures, though the figures are already pretty busy. This is a potential future TODO!
+
+
+# Set up output directory
+
+Because data are updated on a weekly basis, we'll have a separate directory for every week the data are updated:
+
+```{r}
+latest_data_date <- strftime(max(table_of_data_sources$last_modified), format="%F")
+
+dir_outputs <- paste0("./outputs/",latest_data_date)
+if (!dir.exists(dir_outputs)) dir.create(dir_outputs)
+```
 
 
 # Import & wrangle data
@@ -663,7 +677,7 @@ map2_dfr(
   .f = function(data_tbl, name) {
     data_tbl %>%
       mutate(dataset=name,year=as.numeric(year)) %>%
-      filter(!is.na(year) & place_of_death!="All") %>%
+      filter(!is.na(year) & place_of_death!="All") %>%  # to remove summary values from the data
       group_by(dataset,year) %>%
         summarise(total = sum(number_of_deaths), .groups = "drop")
   }
@@ -769,6 +783,7 @@ weekly_covid_cases_hb <-
   summarise(
     weekly_positive = sum(daily_positive),
     cumulative_positive = max(cumulative_positive),
+    crude_rate_positive_per100k = max(crude_rate_positive),
     .groups = "drop"
   ) %>%
   mutate(
@@ -782,6 +797,7 @@ weekly_covid_cases_la <-
   summarise(
     weekly_positive = sum(daily_positive),
     cumulative_positive = max(cumulative_positive),
+    crude_rate_positive_per100k = max(crude_rate_positive),
     .groups = "drop"
   ) %>%
   mutate(
@@ -789,6 +805,178 @@ weekly_covid_cases_la <-
     week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)
     )
 ```
+
+
+# Comparing geographic areas by case counts
+
+We can use the yearly cumulative case count to group geographic areas by how many cases they've had by the end of 2020.
+
+```{r}
+cumulative_case_2020_based_grouping_la <-
+  weekly_covid_cases_la %>% 
+  filter(ref_area!="Scotland") %>%
+  filter(year == 2020) %>% 
+  filter(week_number == max(week_number)) %>%  # keep last week
+  select(ref_area, cumulative_positive, crude_rate_positive_per100k)
+
+cumulative_case_2020_based_grouping_hb <-
+  weekly_covid_cases_hb %>% filter(year == 2020) %>% 
+  filter(ref_area!="Scotland") %>%
+  filter(year == 2020) %>% 
+  filter(week_number == max(week_number)) %>%  # keep last week 
+  select(ref_area, cumulative_positive, crude_rate_positive_per100k)
+
+k_means_clustering_cases_and_per100k_2020_hb <- map(
+  .x = 2:4,
+  .f = ~kmeans(x=cumulative_case_2020_based_grouping_hb %>% select(cumulative_positive, crude_rate_positive_per100k), centers = .x, nstart = 1e3)
+) %>% set_names(nm=paste0("k",2:4))
+
+clusters_hb <-
+  bind_cols(
+    cumulative_case_2020_based_grouping_hb %>% select(ref_area),
+    map_dfc(.x = k_means_clustering_cases_and_per100k_2020_hb, .f = function(x) return(x$cluster))
+  )
+
+cumulative_case_2020_based_grouping_hb <-
+  cumulative_case_2020_based_grouping_hb %>%
+  left_join(clusters_hb, by="ref_area") %>%
+  mutate(
+    quartiles_cases = ntile(cumulative_positive, n=4),
+    quartiles_per100k = ntile(crude_rate_positive_per100k, n=4)
+  )
+
+# TODO: apply to LA also!
+
+
+hb_cases_plots <- list()
+
+hb_cases_plots$cumulative_cases_vs_per100k <-
+  cumulative_case_2020_based_grouping_hb %>%
+  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area)) +
+  geom_point() +
+  geom_label_repel() +
+  theme_minimal() +
+  labs(
+    x="COVID cases",
+    y="COVID cases per 100,000 population",
+    title="Cases vs. population rate"
+  ) +
+  NULL
+
+hb_cases_plots$cumulative_cases_vs_per100k_log10 <-
+  cumulative_case_2020_based_grouping_hb %>%
+  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area)) +
+  geom_point() +
+  geom_label_repel() +
+  theme_minimal() +
+  labs(
+    x="COVID cases (log)",
+    y="COVID cases per 100,000 population (log)",
+    title="Cases vs. population rate (log scale axes)"
+  ) +
+  scale_x_log10() +
+  scale_y_log10() +
+  NULL
+
+hb_cases_plots$cumulative_cases_vs_per100k_quartiles_cases <-
+  cumulative_case_2020_based_grouping_hb %>%
+  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(quartiles_cases))) +
+  geom_point(size=3, aes(colour=factor(quartiles_cases))) +
+  scale_colour_viridis_d() +
+  geom_label_repel() +
+  theme_minimal() +
+  labs(
+    x="COVID cases",
+    y="COVID cases per 100,000 population",
+    title="Cases vs. population rate"
+  ) +
+  NULL
+
+hb_cases_plots$cumulative_cases_vs_per100k_quartiles_cases <-
+  cumulative_case_2020_based_grouping_hb %>%
+  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(quartiles_per100k))) +
+  geom_point(size=3, aes(colour=factor(quartiles_cases))) +
+  scale_colour_viridis_d() +
+  geom_label_repel() +
+  theme_minimal() +
+  labs(
+    x="COVID cases",
+    y="COVID cases per 100,000 population",
+    title="Cases vs. population rate",
+    colour = "Quartile (Cases per 100,000)"
+  ) +
+  NULL
+
+hb_cases_plots$cumulative_cases_vs_per100k_k2 <-
+  cumulative_case_2020_based_grouping_hb %>%
+  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(k2))) +
+  geom_point(size=3, aes(colour=factor(k2))) +
+  scale_colour_viridis_d() +
+  geom_label_repel() +
+  theme_minimal() +
+  labs(
+    x="COVID cases",
+    y="COVID cases per 100,000 population",
+    title="Cases vs. population rate"
+  ) +
+  NULL
+
+
+hb_cases_plots$cumulative_cases_vs_per100k_k3 <-
+  cumulative_case_2020_based_grouping_hb %>%
+  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(k3))) +
+  geom_point(size=3, aes(colour=factor(k3))) +
+  scale_colour_viridis_d() +
+  geom_label_repel() +
+  theme_minimal() +
+  labs(
+    x="COVID cases",
+    y="COVID cases per 100,000 population",
+    title="Cases vs. population rate"
+  ) +
+  NULL
+
+
+hb_cases_plots$cumulative_cases_vs_per100k_k4 <-
+  cumulative_case_2020_based_grouping_hb %>%
+  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(k4))) +
+  geom_point(size=3, aes(colour=factor(k4))) +
+  scale_colour_viridis_d() +
+  geom_label_repel() +
+  theme_minimal() +
+  labs(
+    x="COVID cases",
+    y="COVID cases per 100,000 population",
+    title="Cases vs. population rate"
+  ) +
+  NULL
+
+
+hb_cases_plots_assembled <- patchwork::wrap_plots(hb_cases_plots, ncol = 2)
+
+
+
+
+total_deaths_hb %>% filter(year==2020 & str_starts(place_of_death, pattern="Home")) %>%
+  left_join(cumulative_case_2020_based_grouping_hb, by="ref_area") %>%
+  ggplot(data=., aes(x=cumulative_positive, y=deaths_all_causes, label=ref_area)) +
+  geom_point() +
+  geom_label_repel() +
+  theme_minimal() +
+  NULL
+  
+
+# k means clustering
+hb_clustered <- kmeans(cumulative_case_2020_based_grouping_hb %>% filter(ref_area!="Scotland") %>% select(2:3), centers = 4, nstart = 2500)
+bind_cols(cumulative_case_2020_based_grouping_hb %>% filter(ref_area!="Scotland"), cluster=hb_clustered$cluster) %>%
+  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, fill=cluster, colour=cluster)) +
+    geom_point() +
+    geom_label_repel() +
+    theme_minimal() +
+    NULL
+
+```
+
 
 
 
@@ -963,7 +1151,7 @@ weekly_deaths_overall %>%
 ```
 
 
-# Calculate data averaged over multiple weeks
+# Calculate moving averages (rolling mean) over multiple weeks
 
 Once data are broken down by region there are very small figures on a weekly basis, so we can compute a moving average over several weeks instead. This is different to merging figures into 2-week chunks, for example, as information from consecutive weeks will overlap.
 
@@ -1140,25 +1328,104 @@ total_deaths_age <-
 ```
 
 
-# Visualisations
-
-
-## Set up output directory
-
-Because data are updated on a weekly basis, we'll have a separate directory for every week the data are updated:
+# Comparisons of annual rates with current rates
 
 ```{r}
-latest_data_date <- strftime(max(table_of_data_sources$last_modified), format="%F")
+## this is fairly ad-hoc... but it works!
+table_comparing_rates <-
+  bind_rows(
+    ## all available data
+    merged_data_overall %>%
+      filter(age == "all" &
+               sex == "all" &
+               str_starts(place_of_death, "Home")) %>% group_by(year, week_number) %>%
+      summarise(
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        .groups = "drop"
+      ) %>% left_join(
+        past_deaths_overall %>% filter(str_starts(place_of_death, "Home") &
+                                         year != "average") %>% group_by(week_number) %>% summarise(
+                                           average_weekly_deaths = sum(number_of_deaths) / 5,
+                                           .groups = "drop"
+                                         ),
+        by = "week_number"
+      ) %>% summarise(
+        period = "all available data",
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        past_annual_deaths = sum(average_weekly_deaths)
+      )
+    ,
+    ## 2020 only
+    bind_cols(
+      merged_data_overall %>%
+        filter(
+          age == "all" &
+            sex == "all" & str_starts(place_of_death, "Home") & year == 2020
+        ) %>%
+        summarise(
+          period = "2020",
+          deaths_all_causes = sum(deaths_all_causes),
+          deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
+          deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE)
+        ),
+      past_deaths_overall %>% filter(str_starts(place_of_death, "Home") &
+                                       year != "average") %>% summarise(past_annual_deaths = sum(number_of_deaths) / 5)
+    ),
+    ## 2020 from week 12 onwards (including week 12) - pandemic part of 2020
+    bind_cols(
+      merged_data_overall %>%
+        filter(
+          age == "all" &
+            sex == "all" &
+            str_starts(place_of_death, "Home") &
+            year == 2020 & week_number >= 12
+        ) %>%
+        summarise(
+          period = "2020, from wk12",
+          deaths_all_causes = sum(deaths_all_causes),
+          deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
+          deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE)
+        ),
+      past_deaths_overall %>% filter(
+        week_number >= 12 &
+          str_starts(place_of_death, "Home") &
+          year != "average"
+      ) %>% summarise(past_annual_deaths = sum(number_of_deaths) / 5)
+    )
+  ) %>%
+  mutate(
+    ratio_deaths_all_causes_to_historical = deaths_all_causes / past_annual_deaths,
+    ratio_non_covid_deaths_to_historical = deaths_non_covid / past_annual_deaths,
+    proportion_covid_deaths = deaths_covid_related / deaths_all_causes
+  )
 
-dir_outputs <- paste0("./outputs/",latest_data_date)
-if (!dir.exists(dir_outputs)) dir.create(dir_outputs)
+write_csv(x = table_comparing_rates, file = file.path(dir_outputs, "annual_death_rates_comparison_with_historical_deaths.csv"))
+
+table_comparing_rates %>% knitr::kable(caption = "Comparing annual home death rate during COVID pandemic to historical deaths at home")
 ```
+
+
+
+# Visualisations
 
 
 ## Common elements
 
 ```{r}
-date_range_text <- glue::glue("Data from w/c {format(min(weekly_deaths_overall$date_w_c), '%d %B %Y')} to w/c {format(max(weekly_deaths_overall$date_w_c), '%d %B %Y')} (inclusive).") 
+theme_set(theme_minimal(base_size = 16) +
+            theme(panel.grid.minor = element_blank(),
+                  axis.title.y = element_text(margin = margin(0, 20, 0, 0)),  # remove gap to the left of y axis title and below the x axis title
+                  axis.title.x = element_text(margin = margin(20, 0, 0, 0))
+            ))
+
+
+date_range_text <- glue::glue("Data from w/c {format(min(weekly_deaths_overall$date_w_c), '%d %B %Y')} to w/c {format(max(weekly_deaths_overall$date_w_c), '%d %B %Y')} (inclusive).")
+
+dashed_line_historical_range_text <- "Range of deaths 2015-19 shown as shaded area; mean shown as dashed line."
 
 only_2020_text <- glue::glue("Data from 2020 included, starting with w/c {format(min(merged_deaths_age$date_w_c))}.")
 
@@ -1288,11 +1555,13 @@ figure_place_of_death
 ```
 
 
-## Deaths at home, all of Scotland
+## All of Scotland, deaths at home
 
 ```{r, fig.width=12, fig.height=9, warning=FALSE}
 # TODO: add start of lockdowns 1-3?
 # TODO: what is that dip at week 38/39? not obvious - start of september was tier 4 restrictions in big LAs
+total_deaths_at_home_in_period <- glue::glue("Total deaths at home N={format(merged_deaths_overall %>% filter(sex == 'all' & age == 'all' & place_of_death %in% c('Home & other non-institution')) %>% .$deaths_all_causes %>% sum, big.mark=',')}")
+
 figure_deaths_at_home <-
   merged_deaths_overall %>%
   filter(sex == "all" & age == "all") %>%
@@ -1302,9 +1571,10 @@ figure_deaths_at_home <-
   ggplot(aes(x = week_number_run_over)) +
   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
   geom_line(aes(y = deaths, colour = deaths_type)) +
-  geom_line(aes(y = deaths_mean), linetype = "dashed", size = 0.2) +
+  geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
   geom_vline(xintercept = 54, linetype = "dotted") +
   scale_x_continuous(breaks = seq(0,60,by=10)) +
+  ylim(0, 600) +
   facet_grid(~place_of_death) +
   theme_minimal() +
   scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
@@ -1312,17 +1582,19 @@ figure_deaths_at_home <-
                                  "Non Covid-19 deaths"),
                       guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
                       ) +
+  annotate(geom = "text", label = total_deaths_at_home_in_period, x = 25, y = 575, hjust=0) +
   theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
   labs(x = "Week number",
        y = "Deaths (N)",
        subtitle = date_range_text,
-       caption = paste0(c(vertical_line_text, death_registrations_text, source_nrs_text), collapse="\n"),
+       caption = paste0(c(dashed_line_historical_range_text,vertical_line_text, death_registrations_text, source_nrs_text), collapse="\n"),
        colour = "Cause of death"
        )
 
+## figure for a bit less than half A4 page is approx 14*11cm
 walk(
   .x = c(".pdf",".svg",".png"),
-  .f = ~ggsave(filename = paste0(dir_outputs,"/figure_deaths_at_home",.x), plot = figure_deaths_at_home, width = 12, height = 9, dpi = 300)
+  .f = ~ggsave(filename = paste0(dir_outputs,"/figure_deaths_at_home",.x), plot = figure_deaths_at_home, width = 14, height = 11, units = "cm", dpi = 300)
 )
 
 figure_deaths_at_home
@@ -1775,10 +2047,6 @@ walk(
 figure_map_ratio_home_deaths_2020_to_historical_hb
 ```
 
-
-# Comparing geographic areas by case counts
-
-We can use the yearly cumulative case count to group geographic areas by how many cases they've had
 
 ```{r}
 
