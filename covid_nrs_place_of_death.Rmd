@@ -771,7 +771,7 @@ cases_la <- read_csv(
 ```
 
 
-# Calculate cumulative case counts at weekly deaths
+# Calculate case counts: weekly counts to match weekly death reporting
 
 Note: the cumulative case counts have already been calculated, we just need to subset them to match the weeks. This is not trivial - the death counts cover an entire week starting from the "w/c date"; the cumulative cases for that week could be taken either at the start, the end of the week, or the start of the following week even!
 However, when calculating weekly positive cases we can simply take the maximum of that week's cumulative count - that will be the cumulative count at the end of the week!
@@ -790,6 +790,10 @@ weekly_covid_cases_hb <-
     date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
     week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)
     )
+
+## extract Scotland-wide data and remove from HB split
+weekly_covid_cases_overall <- weekly_covid_cases_hb %>% filter(ref_area=="Scotland")
+weekly_covid_cases_hb <- weekly_covid_cases_hb %>% filter(ref_area!="Scotland")
 
 weekly_covid_cases_la <-
   cases_la %>%
@@ -1289,8 +1293,8 @@ compute_total_deaths_in_year <- function(data_tbl, ...) {
   grouping_vars <- enquos(...)
   data_tbl %>%
     group_by(year, place_of_death, !!!grouping_vars) %>%
-    summarise(across(.cols = c(deaths_all_causes, deaths_covid_related, deaths_non_covid), .fns = ~sum(.x,na.rm=TRUE)), .groups = "drop") %>%
-    mutate(deaths_all_causes_since_covid = deaths_covid_related + deaths_non_covid)
+    summarise(across(.cols = c(deaths_all_causes, deaths_covid_related, deaths_non_covid), .fns = ~sum(.x,na.rm=TRUE)), .groups = "drop") %>%  # compute sums of all types of death
+    mutate(deaths_all_causes_since_covid = deaths_covid_related + deaths_non_covid)  # compute a smaller number of all-cause deaths since covid started (over 2020, covid- and non-covid-related deaths don't add up to all-cause deaths because pre-covid deaths are included also!)
 }
 
 compute_ratio_of_annual_deaths_to_historical <- function(data_tbl) {
@@ -1574,7 +1578,7 @@ figure_deaths_at_home <-
   geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
   geom_vline(xintercept = 54, linetype = "dotted") +
   scale_x_continuous(breaks = seq(0,60,by=10)) +
-  ylim(0, 600) +
+  ylim(0, 600) +  # start scale at 0 for better understanding the scale of deaths
   facet_grid(~place_of_death) +
   theme_minimal() +
   scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
@@ -1950,6 +1954,56 @@ merged_deaths_overall %>%
     deaths_covid_related = sum(deaths_covid_related, na.rm=TRUE),
     deaths_non_covid = sum(deaths_non_covid, na.rm=TRUE)
   )
+```
+
+# Case counts & home deaths - comparing plots
+
+## Scotland-wide figure
+
+```{r}
+# TODO: wokr out how to include both... two panels? two axes on same plot?
+
+ratio_max_weekly_deaths_to_cases <- 600 / 16e3
+
+
+# figure_home_deaths_and_cases_scotland <-
+  merged_deaths_overall %>%
+  filter(sex=="all" & age=="all" & str_starts(place_of_death, "Home")) %>%
+  left_join(weekly_covid_cases_overall, by=c("year","week_number","date_w_c","week_number_run_over","ref_area")) %>%
+  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
+               names_to = "deaths_type", values_to = "deaths") %>% 
+  ggplot(aes(x = week_number_run_over)) +
+  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
+  geom_line(aes(y = deaths, colour = deaths_type)) +
+  geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
+  geom_line(aes(y = weekly_positive * ratio_max_weekly_deaths_to_cases), colour="purple") +
+  geom_vline(xintercept = 54, linetype = "dotted") +
+  scale_x_continuous(breaks = seq(0,60,by=10)) +
+  scale_y_continuous(sec.axis = sec_axis(trans = ~./ratio_max_weekly_deaths_to_cases, name = "Weekly deaths")) +
+  # ylim(0, 600) +  # start scale at 0 for better understanding the scale of deaths
+  facet_grid(~place_of_death) +
+  theme_minimal() +
+  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+                      labels = c("All deaths", 
+                                 "Non Covid-19 deaths"),
+                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+                      ) +
+  annotate(geom = "text", label = total_deaths_at_home_in_period, x = 25, y = 575, hjust=0) +
+  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
+  labs(x = "Week number",
+       y = "Deaths (N)",
+       subtitle = date_range_text,
+       caption = paste0(c(dashed_line_historical_range_text,vertical_line_text, death_registrations_text, source_nrs_text), collapse="\n"),
+       colour = "Cause of death"
+       )
+
+# ## figure for a bit less than half A4 page is approx 14*11cm
+# walk(
+#   .x = c(".pdf",".svg",".png"),
+#   .f = ~ggsave(filename = paste0(dir_outputs,"/figure_deaths_at_home",.x), plot = figure_deaths_at_home, width = 14, height = 11, units = "cm", dpi = 300)
+# )
+# 
+# figure_deaths_at_home
 ```
 
 
