@@ -1113,6 +1113,11 @@ compute_historical_annual_average_deaths <- function(data_tbl, ...) {
   )
 }
 
+
+historical_annual_average_overall <-
+  past_deaths_overall %>%
+  compute_historical_annual_average_deaths()
+
 historical_annual_average_hb <-
   past_deaths_hb %>%
   compute_historical_annual_average_deaths(ref_area)
@@ -1321,6 +1326,12 @@ total_deaths_age <-
   compute_total_deaths_in_year(age) %>%
   left_join(historical_annual_average_age, by = c("place_of_death", "age")) %>%
   compute_ratio_of_annual_deaths_to_historical
+
+total_deaths_overall <-
+  merged_deaths_overall %>%
+  compute_total_deaths_in_year() %>%
+  left_join(historical_annual_average_overall, by = c("place_of_death")) %>%
+  compute_ratio_of_annual_deaths_to_historical
 ```
 
 
@@ -1405,6 +1416,38 @@ table_comparing_rates %>% knitr::kable(caption = "Comparing annual home death ra
 ```
 
 
+# Comparing historical rates of home death to total death to 2020/2021
+
+```{r}
+proportions_of_historical_deaths_by_place <-
+  past_deaths_overall %>% 
+  group_by(year, place_of_death) %>% summarise(number_of_deaths = sum(number_of_deaths), .groups="drop") %>%
+  filter(place_of_death != "All" & !is.na(as.integer(year))) %>%
+  group_by(year) %>%
+  mutate(
+    total_deaths = sum(number_of_deaths)
+  ) %>%
+  ungroup %>%
+  mutate(proportion_of_total = number_of_deaths / total_deaths, year=as.integer(year))
+
+proportions_of_current_deaths_by_place <-
+  total_deaths_overall %>%
+  select(year, place_of_death, number_of_deaths = deaths_all_causes) %>%
+  filter(place_of_death != "All") %>%
+  group_by(year) %>%
+  mutate(
+    total_deaths = sum(number_of_deaths)
+  ) %>%
+  ungroup %>%
+  mutate(proportion_of_total = number_of_deaths / total_deaths)
+
+merged_proportions_of_deaths_by_place <-
+  bind_rows(
+    proportions_of_historical_deaths_by_place,
+    proportions_of_current_deaths_by_place
+  )
+```
+
 
 # Visualisations
 
@@ -1424,6 +1467,7 @@ date_range_text <- glue::glue("Data from w/c {format(min(weekly_deaths_overall$d
 dashed_line_historical_range_text <- "Range of deaths 2015-19 shown as shaded area; mean shown as dashed line."
 
 only_2020_text <- glue::glue("Data from 2020 included, starting with w/c {format(min(merged_deaths_age$date_w_c))}.")
+only_2021_text <- glue::glue("Data for 2021 only include weeks 1-{format(max(merged_deaths_age$week_number[merged_deaths_age$year==2021]))} (w/c {format(max(merged_deaths_age$date_w_c))}).")
 
 source_nrs_text <- "Source: National Records of Scotland"
 source_phs_text <- "Source: Public Health Scotland"
@@ -1433,6 +1477,41 @@ death_registrations_text <- "Note: all figures are based on date of registration
 vertical_line_text <- "Vertical dotted line at week number 54 represents start of 2021."
 ```
 
+
+# Proportion home deaths over time
+
+```{r}
+figure_proportion_home_deaths_over_time <-
+  merged_proportions_of_deaths_by_place %>%
+  mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
+  ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
+  geom_point() +
+  geom_line(size = 1) +
+  geom_text(data = ~filter(.x, year==2021), aes(x=2021.1, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+  scale_x_continuous(breaks = 2015:2021) +
+  scale_y_continuous(label = scales::percent) +
+  scale_colour_viridis_d(option="C") +
+  theme_minimal() +
+  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
+  labs(
+    x = "Year", y= "Proportion of yearly deaths (%)",
+    colour = "",
+    subtitle = paste0("* ",only_2021_text),
+    caption = paste0(c(source_nrs_text),collapse="\n")
+    ) +
+  guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
+  NULL
+
+walk(
+  .x = c(".pdf",".svg",".png"),
+  .f = ~ggsave(filename = paste0(dir_outputs,"/figure_proportion_home_deaths_over_time",.x), plot = figure_proportion_home_deaths_over_time, width = 12, height = 10, units = "cm", dpi = 300)
+)
+
+figure_proportion_home_deaths_over_time
+```
+
+
+# Number of deaths visualisations
 
 ## Number of deaths by age group
 
@@ -1454,6 +1533,8 @@ weekly_deaths_overall %>%
        subtitle = date_range_text,
        caption = paste0(c(date_range_text,source_nrs_text), collapse="\n")
   )
+
+
 ```
 
 
@@ -1959,7 +2040,7 @@ merged_deaths_overall %>%
 ratio_max_weekly_deaths_to_cases <- 600 / 16e3
 
 
-# figure_home_deaths_and_cases_scotland <-
+figure_weekly_deaths_to_cases_part_1 <-
   merged_deaths_overall %>%
   filter(sex=="all" & age=="all" & str_starts(place_of_death, "Home")) %>%
   left_join(weekly_covid_cases_overall, by=c("year","week_number","date_w_c","week_number_run_over","ref_area")) %>%
@@ -1969,10 +2050,10 @@ ratio_max_weekly_deaths_to_cases <- 600 / 16e3
   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
   geom_line(aes(y = deaths, colour = deaths_type)) +
   geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
-  geom_line(aes(y = weekly_positive * ratio_max_weekly_deaths_to_cases), colour="purple") +
+  # geom_line(aes(y = weekly_positive * ratio_max_weekly_deaths_to_cases), colour="purple") +
   geom_vline(xintercept = 54, linetype = "dotted") +
   scale_x_continuous(breaks = seq(0,60,by=10)) +
-  scale_y_continuous(sec.axis = sec_axis(trans = ~./ratio_max_weekly_deaths_to_cases, name = "Weekly cases")) +
+  # scale_y_continuous(sec.axis = sec_axis(trans = ~./ratio_max_weekly_deaths_to_cases, name = "Weekly cases")) +
   # ylim(0, 600) +  # start scale at 0 for better understanding the scale of deaths
   facet_grid(~place_of_death) +
   theme_minimal() +
@@ -1981,7 +2062,7 @@ ratio_max_weekly_deaths_to_cases <- 600 / 16e3
                                  "Non Covid-19 deaths"),
                       guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
                       ) +
-  annotate(geom = "text", label = total_deaths_at_home_in_period, x = 25, y = 575, hjust=0) +
+  # annotate(geom = "text", label = total_deaths_at_home_in_period, x = 25, y = 575, hjust=0) +
   theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
   labs(x = "Week number",
        y = "Deaths (N)",
@@ -1989,27 +2070,34 @@ ratio_max_weekly_deaths_to_cases <- 600 / 16e3
        caption = paste0(c(dashed_line_historical_range_text,vertical_line_text, death_registrations_text, source_nrs_text), collapse="\n"),
        colour = "Cause of death"
        )
-  
+
+figure_weekly_deaths_to_cases_part_2 <-
   merged_deaths_overall %>%
   filter(sex=="all" & age=="all" & str_starts(place_of_death, "Home")) %>%
   left_join(weekly_covid_cases_overall, by=c("year","week_number","date_w_c","week_number_run_over","ref_area")) %>%
   ggplot(aes(x=week_number_run_over, y=weekly_positive)) +
-  geom_line() +
+  geom_line(size=1) +
+  geom_vline(xintercept = 54, linetype = "dotted") +
   theme_minimal() +
+  facet_grid(~ref_area) +
+  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
+  scale_x_continuous(breaks = seq(0,60,by=10)) +
   scale_y_continuous(labels = function(x) format(x, big.mark=",")) +
   labs(
     x = "Week number", y = "COVID-19 positive cases (N)",
-    subtitle = date_range_text,
-    caption = paste0(c(vertical_line_text, source_phs_text), collapse="\n")
+    subtitle = "Note the different scale for positive cases!",
+    caption = paste0(c(source_phs_text), collapse="\n")
   )
 
-# ## figure for a bit less than half A4 page is approx 14*11cm
-# walk(
-#   .x = c(".pdf",".svg",".png"),
-#   .f = ~ggsave(filename = paste0(dir_outputs,"/figure_deaths_at_home",.x), plot = figure_deaths_at_home, width = 14, height = 11, units = "cm", dpi = 300)
-# )
-# 
-# figure_deaths_at_home
+figure_weekly_deaths_to_cases <- wrap_plots(figure_weekly_deaths_to_cases_part_1,figure_weekly_deaths_to_cases_part_2, ncol = 1)
+
+## figure for a bit less than half A4 page is approx 14*11cm
+walk(
+  .x = c(".pdf",".svg",".png"),
+  .f = ~ggsave(filename = paste0(dir_outputs,"/figure_weekly_deaths_to_cases",.x), plot = figure_weekly_deaths_to_cases, width = 15, height = 15, units = "cm", dpi = 300)
+)
+
+figure_weekly_deaths_to_cases
 ```
 
 
