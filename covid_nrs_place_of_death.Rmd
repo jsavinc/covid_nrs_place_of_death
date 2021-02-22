@@ -786,7 +786,10 @@ cases_la <- read_csv(
 # Calculate case counts: weekly counts to match weekly death reporting
 
 Note: the cumulative case counts have already been calculated, we just need to subset them to match the weeks. This is not trivial - the death counts cover an entire week starting from the "w/c date"; the cumulative cases for that week could be taken either at the start, the end of the week, or the start of the following week even!
+
 However, when calculating weekly positive cases we can simply take the maximum of that week's cumulative count - that will be the cumulative count at the end of the week!
+
+Note also that the `crude_rate_positive_per100k` represents the cumulative rate!
 
 ```{r}
 weekly_covid_cases_hb <-
@@ -2106,8 +2109,8 @@ figure_weekly_deaths_to_cases
 ## Ratio of 2020 home deaths to historical home deaths by LA / HB
 
 ```{r}
-areas_relatively_higher_number_home_deaths <- "Lighter areas represent areas with relatively higher number of home deaths in 2020 compared to historical mean"
-home_deaths_ratio <- "Ratio computed from total home deaths in 2020 divided by mean annual home deaths 2015-2019"
+areas_relatively_higher_number_home_deaths_text <- "Lighter areas represent areas with relatively higher number of home deaths in 2020 compared to historical mean"
+home_deaths_ratio_text_text <- "Ratio computed from total home deaths in 2020 divided by mean annual home deaths 2015-2019"
 
 ## max/min used for setting scale of fill colour so it's consistent between plots!
 maximum_ratio_between_hb_and_la_home_deaths <-
@@ -2146,9 +2149,9 @@ figure_map_ratio_home_deaths_2020_to_historical_la <-
   theme_minimal() +
   theme(axis.text = element_blank()) +
   labs(x="", y="",
-       title = "Ratio of home deaths in 2020 to historical mean 2015-2019, by Local Authority",
-       subtitle = "A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.",
-       caption = paste0(c(areas_relatively_higher_number_home_deaths, home_deaths_ratio, source_nrs_text), collapse="\n"),
+       title = str_wrap("Ratio of home deaths in 2020 to historical mean 2015-2019, by Local Authority", width = 50),
+       subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
+       caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
        fill = "Ratio"
        ) +
   NULL
@@ -2179,9 +2182,9 @@ figure_map_ratio_home_deaths_2020_to_historical_hb <-
   theme_minimal() +
   theme(axis.text = element_blank(), aspect.ratio = 1.4) +
   labs(x="", y="",
-       title = "Ratio of home deaths in 2020 to historical mean 2015-2019, by Health Board",
-       subtitle = "A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.",
-       caption = paste0(c(areas_relatively_higher_number_home_deaths, home_deaths_ratio, source_nrs_text), collapse="\n"),
+       title = str_wrap("Ratio of home deaths in 2020 to historical mean 2015-2019, by Health Board", width=50),
+       subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
+       caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
        fill = "Ratio"
        ) +
   NULL
@@ -2196,7 +2199,67 @@ figure_map_ratio_home_deaths_2020_to_historical_hb
 ```
 
 
-```{r}
+## Per capita cases of COVID-19 by region
 
+```{r}
+areas_relatively_higher_number_cases <- "Lighter areas represent areas with relatively higher number of COVID-19 cases per 100,000 population in 2020"
 ```
 
+### LA
+
+```{r, fig.height=12, fig.width=8}
+figure_map_per_capita_covid_cases_2020_la <-
+  weekly_covid_cases_la %>%
+  filter(year == 2020 & week_number == 53) %>%
+  left_join(shapefile_la, by=c("ref_area"="LAD20NM")) %>%
+  ggplot(aes(geometry=geometry, fill=crude_rate_positive_per100k), colour="grey10") +
+  geom_sf(colour="grey10") +
+  scale_fill_viridis_b(option = "B") +
+  theme_minimal() +
+  theme(axis.text = element_blank()) +
+  labs(x="", y="",
+       title = str_wrap("Cumulative cases of COVID-19 in 2020 per 100,000 population, by Local Authority",width=50),
+       subtitle = "",
+       caption = paste0(c(areas_relatively_higher_number_cases, source_phs_text), collapse="\n"),
+       fill = str_wrap("COVID-19 cases in 2020 per 100,000 population", width = 20)
+       ) +
+  NULL
+
+  
+walk(
+  .x = c(".pdf",".svg",".png"),
+  .f = ~ggsave(filename = paste0(dir_outputs,"/figure_map_per_capita_covid_cases_2020_la",.x), plot = figure_map_per_capita_covid_cases_2020_la, width = 9, height = 12, dpi = 300)
+)
+
+figure_map_per_capita_covid_cases_2020_la
+```
+
+
+### HB
+
+```{r, fig.height=12, fig.width=8}
+figure_map_per_capita_covid_cases_2020_hb <-
+  weekly_covid_cases_hb %>%
+  filter(year == 2020 & week_number == 53) %>%
+  left_join(shapefile_hb_uk_wide, by=c("ref_area"="name")) %>%
+  ggplot(aes(geometry=geometry, fill=crude_rate_positive_per100k), colour="grey10") +
+  geom_sf(colour="grey10") +
+  scale_fill_viridis_b(option = "B") +
+  theme_minimal() +
+  theme(axis.text = element_blank(), aspect.ratio = 1.4) +
+  labs(x="", y="",
+       title = str_wrap("Cumulative cases of COVID-19 in 2020 per 100,000 population, by Health Board",width=50),
+       subtitle = "",
+       caption = paste0(c(areas_relatively_higher_number_cases, source_phs_text), collapse="\n"),
+       fill = str_wrap("COVID-19 cases in 2020 per 100,000 population", width = 20)
+       ) +
+  NULL
+
+  
+walk(
+  .x = c(".pdf",".svg",".png"),
+  .f = ~ggsave(filename = paste0(dir_outputs,"/figure_map_per_capita_covid_cases_2020_hb",.x), plot = figure_map_per_capita_covid_cases_2020_hb, width = 9, height = 12, dpi = 300)
+)
+
+figure_map_per_capita_covid_cases_2020_hb
+```
