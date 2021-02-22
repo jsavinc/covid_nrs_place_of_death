@@ -9,10 +9,6 @@ output:
     toc_float: true
 editor_options: 
   chunk_output_type: console
-params:
-  data_sources: '`r tibble()`'
-  historical_data_sources: '`r tibble()`'
-  case_trends_data_sources: '`r tibble()`'
 ---
 
 
@@ -48,7 +44,7 @@ Note: not needed if using `opendatascot`
 To access the latest NRS data using their API, we first setup a SPARQL query.
 
 ```{r}
-endpoint <- "http://statistics.gov.scot/sparql.json"
+# endpoint <- "http://statistics.gov.scot/sparql.json"
 endpoint <- "http://statistics.gov.scot/sparql"
 ```
 
@@ -70,7 +66,25 @@ From NRS website:
 A recent timeline of COVID-19 events in Scotland is [available here](https://spice-spotlight.scot/2021/01/29/timeline-of-coronavirus-covid-19-in-scotland/). Including these might help in the interpreration fo the figures, though the figures are already pretty busy. This is a potential future TODO!
 
 
-# Set up output directory
+# Load info about latest data
+
+A separate script checks for updated data and downloads it, also updating these files with the locations of the downloaded data:
+
+```{r}
+file_data_sources <- "./table_of_data_sources.csv"
+file_historical_data_sources <- "./table_of_historical_data_sources.csv"
+file_case_trends_data_sources <- "./table_of_case_trends_data_sources.csv"
+
+table_of_data_sources <- read_csv(file = file_data_sources)
+table_of_historical_data_sources <- read_csv(file = file_historical_data_sources)
+table_of_case_trends_data_sources <- read_csv(file = file_case_trends_data_sources)
+
+table_of_data_sources %>%
+  kable(caption = "Latest data used in this report.")
+```
+
+
+## Set up output directory
 
 Because data are updated on a weekly basis, we'll have a separate directory for every week the data are updated:
 
@@ -112,13 +126,11 @@ This means we'll need to download those figures from the website rather than usi
 Note that the weekly deaths due to COVID-19 in 2020 & 2021 also include a weekly average 2015-2019, but for the purposes of showing the range of deaths (weekly minima & maxima), we need the weekly figures for individual years & the appropriate cross-tabulations.
 
 ```{r}
-# "unpack" the data source tables
-table_of_data_sources <- params$data_sources
-table_of_historical_data_sources <- params$historical_data_sources
-table_of_case_trends_data_sources <- params$case_trends_data_sources
-
-table_of_data_sources %>%
-  kable(caption = "Latest data used in this report.")
+# TODO: remove this section, params not used anymore
+# # "unpack" the data source tables
+# table_of_data_sources <- params$data_sources
+# table_of_historical_data_sources <- params$historical_data_sources
+# table_of_case_trends_data_sources <- params$case_trends_data_sources
 ```
 
 
@@ -350,9 +362,9 @@ files_weekly_deaths <- set_names(x = as.list(table_of_data_sources$path_latest),
 
 # checking out structure
 
-ods_all_datasets() %>% View()
-ods_structure("deaths")  # can we import all deaths-related data this way?
-ods_structure("coronavirus-covid-19-management-information")
+# ods_all_datasets() %>% View()
+# ods_structure("deaths")  # can we import all deaths-related data this way?
+# ods_structure("coronavirus-covid-19-management-information")
 
 # ods_dataset("coronavirus-covid-19-management-information", geography = "hb") %>%
 #   filter(variable == "testing-new-cases-reported")
@@ -958,27 +970,7 @@ hb_cases_plots$cumulative_cases_vs_per100k_k4 <-
 
 hb_cases_plots_assembled <- patchwork::wrap_plots(hb_cases_plots, ncol = 2)
 
-
-
-
-total_deaths_hb %>% filter(year==2020 & str_starts(place_of_death, pattern="Home")) %>%
-  left_join(cumulative_case_2020_based_grouping_hb, by="ref_area") %>%
-  ggplot(data=., aes(x=cumulative_positive, y=deaths_all_causes, label=ref_area)) +
-  geom_point() +
-  geom_label_repel() +
-  theme_minimal() +
-  NULL
-  
-
-# k means clustering
-hb_clustered <- kmeans(cumulative_case_2020_based_grouping_hb %>% filter(ref_area!="Scotland") %>% select(2:3), centers = 4, nstart = 2500)
-bind_cols(cumulative_case_2020_based_grouping_hb %>% filter(ref_area!="Scotland"), cluster=hb_clustered$cluster) %>%
-  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, fill=cluster, colour=cluster)) +
-    geom_point() +
-    geom_label_repel() +
-    theme_minimal() +
-    NULL
-
+hb_cases_plots_assembled
 ```
 
 
@@ -1339,7 +1331,7 @@ total_deaths_age <-
 table_comparing_rates <-
   bind_rows(
     ## all available data
-    merged_data_overall %>%
+    merged_deaths_overall %>%
       filter(age == "all" &
                sex == "all" &
                str_starts(place_of_death, "Home")) %>% group_by(year, week_number) %>%
@@ -1365,7 +1357,7 @@ table_comparing_rates <-
     ,
     ## 2020 only
     bind_cols(
-      merged_data_overall %>%
+      merged_deaths_overall %>%
         filter(
           age == "all" &
             sex == "all" & str_starts(place_of_death, "Home") & year == 2020
@@ -1381,7 +1373,7 @@ table_comparing_rates <-
     ),
     ## 2020 from week 12 onwards (including week 12) - pandemic part of 2020
     bind_cols(
-      merged_data_overall %>%
+      merged_deaths_overall %>%
         filter(
           age == "all" &
             sex == "all" &
@@ -1434,6 +1426,7 @@ dashed_line_historical_range_text <- "Range of deaths 2015-19 shown as shaded ar
 only_2020_text <- glue::glue("Data from 2020 included, starting with w/c {format(min(merged_deaths_age$date_w_c))}.")
 
 source_nrs_text <- "Source: National Records of Scotland"
+source_phs_text <- "Source: Public Health Scotland"
 
 death_registrations_text <- "Note: all figures are based on date of registration."
 
@@ -1979,7 +1972,7 @@ ratio_max_weekly_deaths_to_cases <- 600 / 16e3
   geom_line(aes(y = weekly_positive * ratio_max_weekly_deaths_to_cases), colour="purple") +
   geom_vline(xintercept = 54, linetype = "dotted") +
   scale_x_continuous(breaks = seq(0,60,by=10)) +
-  scale_y_continuous(sec.axis = sec_axis(trans = ~./ratio_max_weekly_deaths_to_cases, name = "Weekly deaths")) +
+  scale_y_continuous(sec.axis = sec_axis(trans = ~./ratio_max_weekly_deaths_to_cases, name = "Weekly cases")) +
   # ylim(0, 600) +  # start scale at 0 for better understanding the scale of deaths
   facet_grid(~place_of_death) +
   theme_minimal() +
@@ -1996,6 +1989,19 @@ ratio_max_weekly_deaths_to_cases <- 600 / 16e3
        caption = paste0(c(dashed_line_historical_range_text,vertical_line_text, death_registrations_text, source_nrs_text), collapse="\n"),
        colour = "Cause of death"
        )
+  
+  merged_deaths_overall %>%
+  filter(sex=="all" & age=="all" & str_starts(place_of_death, "Home")) %>%
+  left_join(weekly_covid_cases_overall, by=c("year","week_number","date_w_c","week_number_run_over","ref_area")) %>%
+  ggplot(aes(x=week_number_run_over, y=weekly_positive)) +
+  geom_line() +
+  theme_minimal() +
+  scale_y_continuous(labels = function(x) format(x, big.mark=",")) +
+  labs(
+    x = "Week number", y = "COVID-19 positive cases (N)",
+    subtitle = date_range_text,
+    caption = paste0(c(vertical_line_text, source_phs_text), collapse="\n")
+  )
 
 # ## figure for a bit less than half A4 page is approx 14*11cm
 # walk(

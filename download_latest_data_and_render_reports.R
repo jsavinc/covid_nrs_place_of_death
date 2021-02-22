@@ -184,18 +184,19 @@ download_shapefile(url = health_boards_uk_wide_url, directory = dir_map_data, su
 dir_reports <- "./reports"
 if (!dir.exists(dir_reports)) dir.create(dir_reports)
 
+# TODO: remove this section, params no longer used
 ## this line is also useful for testing - just run it and it pre-populates the
 ## params list for the rmd!
-params <- list( # pass the table of data sources
-  data_sources = table_of_data_sources,
-  historical_data_sources = table_of_historical_data_sources,
-  case_trends_data_sources = table_of_case_trends_data_sources
-)
+# params <- list( # pass the table of data sources
+#   data_sources = table_of_data_sources,
+#   historical_data_sources = table_of_historical_data_sources,
+#   case_trends_data_sources = table_of_case_trends_data_sources
+# )
 
 render(
   input = "./covid_nrs_place_of_death.Rmd",
   output_file = paste0("covid_nrs_place_of_death_",today()),
   output_dir = dir_reports,
-  params = params, 
+  # params = params, 
   envir = new.env()
 )
