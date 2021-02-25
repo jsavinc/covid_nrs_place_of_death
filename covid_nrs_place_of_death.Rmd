@@ -2110,7 +2110,7 @@ figure_weekly_deaths_to_cases
 
 ```{r}
 areas_relatively_higher_number_home_deaths_text <- "Lighter areas represent areas with relatively higher number of home deaths in 2020 compared to historical mean"
-home_deaths_ratio_text_text <- "Ratio computed from total home deaths in 2020 divided by mean annual home deaths 2015-2019"
+home_deaths_ratio_text <- "Ratio computed from total home deaths in 2020 divided by mean annual home deaths 2015-2019"
 
 ## max/min used for setting scale of fill colour so it's consistent between plots!
 maximum_ratio_between_hb_and_la_home_deaths <-

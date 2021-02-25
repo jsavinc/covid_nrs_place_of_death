@@ -14,6 +14,7 @@ library(lubridate)  # dealing with dates
 library(curl)
 library(knitr)
 library(rmarkdown)
+library(extrafont)
 
 # Load table keeping track of latest data ---------------------------------
 
@@ -179,19 +180,14 @@ download_shapefile(url = health_boards_shapefile_url, directory = dir_map_data, 
 download_shapefile(url = la_shapefile_url, directory = dir_map_data, subdirectory = "la")
 download_shapefile(url = health_boards_uk_wide_url, directory = dir_map_data, subdirectory = "hb_uk_wide")
 
+# Import Calibri font -----------------------------------------------------
+
+if (!any(fonttable()$FullName=="Calibri")) font_import(pattern = "calibri", prompt = FALSE)  # only run first time if Calibri not yet imported
+
 # Render report with latest data ------------------------------------------
 
 dir_reports <- "./reports"
 if (!dir.exists(dir_reports)) dir.create(dir_reports)
-
-# TODO: remove this section, params no longer used
-## this line is also useful for testing - just run it and it pre-populates the
-## params list for the rmd!
-# params <- list( # pass the table of data sources
-#   data_sources = table_of_data_sources,
-#   historical_data_sources = table_of_historical_data_sources,
-#   case_trends_data_sources = table_of_case_trends_data_sources
-# )
 
 render(
   input = "./covid_nrs_place_of_death.Rmd",
