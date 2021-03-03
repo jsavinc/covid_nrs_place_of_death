@@ -786,6 +786,16 @@ cases_la <- read_csv(
 ```
 
 
+# Constants about latest data available
+
+```{r}
+## constants for use in graphs & annotations
+weeks_available_2021 <- max(merged_deaths_age$week_number[merged_deaths_age$year==2021])
+most_recent_date_available_2021 <- max(merged_deaths_age$date_w_c)
+earliest_date <- min(merged_deaths_age$date_w_c)
+```
+
+
 # Calculate case counts: weekly counts to match weekly death reporting
 
 Note: the cumulative case counts have already been calculated, we just need to subset them to match the weeks. This is not trivial - the death counts cover an entire week starting from the "w/c date"; the cumulative cases for that week could be taken either at the start, the end of the week, or the start of the following week even!
@@ -1344,81 +1354,90 @@ total_deaths_overall <-
 # Comparisons of annual rates with current rates
 
 ```{r}
-## this is fairly ad-hoc... but it works!
-table_comparing_rates <-
+table_current_deaths_compared_to_past <-
   bind_rows(
     ## all available data
     merged_deaths_overall %>%
       filter(age == "all" &
-               sex == "all" &
-               str_starts(place_of_death, "Home")) %>% group_by(year, week_number) %>%
+               sex == "all"
+             ) %>% 
+      group_by(year, place_of_death, week_number) %>%
       summarise(
         deaths_all_causes = sum(deaths_all_causes),
-        deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
+        # deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
         deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
         .groups = "drop"
-      ) %>% left_join(
-        past_deaths_overall %>% filter(str_starts(place_of_death, "Home") &
-                                         year != "average") %>% group_by(week_number) %>% summarise(
+      ) %>% 
+      mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+      left_join(
+        past_deaths_overall %>% filter(year != "average") %>% group_by(week_number, place_of_death) %>% summarise(
                                            average_weekly_deaths = sum(number_of_deaths) / 5,
                                            .groups = "drop"
                                          ),
-        by = "week_number"
-      ) %>% summarise(
-        period = "all available data",
+        by = c("week_number", "place_of_death")
+      ) %>% 
+      group_by(place_of_death) %>%
+      summarise(
+        period = glue::glue("Data from week 1, 2020 to week {weeks_available_2021}, 2021"),
         deaths_all_causes = sum(deaths_all_causes),
         deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
         deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
-        past_annual_deaths = sum(average_weekly_deaths)
+        mean_annual_deaths_2015_2019 = sum(average_weekly_deaths),
+        .groups = "drop"
       )
     ,
     ## 2020 only
-    bind_cols(
-      merged_deaths_overall %>%
-        filter(
-          age == "all" &
-            sex == "all" & str_starts(place_of_death, "Home") & year == 2020
-        ) %>%
-        summarise(
-          period = "2020",
-          deaths_all_causes = sum(deaths_all_causes),
-          deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
-          deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE)
-        ),
-      past_deaths_overall %>% filter(str_starts(place_of_death, "Home") &
-                                       year != "average") %>% summarise(past_annual_deaths = sum(number_of_deaths) / 5)
-    ),
+    merged_deaths_overall %>%
+      filter(age == "all" &
+               sex == "all" &
+               year == 2020
+             ) %>% 
+      group_by(place_of_death) %>%
+      summarise(
+        period = "2020",
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        .groups = "drop"
+      ) %>% 
+      mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+    left_join(
+      historical_annual_average_overall %>% 
+        select(place_of_death, mean_annual_deaths_2015_2019 = annual_deaths_mean),
+      by = "place_of_death"
+    )
+    ,
     ## 2020 from week 12 onwards (including week 12) - pandemic part of 2020
-    bind_cols(
-      merged_deaths_overall %>%
-        filter(
-          age == "all" &
-            sex == "all" &
-            str_starts(place_of_death, "Home") &
-            year == 2020 & week_number >= 12
-        ) %>%
-        summarise(
-          period = "2020, from wk12",
-          deaths_all_causes = sum(deaths_all_causes),
-          deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
-          deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE)
-        ),
-      past_deaths_overall %>% filter(
-        week_number >= 12 &
-          str_starts(place_of_death, "Home") &
-          year != "average"
-      ) %>% summarise(past_annual_deaths = sum(number_of_deaths) / 5)
+    merged_deaths_overall %>%
+      filter(
+        age == "all" &
+          sex == "all" &
+          year == 2020 & week_number >= 12
+      ) %>%
+      group_by(place_of_death) %>%
+      summarise(
+        period = "2020, week 12 - week 53",
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        .groups = "drop"
+      ) %>% 
+    mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+    left_join(
+      past_deaths_overall %>% 
+        filter(week_number >= 12 & year != "average") %>%
+        group_by(place_of_death) %>%
+        summarise(mean_annual_deaths_2015_2019 = sum(number_of_deaths) / 5),
+      by = "place_of_death"
     )
   ) %>%
   mutate(
-    ratio_deaths_all_causes_to_historical = deaths_all_causes / past_annual_deaths,
-    ratio_non_covid_deaths_to_historical = deaths_non_covid / past_annual_deaths,
+    ratio_deaths_all_causes_to_historical = deaths_all_causes / mean_annual_deaths_2015_2019,
+    ratio_non_covid_deaths_to_historical = deaths_non_covid / mean_annual_deaths_2015_2019,
     proportion_covid_deaths = deaths_covid_related / deaths_all_causes
   )
 
-write_csv(x = table_comparing_rates, file = file.path(dir_outputs, "annual_death_rates_comparison_with_historical_deaths.csv"))
+write_csv(x = table_current_deaths_compared_to_past, file = file.path(dir_outputs, "annual_death_rates_comparison_with_historical_deaths.csv"))
 
-table_comparing_rates %>% knitr::kable(caption = "Comparing annual home death rate during COVID pandemic to historical deaths at home")
+table_current_deaths_compared_to_past %>% knitr::kable(caption = "Comparing annual home death rate during COVID pandemic to historical deaths at home")
 ```
 
 
@@ -1471,10 +1490,6 @@ theme_set(theme_minimal(base_size = 12) +
                   text=element_text(family="Calibri")
             ))
 
-## constants for use in graphs & annotations
-weeks_available_2021 <- max(merged_deaths_age$week_number[merged_deaths_age$year==2021])
-most_recent_date_available_2021 <- max(merged_deaths_age$date_w_c)
-earliest_date <- min(merged_deaths_age$date_w_c)
 
 date_range_text <- glue::glue("Data from w/c {format(min(weekly_deaths_overall$date_w_c), '%d %B %Y')} to w/c {format(max(weekly_deaths_overall$date_w_c), '%d %B %Y')} (inclusive).")
 
