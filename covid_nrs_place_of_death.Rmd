@@ -785,17 +785,6 @@ cases_la <- read_csv(
     )
 ```
 
-
-# Constants about latest data available
-
-```{r}
-## constants for use in graphs & annotations
-weeks_available_2021 <- max(merged_deaths_age$week_number[merged_deaths_age$year==2021])
-most_recent_date_available_2021 <- max(merged_deaths_age$date_w_c)
-earliest_date <- min(merged_deaths_age$date_w_c)
-```
-
-
 # Calculate case counts: weekly counts to match weekly death reporting
 
 Note: the cumulative case counts have already been calculated, we just need to subset them to match the weeks. This is not trivial - the death counts cover an entire week starting from the "w/c date"; the cumulative cases for that week could be taken either at the start, the end of the week, or the start of the following week even!
@@ -1351,6 +1340,16 @@ total_deaths_overall <-
 ```
 
 
+# Constants about latest data available
+
+```{r}
+## constants for use in graphs & annotations
+weeks_available_2021 <- max(merged_deaths_age$week_number[merged_deaths_age$year==2021])
+most_recent_date_available_2021 <- max(merged_deaths_age$date_w_c)
+earliest_date <- min(merged_deaths_age$date_w_c)
+```
+
+
 # Comparisons of annual rates with current rates
 
 ```{r}
@@ -1566,30 +1565,64 @@ figure_proportion_home_deaths_over_time
 ```
 
 
-# Number of deaths visualisations
+# Cumulative deaths
 
-## Number of deaths by age group
+Note: I've left this unfinished, it doesn't tell a better story than the weekly figures!
 
-```{r, fig.width=12, fig.height=9, warning=FALSE}
-## graph format copied from: https://github.com/davidhen/nrs_covid_stats/
-weekly_deaths_overall %>% 
-  filter(sex == "all" & place_of_death == "All") %>% 
-  filter(age != "all") %>%
-  group_by(age) %>% 
-  summarise(n = sum(deaths_all_causes)) %>%
-  mutate(pct = round(n/sum(n), 3)) %>% 
-  ggplot(aes(age, n)) +
-  geom_col(fill = "#4477AA") +
-  geom_text(aes(label = scales::percent(pct, accuracy = 0.1), y = n + 1000)) +
-  # theme_minimal() +
-  labs(x = "",
-       y = "",
-       title = "Deaths Associated with COVID-19 by Age Group",
-       subtitle = date_range_text,
-       caption = paste0(c(date_range_text,source_nrs_text), collapse="\n")
-  )
+```{r}
+text_non_covid_deaths_equivalent_to_all_cause_before_wk12 <- "Note: all-cause deaths and non-covid deaths were considered equivalent before 2020, week 12"
+
+figure_cumulative_deaths_by_place <-
+  merged_deaths_overall %>%
+  filter(sex == "all" & age == "all") %>%
+  filter(!place_of_death %in% c("All","Other")) %>%
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+  mutate(deaths_non_covid = if_else(condition = is.na(deaths_non_covid), true = deaths_all_causes, false = deaths_non_covid)) %>%  # replace NA in non-covid deaths with all cause deaths - before covid, non-covid deaths are equivalent to all deaths 
+  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
+               names_to = "deaths_type", values_to = "deaths") %>%
+  mutate(deaths_type = case_when(
+    deaths_type == "deaths_all_causes" ~ "All-cause deaths",
+    deaths_type == "deaths_non_covid" ~ "Non-COVID deaths",
+    TRUE ~ NA_character_
+  )) %>%
+  group_by(place_of_death, deaths_type) %>%
+  mutate(
+    cumulative_deaths = cumsum(replace_na(deaths, replace = 0)),
+    cumulative_historical_mean = cumsum(replace_na(deaths_mean, replace = 0)),
+    cumulative_historical_min = cumsum(replace_na(deaths_min, replace = 0)),
+    cumulative_historical_max = cumsum(replace_na(deaths_max, replace = 0))
+    ) %>%
+  ungroup %>%
+  ggplot(aes(x = date_w_c)) +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "8 weeks", limits = c(earliest_date, most_recent_date_available_2021)) +
+  scale_y_continuous(labels = function(x) format(x, big.mark = ",")) +
+  geom_ribbon(aes(ymin = cumulative_historical_min, ymax = cumulative_historical_max, fill = place_of_death), alpha = 0.4) +
+  geom_line(aes(y = cumulative_historical_mean, colour = place_of_death), linetype = "dashed", alpha = 0.8, show.legend = FALSE) +
+  geom_line(aes(y = cumulative_deaths, colour = place_of_death)) +
+  facet_wrap(~deaths_type) +
+  scale_colour_viridis_d(option = "C") +
+  scale_fill_viridis_d(option = "C") +
+  theme(
+    legend.position = "top",
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    plot.margin = margin(5, 15, 5, 5),
+    axis.text.x = element_text(angle = 60, colour = "gray40", vjust=1, hjust=1)
+  ) +
+  labs(x = "Date w/c",
+       y = "Cumulative deaths (N)",
+       title = "Cumulative deaths by place of death",
+       # subtitle = paste0(c(only_2020_text,light_shaded_area_shows_difference),collapse="\n"),
+       caption = paste0(c(text_non_covid_deaths_equivalent_to_all_cause_before_wk12,death_registrations_text,source_nrs_text), collapse="\n")
+  ) +
+  NULL
+  
+save_output_file(filename = paste0(dir_outputs,"/figure_cumulative_deaths_by_place"), extensions = c(".pdf",".svg",".png"), plot = figure_cumulative_deaths_by_place, width = 15, height = 12, dpi = 300, units = "cm")
+
+figure_cumulative_deaths_by_place
 ```
 
+
+# Number of deaths visualisations
 
 ## Total deaths in 2020 by age group & place of death
 
@@ -1613,7 +1646,6 @@ figure_annual_deaths_by_age_group_2020 <-
   geom_errorbar(aes(x = age, ymin = annual_deaths_min, ymax = annual_deaths_max)) +
   facet_wrap(~place_of_death) +
   scale_y_continuous(labels = function(x) format(x,big.mark=",")) +
-  # theme_minimal() +
   labs(x = "Age",
        y = "Deaths (N)",
        title = "Deaths in 2020 by age group & place of death",

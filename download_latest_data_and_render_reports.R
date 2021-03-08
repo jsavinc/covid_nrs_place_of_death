@@ -175,10 +175,10 @@ health_boards_uk_wide_url <- "https://github.com/tomwhite/covid-19-uk-data/files
 # https://geoportal.statistics.gov.uk/datasets/local-authority-districts-may-2020-boundaries-uk-buc
 la_shapefile_url <- "https://opendata.arcgis.com/datasets/910f48f3c4b3400aa9eb0af9f8989bbe_0.zip?outSR=%7B%22latestWkid%22%3A27700%2C%22wkid%22%3A27700%7D"
 
-
-download_shapefile(url = health_boards_shapefile_url, directory = dir_map_data, subdirectory = "hb")
-download_shapefile(url = la_shapefile_url, directory = dir_map_data, subdirectory = "la")
-download_shapefile(url = health_boards_uk_wide_url, directory = dir_map_data, subdirectory = "hb_uk_wide")
+# TODO: these have been downloaded so don't need to be downloaded again... change to check if they exist already first?
+# download_shapefile(url = health_boards_shapefile_url, directory = dir_map_data, subdirectory = "hb")
+# download_shapefile(url = la_shapefile_url, directory = dir_map_data, subdirectory = "la")
+# download_shapefile(url = health_boards_uk_wide_url, directory = dir_map_data, subdirectory = "hb_uk_wide")
 
 # Import Calibri font -----------------------------------------------------
 
