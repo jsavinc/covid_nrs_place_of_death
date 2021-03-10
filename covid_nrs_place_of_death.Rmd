@@ -36,6 +36,7 @@ library(sf)  # for mapping
 library(ggrepel)  # for 'mapping'repelling' labels/texst in ggplot
 library(patchwork)  # for assembling plots
 library(extrafont)  # for working with fonts
+library(openxlsx)  # for creating xlsx files
 ```
 
 
@@ -1286,6 +1287,28 @@ merged_deaths_age <-
 ```
 
 
+## Weekly deaths including past weekly deaths
+
+For this dataset, we simply `bind_rows` weekly deaths by year and place of death with past weekly deaths by year and location. Note that past data for years with 52 weeks includes an entry of 0 deaths for week 53, so we'll remove them, otherwise the date computation is thrown off!
+
+```{r}
+weekly_deaths_current_and_past <-
+  bind_rows(
+    weekly_deaths_overall %>%
+    filter(sex=="all" & age=="all" & place_of_death!="All") %>%  # keep only aggregated values over sex & age
+    select(year, week_number, week_number_run_over, place_of_death, matches("deaths"), -deaths_nrs_past_average_all_causes)
+    ,
+    past_deaths_overall %>%
+      rename(deaths_all_causes = number_of_deaths) %>%
+      filter(place_of_death!="All" & year!="average") %>%  # remove aggregated entries
+      mutate(year = as.integer(year)) %>%
+      filter(!(year %in% 2016:2019 & week_number==53))  # remove week 53 entries from years 2016-2019
+  ) %>%
+  mutate(date_w_c = compute_start_date_from_week_number(week_number = week_number, year_number = year))
+```
+
+
+
 # Annual deaths for 2020 & 2021
 
 For visualising data using maps, we need to compute data for the entire year. Note: the non-covid and covid-related deaths in 2020 don't add up to all cause deaths due to the covid status only starting in week 12!
@@ -1465,10 +1488,35 @@ proportions_of_current_deaths_by_place <-
   ungroup %>%
   mutate(proportion_of_total = number_of_deaths / total_deaths)
 
+
 merged_proportions_of_deaths_by_place <-
   bind_rows(
     proportions_of_historical_deaths_by_place,
     proportions_of_current_deaths_by_place
+  )
+```
+
+## Including non-COVID deaths
+
+Note: non-covid deaths are defined as all-cause deaths minus covid-related deaths. Otherwise the number of non-covid deaths only includes non-covid deaths once covid-related deaths started being reported in 2020 (week 12).
+
+```{r}
+proportions_of_current_non_covid_deaths_by_place <-
+  total_deaths_overall %>%
+  mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+  select(year, place_of_death, number_of_deaths = deaths_non_covid) %>%
+  filter(place_of_death != "All") %>%
+  group_by(year) %>%
+  mutate(
+    total_deaths = sum(number_of_deaths)
+  ) %>%
+  ungroup %>%
+  mutate(proportion_of_total = number_of_deaths / total_deaths)
+
+merged_proportions_of_non_covid_deaths_by_place <-
+  bind_rows(
+    proportions_of_historical_deaths_by_place,  # all historical deaths are non-covid!
+    proportions_of_current_non_covid_deaths_by_place
   )
 ```
 
@@ -1481,7 +1529,6 @@ merged_proportions_of_deaths_by_place <-
 loadfonts()  # load imported fonts
 # Sys.setenv(R_GSCMD = "C:/Program Files/gs/gs9.27/bin/gswin64c.exe")  # set the location of the GS file  # this not needed, just use device=device_cairo for pdfs in ggsave
 
-# theme_set(theme_minimal(base_size = 16) +
 theme_set(theme_minimal(base_size = 12) +
             theme(panel.grid.minor = element_blank(),
                   axis.title.y = element_text(margin = margin(0, 20, 0, 0)),  # remove gap to the left of y axis title and below the x axis title
@@ -1521,7 +1568,11 @@ save_output_file <- function(filename, extensions, plot, width, height, units, d
   
 walk(
   .x = extensions,
-  .f = ~ggsave(filename = paste0(filename, .x), plot = plot, width = width, height = height, units = units, dpi = dpi, device = if (.x==".pdf") cairo_pdf else NULL)
+  .f = ~function(ext) {
+    if (tolower(ext)==".pdf") device <- cairo_pdf
+    
+  ggsave(filename = paste0(filename, .x), plot = plot, width = width, height = height, units = units, dpi = dpi, device = if (.x==".pdf") cairo_pdf else NULL)
+  }
 )
 
 # TODO: remove below bit, not needed when using device=device_cairo
@@ -1571,6 +1622,10 @@ Note: I've left this unfinished, it doesn't tell a better story than the weekly 
 
 ```{r}
 text_non_covid_deaths_equivalent_to_all_cause_before_wk12 <- "Note: all-cause deaths and non-covid deaths were considered equivalent before 2020, week 12"
+
+text_annotation_cunulative_all_cause_deaths <- "Hospital all-cause deaths were within the historical range; home & care home deaths exceeded historical ranges."
+
+# TODO: these figures over- and underestimate yearly cumulative deaths (because they use weekly min/max, as opposed to min/max of cumulative deaths)
 
 figure_cumulative_deaths_by_place <-
   merged_deaths_overall %>%
@@ -2336,30 +2391,39 @@ figure_map_ratio_home_deaths_2020_to_historical_la <-
   ) %>%
   mutate(percent_increase_home_death = ratio_annual_deaths_to_historical_mean - 1) %>%
   left_join(shapefile_la, by=c("ref_area"="LAD20NM")) %>%
-  # ggplot(aes(geometry=geometry, fill=ratio_annual_deaths_to_historical_mean), colour="grey10") +
   ggplot(aes(geometry=geometry, fill=percent_increase_home_death), colour="grey10") +
   geom_sf(colour="grey10") +
-  scale_fill_viridis_b(limits = c(minimum_ratio_between_hb_and_la_home_deaths-1, maximum_ratio_between_hb_and_la_home_deaths-1), labels = function(x) scales::percent(x, accuracy = 1)) +
+  # scale_fill_viridis_b(limits = c(minimum_ratio_between_hb_and_la_home_deaths-1, maximum_ratio_between_hb_and_la_home_deaths-1), labels = function(x) scales::percent(x, accuracy = 1)) +
+  scale_fill_viridis_b(labels = function(x) scales::percent(x, accuracy = 1)) +
   theme(axis.text = element_blank(), panel.grid = element_blank()) +
   labs(x="", y="",
-       title = str_wrap("Ratio of home deaths in 2020 to historical mean 2015-2019, by Local Authority", width = 50),
-       subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
-       caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
-       # fill = "Ratio"
-       fill = "Home death increase"
+       title = str_wrap("Increased home deaths in 2020 relative to historical mean 2015-2019, by Local Authority", width=50),
+       # subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
+       # caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
+       caption = paste0(c(source_nrs_text), collapse="\n"),
+       fill = "Home death\nincrease"
        ) +
   NULL
 
-save_output_file(filename = paste0(dir_outputs,"/figure_map_ratio_home_deaths_2020_to_historical_la"), extensions = c(".pdf",".svg",".png"), plot = figure_map_ratio_home_deaths_2020_to_historical_la, width = 9, height = 12, dpi = 300, units = "in")
+save_output_file(filename = paste0(dir_outputs,"/figure_map_ratio_home_deaths_2020_to_historical_la"), extensions = c(".pdf",".svg",".png"), plot = figure_map_ratio_home_deaths_2020_to_historical_la, width = 12, height = 14, dpi = 300, units = "cm")
 
 figure_map_ratio_home_deaths_2020_to_historical_la
 ```
 
+#### Grayscale version of the same
+
+```{r}
+figure_map_ratio_home_deaths_2020_to_historical_la_bw <-
+  figure_map_ratio_home_deaths_2020_to_historical_la +
+  scale_fill_gradient(low = "grey10", high = "grey75", labels = function(x) scales::percent(x, accuracy = 1)) +
+  NULL
+
+save_output_file(filename = paste0(dir_outputs,"/figure_map_ratio_home_deaths_2020_to_historical_la_bw"), extensions = c(".pdf",".svg",".png"), plot = figure_map_ratio_home_deaths_2020_to_historical_la_bw, width = 12, height = 14, dpi = 300, units = "cm")
+```
 
 ### HB
 
 ```{r, fig.height=12, fig.width=8}
-# TODO: work out the size of these plots
 figure_map_ratio_home_deaths_2020_to_historical_hb <-
   total_deaths_hb %>%
   filter(
@@ -2372,19 +2436,37 @@ figure_map_ratio_home_deaths_2020_to_historical_hb <-
   geom_sf(colour="grey10") +
   # scale_fill_viridis_b(limits = c(minimum_ratio_between_hb_and_la_home_deaths-1, maximum_ratio_between_hb_and_la_home_deaths-1), labels = function(x) scales::percent(x, accuracy = 1)) +
   scale_fill_viridis_b(labels = function(x) scales::percent(x, accuracy = 1)) +
-  theme(axis.text = element_blank(), panel.grid = element_blank(), aspect.ratio = 1.4) +
+  theme(
+    axis.text = element_blank(), 
+    panel.grid = element_blank(), 
+    aspect.ratio = 1.4,  # needed for Scotland HB plot
+    plot.margin = margin(5,5,5,5),
+    # legend.position = c(1.2,0.4)  # this was manually tweaked until just right  # problem - edge gets cut
+    ) +
   labs(x="", y="",
-       title = str_wrap("Ratio of home deaths in 2020 to historical mean 2015-2019, by Health Board", width=50),
-       subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
-       caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
+       title = str_wrap("Increased home deaths in 2020 relative to historical mean 2015-2019, by Health Board", width=50),
+       # subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
+       # caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
+       caption = paste0(c(source_nrs_text), collapse="\n"),
        # fill = "Ratio"
-       fill = "Home death increase"
+       fill = "Home death\nincrease"
        ) +
   NULL
 
-save_output_file(filename = paste0(dir_outputs,"/figure_map_ratio_home_deaths_2020_to_historical_hb"), extensions = c(".pdf",".svg",".png"), plot = figure_map_ratio_home_deaths_2020_to_historical_hb, width = 9, height = 12, dpi = 300, units = "in")
+save_output_file(filename = paste0(dir_outputs,"/figure_map_ratio_home_deaths_2020_to_historical_hb"), extensions = c(".pdf",".svg",".png"), plot = figure_map_ratio_home_deaths_2020_to_historical_hb, width = 12, height = 14, dpi = 300, units = "cm")
 
 figure_map_ratio_home_deaths_2020_to_historical_hb
+```
+
+#### Grayscale version of the same
+
+```{r}
+figure_map_ratio_home_deaths_2020_to_historical_hb_bw <-
+  figure_map_ratio_home_deaths_2020_to_historical_hb +
+  scale_fill_gradient(low = "grey10", high = "grey75", labels = function(x) scales::percent(x, accuracy = 1)) +
+  NULL
+
+save_output_file(filename = paste0(dir_outputs,"/figure_map_ratio_home_deaths_2020_to_historical_hb_bw"), extensions = c(".pdf",".svg",".png"), plot = figure_map_ratio_home_deaths_2020_to_historical_hb_bw, width = 12, height = 14, dpi = 300, units = "cm")
 ```
 
 
@@ -2403,22 +2485,31 @@ figure_map_per_capita_covid_cases_2020_la <-
   left_join(shapefile_la, by=c("ref_area"="LAD20NM")) %>%
   ggplot(aes(geometry=geometry, fill=crude_rate_positive_per100k), colour="grey10") +
   geom_sf(colour="grey10") +
-  scale_fill_viridis_b(option = "B") +
-  # theme_minimal() +
+  scale_fill_viridis_b(option = "B", labels = function(x) format(x, big.mark=",")) +
   theme(axis.text = element_blank(), panel.grid = element_blank()) +
   labs(x="", y="",
-       title = str_wrap("Cumulative cases of COVID-19 in 2020 per 100,000 population, by Local Authority",width=50),
+       title = str_wrap("Total COVID-19 cases in 2020 per 100,000 population, by Local Authority",width=50),
        subtitle = "",
-       caption = paste0(c(areas_relatively_higher_number_cases, source_phs_text), collapse="\n"),
-       fill = str_wrap("COVID-19 cases in 2020 per 100,000 population", width = 20)
+       caption = paste0(c(source_phs_text), collapse="\n"),
+       fill = str_wrap("Cases per 100,000 population", width = 15)
        ) +
   NULL
 
-save_output_file(filename = paste0(dir_outputs,"/figure_map_per_capita_covid_cases_2020_la"), extensions = c(".pdf",".svg",".png"), plot = figure_map_per_capita_covid_cases_2020_la, width = 9, height = 12, dpi = 300, units = "in")
+save_output_file(filename = paste0(dir_outputs,"/figure_map_per_capita_covid_cases_2020_la"), extensions = c(".pdf",".svg",".png"), plot = figure_map_per_capita_covid_cases_2020_la, width = 12, height = 14, dpi = 300, units = "cm")
 
 figure_map_per_capita_covid_cases_2020_la
 ```
 
+#### Grayscale version of the same
+
+```{r}
+figure_map_per_capita_covid_cases_2020_la_bw <-
+  figure_map_per_capita_covid_cases_2020_la +
+  scale_fill_gradient(low = "grey10", high = "grey75", labels = function(x) format(x, big.mark=",")) +
+  NULL
+
+save_output_file(filename = paste0(dir_outputs,"/figure_map_per_capita_covid_cases_2020_la_bw"), extensions = c(".pdf",".svg",".png"), plot = figure_map_per_capita_covid_cases_2020_la_bw, width = 12, height = 14, dpi = 300, units = "cm")
+```
 
 ### HB
 
@@ -2429,21 +2520,32 @@ figure_map_per_capita_covid_cases_2020_hb <-
   left_join(shapefile_hb_uk_wide, by=c("ref_area"="name")) %>%
   ggplot(aes(geometry=geometry, fill=crude_rate_positive_per100k), colour="grey10") +
   geom_sf(colour="grey10") +
-  scale_fill_viridis_b(option = "B") +
-  # theme_minimal() +
+  scale_fill_viridis_b(option = "B", labels = function(x) format(x, big.mark=",")) +
   theme(axis.text = element_blank(), panel.grid = element_blank(), aspect.ratio = 1.4) +
   labs(x="", y="",
-       title = str_wrap("Cumulative cases of COVID-19 in 2020 per 100,000 population, by Health Board",width=50),
+       title = str_wrap("Total cases of COVID-19 in 2020 per 100,000 population, by Health Board",width=50),
        subtitle = "",
-       caption = paste0(c(areas_relatively_higher_number_cases, source_phs_text), collapse="\n"),
-       fill = str_wrap("COVID-19 cases in 2020 per 100,000 population", width = 20)
+       caption = paste0(c(source_phs_text), collapse="\n"),
+       fill = str_wrap("Cases per 100,000 population", width = 15)
        ) +
   NULL
 
   
-save_output_file(filename = paste0(dir_outputs,"/figure_map_per_capita_covid_cases_2020_hb"), extensions = c(".pdf",".svg",".png"), plot = figure_map_per_capita_covid_cases_2020_hb, width = 9, height = 12, dpi = 300, units = "in")
+save_output_file(filename = paste0(dir_outputs,"/figure_map_per_capita_covid_cases_2020_hb"), extensions = c(".pdf",".svg",".png"), plot = figure_map_per_capita_covid_cases_2020_hb, width = 12, height = 14, dpi = 300, units = "cm")
 
 figure_map_per_capita_covid_cases_2020_hb
+```
+
+
+#### Grayscale version of the same
+
+```{r}
+figure_map_per_capita_covid_cases_2020_hb_bw <-
+  figure_map_per_capita_covid_cases_2020_hb +
+  scale_fill_gradient(low = "grey10", high = "grey75", labels = function(x) format(x, big.mark=",")) +
+  NULL
+
+save_output_file(filename = paste0(dir_outputs,"/figure_map_per_capita_covid_cases_2020_hb_bw"), extensions = c(".pdf",".svg",".png"), plot = figure_map_per_capita_covid_cases_2020_hb_bw, width = 12, height = 14, dpi = 300, units = "cm")
 ```
 
 
@@ -2481,5 +2583,18 @@ figure_map_home_deaths_ratios_2020_and_per_capita_cases <-
   )
   
 save_output_file(filename = paste0(dir_outputs,"/figure_map_home_deaths_ratios_2020_and_per_capita_cases"), extensions = c(".pdf",".svg",".png"), plot = figure_map_home_deaths_ratios_2020_and_per_capita_cases, width = 20, height = 10, dpi = 300, units = "cm")
+```
+
+
+# Save most recent workspace for further analyses
+
+```{r}
+save.image(file = "./workspace.RData", safe = TRUE)
+```
+
+# Print session info
+
+```{r}
+sessionInfo()
 ```
 
