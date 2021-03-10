@@ -196,3 +196,11 @@ render(
   # params = params, 
   envir = new.env()
 )
+
+render(
+  input = "./paper_reporting_death_at_home_increase.Rmd",
+  output_file = paste0("paper_reporting_death_at_home_increase_",today()),
+  output_dir = dir_reports,
+  envir = new.env()
+)
+
