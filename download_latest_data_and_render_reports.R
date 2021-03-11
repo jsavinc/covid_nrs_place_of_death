@@ -204,3 +204,10 @@ render(
   envir = new.env()
 )
 
+render(
+  input = "./visualisations_for_blog.Rmd",
+  output_file = paste0("visualisations_for_blog_",today()),
+  output_dir = dir_reports,
+  envir = new.env()
+)
+

@@ -1,0 +1,157 @@
+---
+title: "Visualisations for blog on SCADR website"
+author: "Jan Savinc"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Load packages
+
+```{r, warning=FALSE, message=FALSE}
+library(tidyverse)  # for tidy workflow
+library(opendatascot)  # importing data from ScotGov open data website
+library(phsmethods)  # methods for working with PHS data
+library(readxl)  # for reading excel files
+library(lubridate)  # dealing with dates
+library(janitor)  # for cleaning column names
+library(ISOweek)  # for computing date from ISO week number + year
+library(sf)  # for mapping
+library(ggrepel)  # for 'mapping'repelling' labels/texst in ggplot
+library(patchwork)  # for assembling plots
+library(extrafont)  # for working with fonts
+library(openxlsx)  # for creating xlsx files
+library(scico)  # for continuous grayscale palette
+library(kable)  # for printing tables nicely
+```
+
+
+# Load workspace
+
+This was previously saved!
+
+```{r}
+load(file = "./workspace.RData")
+```
+
+
+# Set up output directory
+
+Because data are updated on a weekly basis, we'll have a separate directory for every week the data are updated:
+
+```{r}
+dir_blog <- paste0("./outputs/scadr_blog_",latest_data_date)
+if (!dir.exists(dir_blog)) dir.create(dir_blog)
+```
+
+
+# Tables
+
+# Visualisations
+
+## Common elements
+
+```{r}
+## modify theme with relevant font
+theme_set(theme_minimal(base_size = 12) +
+            theme(panel.grid.minor = element_blank(),
+                  axis.title.y = element_text(margin = margin(0, 20, 0, 0)),  # remove gap to the left of y axis title and below the x axis title
+                  axis.title.x = element_text(margin = margin(20, 0, 0, 0)),
+                  text=element_text(family="Calibri")
+            ))
+```
+
+
+## Home deaths by HB: Forth Valley vs Dumfries
+
+```{r}
+(home_deaths_by_hb_fv_vs_dag_2week_average <-
+  merged_deaths_hb %>%
+  filter(place_of_death %in% c("Home & other non-institution")) %>%
+  filter(ref_area %in% c("Dumfries and Galloway", "Forth Valley")) %>%
+  pivot_longer(cols = c(ma2w_deaths_all_causes, ma2w_deaths_non_covid, ma2w_deaths_mean), 
+               names_to = "deaths_type", values_to = "ma2w_deaths") %>% 
+  mutate(
+    deaths_type = factor(x = deaths_type, levels = c("ma2w_deaths_all_causes", "ma2w_deaths_non_covid", "ma2w_deaths_mean"), labels = c("All deaths", "Non Covid-19 deaths", "Historic mean"))
+    ) %>%
+  mutate(fill_text = "Historic range (min/max)") %>%  # added for ease of using aes(fill) later
+  ggplot(aes(x = date_w_c)) +
+  annotate(geom = "rect", xmin = compute_start_date_from_week_number(week_number = 1, year_number = 2021), xmax = compute_start_date_from_week_number(week_number = weeks_available_2021, year_number = 2021), ymin = -Inf, ymax = Inf, fill = "grey90", alpha = 0.2) +  # shade area - geom_rect doesn't work here
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "8 weeks", limits = c(earliest_date, most_recent_date_available_2021)) +
+  geom_ribbon(aes(ymin = ma2w_deaths_min, ymax = ma2w_deaths_max, fill = fill_text), alpha = 0.5) +
+  geom_line(aes(y = ma2w_deaths, colour = deaths_type, linetype = deaths_type)) +
+  ylim(0, NA) +  # start scale at 0 for better understanding the scale of deaths
+  facet_grid(~ref_area) +
+  scale_linetype_manual(values = c("solid","solid","dashed")) +
+  scale_fill_manual(values = c("#4477aa")) +  # specify historic range fill
+  scale_colour_manual(values = c("red","blue","grey20")) +
+  theme(
+    legend.position = "top",
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    plot.margin = margin(5, 15, 5, 5),
+    axis.text.x = element_text(angle = 60, hjust = 1),
+    legend.title = element_blank()
+  ) +
+  labs(x = "Date w/c",
+       y = "Deaths, 2-week average (N)",
+       subtitle = date_range_text,
+       caption = paste0(c(death_registrations_text, source_nrs_text), collapse="\n")
+       # colour = "Cause of death" 
+       ) +
+  # ## annotate year
+  geom_text(aes(x=ymd("2021-01-07"), y=2, label = "2021"), hjust = 0, colour = "grey40") +
+  NULL
+)
+save_output_file(filename = paste0(dir_blog,"/home_deaths_by_hb_fv_vs_dag_2week_average"), extensions = c(".pdf",".svg",".png"), plot = home_deaths_by_hb_fv_vs_dag_2week_average, width = 16, height = 12, dpi = 300, units = "cm")
+```
+
+```{r}
+total_deaths_hb %>%
+  filter(place_of_death %in% c("Home & other non-institution")) %>%
+  filter(ref_area %in% c("Dumfries and Galloway", "Forth Valley")) %>%
+  filter(year == 2020) %>%
+  select(year, place_of_death, ref_area, deaths_all_causes, ratio_annual_deaths_to_historical_mean) %>%
+  kable(caption = "Total deaths at home in 2020 for health boards.")
+
+merged_deaths_hb %>%
+  filter(place_of_death %in% c("Home & other non-institution")) %>%
+  filter(ref_area %in% c("Dumfries and Galloway", "Forth Valley")) %>%
+  group_by(year, place_of_death, ref_area, week_number) %>%
+  summarise(
+    deaths_all_causes = sum(deaths_all_causes),
+    # deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
+    deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+    .groups = "drop"
+  ) %>% 
+  mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+  left_join(
+    past_deaths_hb %>% filter(year != "average") %>% group_by(week_number, place_of_death, ref_area) %>% summarise(
+                                       average_weekly_deaths = sum(number_of_deaths) / 5,
+                                       .groups = "drop"
+                                     ),
+    by = c("week_number", "place_of_death", "ref_area")
+  ) %>% 
+  group_by(place_of_death, ref_area) %>%
+  summarise(
+    period = glue::glue("Data from week 1, 2020 to week {weeks_available_2021}, 2021"),
+    deaths_all_causes = sum(deaths_all_causes),
+    deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
+    deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+    mean_annual_deaths_2015_2019 = sum(average_weekly_deaths),
+    .groups = "drop"
+  ) %>%
+  mutate(percent_increase_deaths_over_historic = (deaths_all_causes / mean_annual_deaths_2015_2019) - 1) %>%
+  kable(caption = "Total deaths at home in data so far for health boards.")
+```
+

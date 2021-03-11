@@ -91,6 +91,61 @@ write.xlsx(x = table_1_for_paper, file = paste0(dir_paper,"/number_of_deaths_by_
 ```
 
 
+## Correlation between annual covid cases & annual deaths
+
+The interesting correlation is between the ratio of 2020 home deaths to historical mean, and the covid cases, rather than the total home deaths!
+
+```{r}
+home_deaths_and_cases_2020_hb <-
+  total_deaths_hb %>%
+  filter(str_starts(place_of_death, "Home") & year == 2020) %>%
+  left_join(
+    weekly_covid_cases_hb %>%
+      filter(year == 2020 & week_number == 53),
+    by = c("year", "ref_area")
+  ) %>%
+  mutate(deaths_non_covid_2020 = deaths_all_causes - deaths_covid_related)
+
+home_deaths_and_cases_2020_la <-
+  total_deaths_la %>%
+  filter(str_starts(place_of_death, "Home") & year == 2020) %>%
+  left_join(
+    weekly_covid_cases_la %>%
+      filter(year == 2020 & week_number == 53),
+    by = c("year", "ref_area")
+  ) %>%
+  mutate(deaths_non_covid_2020 = deaths_all_causes - deaths_covid_related)
+
+# Non-covid home deaths not included because nearly identical to all deaths
+
+
+correlations_home_deaths_and_cases <-
+  bind_rows(
+    broom::tidy(cor.test(home_deaths_and_cases_2020_hb$ratio_annual_deaths_to_historical_mean, home_deaths_and_cases_2020_hb$cumulative_positive, method = "pearson")) %>% mutate(x="Ratio home deaths 2020 to historical mean", y = "Total cases", region = "HB"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_hb$ratio_annual_deaths_to_historical_mean, home_deaths_and_cases_2020_hb$crude_rate_positive_per100k, method = "pearson")) %>% mutate(x="Ratio home deaths 2020 to historical mean", y = "Cases per 100k", region = "HB"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_la$ratio_annual_deaths_to_historical_mean, home_deaths_and_cases_2020_la$cumulative_positive, method = "pearson")) %>% mutate(x="Ratio home deaths 2020 to historical mean", y = "Total cases", region = "LA"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_la$ratio_annual_deaths_to_historical_mean, home_deaths_and_cases_2020_la$crude_rate_positive_per100k, method = "pearson")) %>% mutate(x="Ratio home deaths 2020 to historical mean", y = "Cases per 100k", region = "LA"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_hb$ratio_annual_deaths_to_historical_mean, home_deaths_and_cases_2020_hb$cumulative_positive, method = "spearman")) %>% mutate(x="Ratio home deaths 2020 to historical mean", y = "Total cases", region = "HB"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_hb$ratio_annual_deaths_to_historical_mean, home_deaths_and_cases_2020_hb$crude_rate_positive_per100k, method = "spearman")) %>% mutate(x="Ratio home deaths 2020 to historical mean", y = "Cases per 100k", region = "HB"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_la$ratio_annual_deaths_to_historical_mean, home_deaths_and_cases_2020_la$cumulative_positive, method = "spearman")) %>% mutate(x="Ratio home deaths 2020 to historical mean", y = "Total cases", region = "LA"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_la$ratio_annual_deaths_to_historical_mean, home_deaths_and_cases_2020_la$crude_rate_positive_per100k, method = "spearman")) %>% mutate(x="Ratio home deaths 2020 to historical mean", y = "Cases per 100k", region = "LA"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_hb$deaths_all_causes, home_deaths_and_cases_2020_hb$cumulative_positive, method = "pearson")) %>% mutate(x="All home deaths", y = "Total cases", region = "HB"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_hb$deaths_all_causes, home_deaths_and_cases_2020_hb$crude_rate_positive_per100k, method = "pearson")) %>% mutate(x="All home deaths", y = "Cases per 100k", region = "HB"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_la$deaths_all_causes, home_deaths_and_cases_2020_la$cumulative_positive, method = "pearson")) %>% mutate(x="All home deaths", y = "Total cases", region = "LA"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_la$deaths_all_causes, home_deaths_and_cases_2020_la$crude_rate_positive_per100k, method = "pearson")) %>% mutate(x="All home deaths", y = "Cases per 100k", region = "LA"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_hb$deaths_all_causes, home_deaths_and_cases_2020_hb$cumulative_positive, method = "spearman")) %>% mutate(x="All home deaths", y = "Total cases", region = "HB"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_hb$deaths_all_causes, home_deaths_and_cases_2020_hb$crude_rate_positive_per100k, method = "spearman")) %>% mutate(x="All home deaths", y = "Cases per 100k", region = "HB"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_la$deaths_all_causes, home_deaths_and_cases_2020_la$cumulative_positive, method = "spearman")) %>% mutate(x="All home deaths", y = "Total cases", region = "LA"),
+    broom::tidy(cor.test(home_deaths_and_cases_2020_la$deaths_all_causes, home_deaths_and_cases_2020_la$crude_rate_positive_per100k, method = "spearman")) %>% mutate(x="All home deaths", y = "Cases per 100k", region = "LA")
+  ) %>%
+  mutate(year = 2020) %>%
+  relocate(region, year, x, y)
+
+write.xlsx(x = correlations_home_deaths_and_cases, file = paste0(dir_paper, "/correlations_home_deaths_and_cases_by_region.xlsx"))
+```
+
+
+
 # Visualisations
 
 ## Common elements
@@ -105,9 +160,8 @@ theme_set(theme_minimal(base_size = 12) +
             ))
 ```
 
-## Charts: number of deaths by week & place of death
 
-### Showing historical trends as well as 2020
+## Showing historical trends as well as 2020
 
 ```{r}
 ## to put the arrows explaining historic range etc. only in one panel, need to construct a tibble to pass as data
@@ -166,7 +220,7 @@ figure1b <-
 save_output_file(filename = paste0(dir_paper,"/figure1b"), extensions = c(".pdf",".wmf",".png"), plot = figure1b, width = 28, height = 14, dpi = 300, units = "cm")
 ```
 
-### Grayscale plot of weekly deaths w/ historical range for 2020
+## Grayscale plot of weekly deaths w/ historical range for 2020
 
 ```{r}
 figure1 <-

@@ -37,6 +37,7 @@ library(ggrepel)  # for 'mapping'repelling' labels/texst in ggplot
 library(patchwork)  # for assembling plots
 library(extrafont)  # for working with fonts
 library(openxlsx)  # for creating xlsx files
+library(knitr)  # for displaying tables in rmd
 ```
 
 
@@ -1568,10 +1569,9 @@ save_output_file <- function(filename, extensions, plot, width, height, units, d
   
 walk(
   .x = extensions,
-  .f = ~function(ext) {
-    if (tolower(ext)==".pdf") device <- cairo_pdf
-    
-  ggsave(filename = paste0(filename, .x), plot = plot, width = width, height = height, units = units, dpi = dpi, device = if (.x==".pdf") cairo_pdf else NULL)
+  .f = function(ext) {
+  # if (tolower(ext)==".pdf") device <- cairo_pdf
+  ggsave(filename = paste0(filename, ext), plot = plot, width = width, height = height, units = units, dpi = dpi, device = if (tolower(ext)==".pdf") cairo_pdf else NULL)
   }
 )
 
@@ -2228,6 +2228,40 @@ save_output_file(filename = paste0(dir_outputs,"/figure_deaths_at_home_by_age"),
 figure_deaths_at_home_by_age
 ```
 
+### Percent increase in home deaths over historic average, by age
+
+```{r}
+merged_deaths_age %>%
+  filter(place_of_death %in% c("Home & other non-institution")) %>%
+  group_by(year, place_of_death, age, week_number) %>%
+  summarise(
+    deaths_all_causes = sum(deaths_all_causes),
+    deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+    .groups = "drop"
+  ) %>% 
+  mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+  left_join(
+    past_deaths_age %>% filter(year != "average") %>% group_by(week_number, place_of_death, age) %>% summarise(
+                                       average_weekly_deaths = sum(number_of_deaths) / 5,
+                                       .groups = "drop"
+                                     ),
+    by = c("week_number", "place_of_death", "age")
+  ) %>% 
+  group_by(place_of_death, age) %>%
+  summarise(
+    period = glue::glue("Data from week 1, 2020 to week {weeks_available_2021}, 2021"),
+    deaths_all_causes = sum(deaths_all_causes),
+    deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
+    deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+    mean_annual_deaths_2015_2019 = sum(average_weekly_deaths),
+    .groups = "drop"
+  ) %>%
+  mutate(percent_increase_deaths_over_historic = (deaths_all_causes / mean_annual_deaths_2015_2019) - 1) %>%
+  kable(caption = "Total deaths at home in data so far for age groups.")
+```
+
+
+
 
 ## Deaths at home by sex
 
@@ -2589,7 +2623,8 @@ save_output_file(filename = paste0(dir_outputs,"/figure_map_home_deaths_ratios_2
 # Save most recent workspace for further analyses
 
 ```{r}
-save.image(file = "./workspace.RData", safe = TRUE)
+# save.image(file = "./workspace.RData", safe = TRUE)  # this is calling .GlobalEnv, which is empty
+save(list = ls(all.names = TRUE), file = "./workspace.RData", envir = environment())
 ```
 
 # Print session info
