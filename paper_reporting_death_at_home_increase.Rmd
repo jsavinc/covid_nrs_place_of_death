@@ -55,7 +55,7 @@ load(file = "./workspace.RData")
 Because data are updated on a weekly basis, we'll have a separate directory for every week the data are updated:
 
 ```{r}
-dir_paper <- paste0("./outputs/paper_",latest_data_date)
+dir_paper <- paste0("./outputs/paper_",latest_data_modified_date)
 if (!dir.exists(dir_paper)) dir.create(dir_paper)
 ```
 
@@ -91,9 +91,7 @@ write.xlsx(x = table_1_for_paper, file = paste0(dir_paper,"/number_of_deaths_by_
 ```
 
 
-## Correlation between annual covid cases & annual deaths
-
-The interesting correlation is between the ratio of 2020 home deaths to historical mean, and the covid cases, rather than the total home deaths!
+## Table of annual covid cases & annual deaths
 
 ```{r}
 home_deaths_and_cases_2020_hb <-
@@ -117,8 +115,29 @@ home_deaths_and_cases_2020_la <-
   mutate(deaths_non_covid_2020 = deaths_all_causes - deaths_covid_related)
 
 # Non-covid home deaths not included because nearly identical to all deaths
+```
+
+We'll use the LA data, and export a table for the paper!
+
+```{r}
+table_2_paper <-
+  home_deaths_and_cases_2020_la %>%
+  mutate(
+    `Percent increase` = scales::percent(ratio_annual_deaths_to_historical_mean - 1, accuracy = 0.1),
+    `COVID cases per 100,000` = format(round(crude_rate_positive_per100k, digits=1), big.mark = ",")
+    ) %>%
+  select(`Local Authority` = ref_area, `All Deaths (Home)` = deaths_all_causes, `Percent increase`, `COVID cases per 100,000`)
+
+write.xlsx(x = table_2_paper, file = paste0(dir_paper, "/percent_increase_and_covid_cases_by_region.xlsx"))
+```
 
 
+
+### Correlation between annual covid cases & annual deaths
+
+The interesting correlation is between the ratio of 2020 home deaths to historical mean, and the covid cases, rather than the total home deaths!
+
+```{r}
 correlations_home_deaths_and_cases <-
   bind_rows(
     broom::tidy(cor.test(home_deaths_and_cases_2020_hb$ratio_annual_deaths_to_historical_mean, home_deaths_and_cases_2020_hb$cumulative_positive, method = "pearson")) %>% mutate(x="Ratio home deaths 2020 to historical mean", y = "Total cases", region = "HB"),
