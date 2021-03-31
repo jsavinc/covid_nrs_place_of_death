@@ -11,10 +11,24 @@
 
 library(tidyverse)
 library(lubridate)  # dealing with dates
-library(curl)
-library(knitr)
-library(rmarkdown)
-library(extrafont)
+library(curl)  # for downloading & last modified date extraction
+library(knitr)  # for rendering .Rmd
+library(rmarkdown)  # for rendering .Rmd
+library(extrafont)  # for setting fonts
+library(rvest)  # for extracting url from links
+library(xml2)  # for the url_absolute() function
+
+# Find latest NRS weekly deaths spreadsheet URL ---------------------------
+
+url_nrs_weekly_deaths <- "https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/vital-events/general-publications/weekly-and-monthly-data-on-births-and-deaths/deaths-involving-coronavirus-covid-19-in-scotland"
+
+all_nrs_links <-
+  read_html(url_nrs_weekly_deaths) %>% 
+  html_nodes("a") %>%
+  html_attr("href")  # find all links on the page
+
+weekly_deaths_url_relative <- all_nrs_links[which(str_detect(all_nrs_links, pattern = "covid-deaths-21-data.*xlsx"))]  # keep only links that are probably weekly deaths
+weekly_deaths_url_absolute <- url_absolute(weekly_deaths_url_relative, base = url_nrs_weekly_deaths)
 
 # Load table keeping track of latest data ---------------------------------
 
@@ -32,8 +46,9 @@ if (file.exists(file_data_sources)) {
   table_of_data_sources <- read_csv(file = file_data_sources)
 } else {
   table_of_data_sources <- tibble(
-    short_name = c("sex_age","la","hb"),
+    short_name = c("main_report","sex_age","la","hb"),
     url = c(
+      weekly_deaths_url_absolute,  # found automatically above!
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-age-sex.xlsx",
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-council-area-location.xlsx",
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-health-board-location.xlsx"
