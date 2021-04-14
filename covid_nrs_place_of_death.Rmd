@@ -994,150 +994,152 @@ weekly_covid_cases_la <-
 
 We can use the yearly cumulative case count to group geographic areas by how many cases they've had by the end of 2020.
 
+NOTE: I've commented this out - I ended up not using it. TODO: remove in a future iteration!
+
 ```{r}
-cumulative_case_2020_based_grouping_la <-
-  weekly_covid_cases_la %>% 
-  filter(ref_area!="Scotland") %>%
-  filter(year == 2020) %>% 
-  filter(week_number == max(week_number)) %>%  # keep last week
-  select(ref_area, cumulative_positive, crude_rate_positive_per100k)
-
-cumulative_case_2020_based_grouping_hb <-
-  weekly_covid_cases_hb %>% filter(year == 2020) %>% 
-  filter(ref_area!="Scotland") %>%
-  filter(year == 2020) %>% 
-  filter(week_number == max(week_number)) %>%  # keep last week 
-  select(ref_area, cumulative_positive, crude_rate_positive_per100k)
-
-k_means_clustering_cases_and_per100k_2020_hb <- map(
-  .x = 2:4,
-  .f = ~kmeans(x=cumulative_case_2020_based_grouping_hb %>% select(cumulative_positive, crude_rate_positive_per100k), centers = .x, nstart = 1e3)
-) %>% set_names(nm=paste0("k",2:4))
-
-clusters_hb <-
-  bind_cols(
-    cumulative_case_2020_based_grouping_hb %>% select(ref_area),
-    map_dfc(.x = k_means_clustering_cases_and_per100k_2020_hb, .f = function(x) return(x$cluster))
-  )
-
-cumulative_case_2020_based_grouping_hb <-
-  cumulative_case_2020_based_grouping_hb %>%
-  left_join(clusters_hb, by="ref_area") %>%
-  mutate(
-    quartiles_cases = ntile(cumulative_positive, n=4),
-    quartiles_per100k = ntile(crude_rate_positive_per100k, n=4)
-  )
-
-# TODO: apply to LA also!
-
-
-hb_cases_plots <- list()
-
-hb_cases_plots$cumulative_cases_vs_per100k <-
-  cumulative_case_2020_based_grouping_hb %>%
-  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area)) +
-  geom_point() +
-  geom_label_repel() +
-  # theme_minimal() +
-  labs(
-    x="COVID cases",
-    y="COVID cases per 100,000 population",
-    title="Cases vs. population rate"
-  ) +
-  NULL
-
-hb_cases_plots$cumulative_cases_vs_per100k_log10 <-
-  cumulative_case_2020_based_grouping_hb %>%
-  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area)) +
-  geom_point() +
-  geom_label_repel() +
-  # theme_minimal() +
-  labs(
-    x="COVID cases (log)",
-    y="COVID cases per 100,000 population (log)",
-    title="Cases vs. population rate (log scale axes)"
-  ) +
-  scale_x_log10() +
-  scale_y_log10() +
-  NULL
-
-hb_cases_plots$cumulative_cases_vs_per100k_quartiles_cases <-
-  cumulative_case_2020_based_grouping_hb %>%
-  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(quartiles_cases))) +
-  geom_point(size=3, aes(colour=factor(quartiles_cases))) +
-  scale_colour_viridis_d() +
-  geom_label_repel() +
-  # theme_minimal() +
-  labs(
-    x="COVID cases",
-    y="COVID cases per 100,000 population",
-    title="Cases vs. population rate"
-  ) +
-  NULL
-
-hb_cases_plots$cumulative_cases_vs_per100k_quartiles_cases <-
-  cumulative_case_2020_based_grouping_hb %>%
-  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(quartiles_per100k))) +
-  geom_point(size=3, aes(colour=factor(quartiles_cases))) +
-  scale_colour_viridis_d() +
-  geom_label_repel() +
-  # theme_minimal() +
-  labs(
-    x="COVID cases",
-    y="COVID cases per 100,000 population",
-    title="Cases vs. population rate",
-    colour = "Quartile (Cases per 100,000)"
-  ) +
-  NULL
-
-hb_cases_plots$cumulative_cases_vs_per100k_k2 <-
-  cumulative_case_2020_based_grouping_hb %>%
-  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(k2))) +
-  geom_point(size=3, aes(colour=factor(k2))) +
-  scale_colour_viridis_d() +
-  geom_label_repel() +
-  # theme_minimal() +
-  labs(
-    x="COVID cases",
-    y="COVID cases per 100,000 population",
-    title="Cases vs. population rate"
-  ) +
-  NULL
-
-
-hb_cases_plots$cumulative_cases_vs_per100k_k3 <-
-  cumulative_case_2020_based_grouping_hb %>%
-  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(k3))) +
-  geom_point(size=3, aes(colour=factor(k3))) +
-  scale_colour_viridis_d() +
-  geom_label_repel() +
-  # theme_minimal() +
-  labs(
-    x="COVID cases",
-    y="COVID cases per 100,000 population",
-    title="Cases vs. population rate"
-  ) +
-  NULL
-
-
-hb_cases_plots$cumulative_cases_vs_per100k_k4 <-
-  cumulative_case_2020_based_grouping_hb %>%
-  ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(k4))) +
-  geom_point(size=3, aes(colour=factor(k4))) +
-  scale_colour_viridis_d() +
-  geom_label_repel() +
-  # theme_minimal() +
-  labs(
-    x="COVID cases",
-    y="COVID cases per 100,000 population",
-    title="Cases vs. population rate"
-  ) +
-  NULL
-
-
-hb_cases_plots_assembled <- patchwork::wrap_plots(hb_cases_plots, ncol = 2)
-
-hb_cases_plots_assembled
+# cumulative_case_2020_based_grouping_la <-
+#   weekly_covid_cases_la %>% 
+#   filter(ref_area!="Scotland") %>%
+#   filter(year == 2020) %>% 
+#   filter(week_number == max(week_number)) %>%  # keep last week
+#   select(ref_area, cumulative_positive, crude_rate_positive_per100k)
+# 
+# cumulative_case_2020_based_grouping_hb <-
+#   weekly_covid_cases_hb %>% filter(year == 2020) %>% 
+#   filter(ref_area!="Scotland") %>%
+#   filter(year == 2020) %>% 
+#   filter(week_number == max(week_number)) %>%  # keep last week 
+#   select(ref_area, cumulative_positive, crude_rate_positive_per100k)
+# 
+# k_means_clustering_cases_and_per100k_2020_hb <- map(
+#   .x = 2:4,
+#   .f = ~kmeans(x=cumulative_case_2020_based_grouping_hb %>% select(cumulative_positive, crude_rate_positive_per100k), centers = .x, nstart = 1e3)
+# ) %>% set_names(nm=paste0("k",2:4))
+# 
+# clusters_hb <-
+#   bind_cols(
+#     cumulative_case_2020_based_grouping_hb %>% select(ref_area),
+#     map_dfc(.x = k_means_clustering_cases_and_per100k_2020_hb, .f = function(x) return(x$cluster))
+#   )
+# 
+# cumulative_case_2020_based_grouping_hb <-
+#   cumulative_case_2020_based_grouping_hb %>%
+#   left_join(clusters_hb, by="ref_area") %>%
+#   mutate(
+#     quartiles_cases = ntile(cumulative_positive, n=4),
+#     quartiles_per100k = ntile(crude_rate_positive_per100k, n=4)
+#   )
+# 
+# # TODO: apply to LA also!
+# 
+# 
+# hb_cases_plots <- list()
+# 
+# hb_cases_plots$cumulative_cases_vs_per100k <-
+#   cumulative_case_2020_based_grouping_hb %>%
+#   ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area)) +
+#   geom_point() +
+#   geom_label_repel() +
+#   # theme_minimal() +
+#   labs(
+#     x="COVID cases",
+#     y="COVID cases per 100,000 population",
+#     title="Cases vs. population rate"
+#   ) +
+#   NULL
+# 
+# hb_cases_plots$cumulative_cases_vs_per100k_log10 <-
+#   cumulative_case_2020_based_grouping_hb %>%
+#   ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area)) +
+#   geom_point() +
+#   geom_label_repel() +
+#   # theme_minimal() +
+#   labs(
+#     x="COVID cases (log)",
+#     y="COVID cases per 100,000 population (log)",
+#     title="Cases vs. population rate (log scale axes)"
+#   ) +
+#   scale_x_log10() +
+#   scale_y_log10() +
+#   NULL
+# 
+# hb_cases_plots$cumulative_cases_vs_per100k_quartiles_cases <-
+#   cumulative_case_2020_based_grouping_hb %>%
+#   ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(quartiles_cases))) +
+#   geom_point(size=3, aes(colour=factor(quartiles_cases))) +
+#   scale_colour_viridis_d() +
+#   geom_label_repel() +
+#   # theme_minimal() +
+#   labs(
+#     x="COVID cases",
+#     y="COVID cases per 100,000 population",
+#     title="Cases vs. population rate"
+#   ) +
+#   NULL
+# 
+# hb_cases_plots$cumulative_cases_vs_per100k_quartiles_cases <-
+#   cumulative_case_2020_based_grouping_hb %>%
+#   ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(quartiles_per100k))) +
+#   geom_point(size=3, aes(colour=factor(quartiles_cases))) +
+#   scale_colour_viridis_d() +
+#   geom_label_repel() +
+#   # theme_minimal() +
+#   labs(
+#     x="COVID cases",
+#     y="COVID cases per 100,000 population",
+#     title="Cases vs. population rate",
+#     colour = "Quartile (Cases per 100,000)"
+#   ) +
+#   NULL
+# 
+# hb_cases_plots$cumulative_cases_vs_per100k_k2 <-
+#   cumulative_case_2020_based_grouping_hb %>%
+#   ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(k2))) +
+#   geom_point(size=3, aes(colour=factor(k2))) +
+#   scale_colour_viridis_d() +
+#   geom_label_repel() +
+#   # theme_minimal() +
+#   labs(
+#     x="COVID cases",
+#     y="COVID cases per 100,000 population",
+#     title="Cases vs. population rate"
+#   ) +
+#   NULL
+# 
+# 
+# hb_cases_plots$cumulative_cases_vs_per100k_k3 <-
+#   cumulative_case_2020_based_grouping_hb %>%
+#   ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(k3))) +
+#   geom_point(size=3, aes(colour=factor(k3))) +
+#   scale_colour_viridis_d() +
+#   geom_label_repel() +
+#   # theme_minimal() +
+#   labs(
+#     x="COVID cases",
+#     y="COVID cases per 100,000 population",
+#     title="Cases vs. population rate"
+#   ) +
+#   NULL
+# 
+# 
+# hb_cases_plots$cumulative_cases_vs_per100k_k4 <-
+#   cumulative_case_2020_based_grouping_hb %>%
+#   ggplot(data=., aes(x=cumulative_positive, y=crude_rate_positive_per100k, label=ref_area, shape=factor(k4))) +
+#   geom_point(size=3, aes(colour=factor(k4))) +
+#   scale_colour_viridis_d() +
+#   geom_label_repel() +
+#   # theme_minimal() +
+#   labs(
+#     x="COVID cases",
+#     y="COVID cases per 100,000 population",
+#     title="Cases vs. population rate"
+#   ) +
+#   NULL
+# 
+# 
+# hb_cases_plots_assembled <- patchwork::wrap_plots(hb_cases_plots, ncol = 2)
+# 
+# hb_cases_plots_assembled
 ```
 
 
@@ -2667,8 +2669,9 @@ figure_deaths_at_home_by_sex
   # pivot_longer(cols = c(deaths, annual_deaths_mean), names_to = "deaths_type", values_to = "deaths") %>%
   ggplot() +
   # geom_col(aes(x = cause_of_death, fill = cause_of_death, y = deaths, group = deaths_type, linetype = deaths_type), position = "dodge", colour = "grey10") +
-  geom_col(aes(x = cause_of_death, fill = cause_of_death, y = deaths), position = "dodge", colour = "grey10") +
-  geom_point(aes(x = cause_of_death, y = annual_deaths_mean), position = "dodge", colour = "grey10") +
+  geom_col(aes(x = cause_of_death, fill = cause_of_death, y = deaths), colour = "grey10") +
+  # geom_point(aes(x = cause_of_death, y = annual_deaths_mean), colour = "grey10") +
+  geom_line(aes(x = cause_of_death, y = annual_deaths_mean), colour = "grey10") +
   scale_fill_viridis_d() +
   facet_wrap(~place_of_death) +
   NULL
