@@ -1,0 +1,245 @@
+---
+title: "Using UPRN to determine household composition"
+author: "Jan Savinc"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+```
+
+
+# Overview
+
+Universal Property Reference Number (UPRN) is a high-resolution identifier for distinguishing properties. This allows research to include household structure and work out from administrative records which individuals live in the same property. In the Deaths at home study, we can use it to determine which people lived with others (as opposed to alone) in the same household at the time of death.
+
+
+# Problem
+
+Death records span a period of time, and so do address changes recorded in CHI data. Furthermore, we probably want to only include adults living in the same household because we are interested in the availability of informal care (with children we can assume the care relationship is the other way round - e.g. the deceased person was a carer/guardian for the child).
+
+There is computational complexity involved because we will be consulting the entirety of CHI data, e.g. all people residing in Scotland and known to health services. It is therefore useful to plan the algorithm to reducing the data required as much as possible.
+
+Because of the longitudinal nature of the data, we need to work out when address changes happened, to ensure that people lived in the same property at the same time.
+
+Here is a high level overview of what we need to achieve:
+
+**Find CHI records that match the UPRN of the deceased individuals, where**:
+
+* the individuals in the CHI records were resident at that address at the time of the deceased person's death (specified by month & year)
+  - CHI records have a date of address change linked to each address
+  - from that we can define "episodes" of living at an address - starting from the date of change, and ending on the date of the next address entry (if different)
+  - we are looking for records where the date of death falls within the "episode" of living at that UPRN
+* they were aged 18+ at the date of the deceased person's death
+* they were alive at the date of the deceased person's death
+* note that we will likely encounter situations where a deceased person was a household member to another deceased person, so we can't simply separate the data into deceased and alive individuals
+
+
+# Outline of algorithm
+
+0. Extract from death records the deceased persons' dates of death & UPRN at death, and an id linking the same individual to their CHI records
+1. Narrow down CHI data to individuals who ever lived at the same UPRN as the deceased persons, joining on the deceased person's id & death date
+  - This is a many-to-many mapping - the same person may have lived with multiple deceased people over time; the same deceased person may have lived with multiple people over time; an alive person at time A becomes a deceased person at time B; various combinations thereof; etc.
+2. Remove CHI records where the CHI person id matches the deceased person ID (this is so we don't double-count the deceased person in their own home)
+3. Keep records only if age at date of death of deceased person was 18+
+4. Compute period of residence at UPRN from change of address & date of death if the person died
+5. Keep records if date of death of deceased person falls within period of residence
+6. Finally, for every combination of deceased person id and UPRN, compute the number of distinct CHI ids - this is the number of same household members aged 18+
+
+
+## Join operation
+
+In step 1, we filter CHI records to those that ever included a UPRN matching a deceased person's UPRN & join the deceased person's id and date of death.
+This can be implemented as a series of steps:
+
+1. First, an `inner join` operation, keeping only those records that have a matching UPRN - this will massively reduce the amount of data in consideration so it's likely worth doing first; we are left only with records for individuals who ever lived at the relevant UPRN, and only with the record containing that UPRN
+2. Add back UPRN records for the remaining individuals - this is needed to compute how long they lived at that UPRN
+  - Start by taking the unique person ids of the data from the previous step
+  - This followed by a `left_join` on the person ids from the CHI data - we now have all CHI records but only for the individuals who lived at a deceased person's UPRN at any point
+3. For the records where the UPRN matches the deceased person's UPRN, compute the period of time at the UPRN:
+  - sort address changes by date
+  - get the next entry's address change date - this is the end of the period lived at relevant UPRN
+
+Step 3 is the most computationally intensive, because it requires a search through each person's records separately! The smaller the dataset at this point, the faster this step can be.
+
+Note that step 3 could be done first, followed by 1, skipping step 2. The practicality of this depends on the size of the data.
+
+
+## Same algorithm simplified, using minimal data
+
+1. Extract unique UPRN values from deaths file,
+2. Filter CHI records to keep records with UPRN matching unique UPRN value from step 1,
+3. Extract person ids from step 2,
+4. Get CHI records matching person ids from step 3,
+5. Order CHI records from step 4 by date and compute "episode" end date by using the following records' start dates
+6. Filter CHI records so only those matching the UPRN from death records (keep only records from step 2, i.e. UPRN "episodes")
+7. Join death records to CHI episodes on UPRN
+8. Filter to keep CHI episodes where the date of death is between date address change and date "episode" end
+
+This leaves us with one CHI record for each individual who lived with a deceased person at the same UPRN at the time the deceased person died.
+
+# Coded example
+
+```{r}
+data_deaths <- tribble(
+  ~id_death, ~uprn_death, ~date_death,
+  "H", "d", ymd("2020-04-01"),
+  "I", "e", ymd("2020-06-01"),
+  "J", "f", ymd("2020-08-01")
+)
+
+# TODO: add date of birth? and explain what kinds of situations are included in the CHI data below
+
+data_chi <- tribble(
+  ~id_chi, ~uprn_chi, ~date_changed,
+  "H", "d", ymd("2001-01-01"),
+  "I", "e", ymd("2010-04-01"),
+  "J", "f", ymd("2012-09-01"),  # the deceased people at their addresses
+  "A", "d", ymd("2020-05-01"),  # lived at same address but moved after death
+  "A", "n", ymd("2020-07-01"),  # at other address afterwards
+  "B", "x", ymd("2020-01-01"),  # not relevant
+  "C", "x", ymd("2020-01-01"),  # not relevant
+  "D", "x", ymd("2020-01-01"),  # not relevant
+  "E", "x", ymd("2020-01-01"),  # not relevant
+  "F", "x", ymd("2020-01-01"),  # not relevant
+  "G", "e", ymd("2020-01-01")  # moved in with I before I died
+)
+
+step1_1 <- data_chi %>% inner_join(data_deaths, by = c("uprn_chi"="uprn_death"))
+step1_2 <- step1_1 %>% select(id_chi) %>% distinct %>% left_join(data_chi) %>% left_join(data_deaths, by = c("uprn_chi"="uprn_death"))
+step1_3 <- step1_2 %>% group_by(id_chi) %>% arrange(date_changed) %>% mutate(date_moved_out = lead(date_changed, n=1, default = ymd("2022-01-01")))
+
+step2 <- step1_3 %>% filter(id_chi != id_death)
+step3 <- step2 #%>% filter(age_in_years_chi_at_death >= 18)  # TODO: include age/dob
+step4_and_5 <- step3 %>% filter(date_changed < date_death & date_death < date_moved_out)
+step6_final <- 
+  step4_and_5 %>% 
+  group_by(id_death, uprn_chi) %>% 
+  summarise(number_of_other_adult_residents = n_distinct(id_chi), .groups = "drop") %>%
+  tidyr::complete(nesting(id_death = data_deaths$id_death, uprn_chi = data_deaths$uprn_death), fill(number_of_other_adult_residents = 0))  # TODO: fix this, doesn't work!
+
+```
+
+
+# Simulating effect of operation order
+
+Note: I was stuck for a while waiting for the combination of `dplyr::group_by()` and `dplyr::lead` to finish computing. At least on my setup, this is very slow - the "simpler" (less tidy) approach is to sort the dataset by id & date - this way we get continuous runs of records belonging to the same person - then compute the `lead` of the date (i.e. the end date for each episode) and `lead` of the person id. We can then set the "end date" to `NA` where the id doesn't match the next record's id (i.e. when one person's run of records ends and another person's begins).
+
+I thought this was what `group_by()` + `lead` was doing under the hood, but for some reason it's incredibly slow!
+
+```{r}
+set.seed(42)
+n_individuals = 5e6
+n_addresses = 2e6
+min_records = 1
+max_records = 6
+
+n_deaths_year = 6e5
+years = 2015:2020
+total_deaths = length(years)*n_deaths_year
+
+# possible_dates_character <- 
+#   as.character(
+#     seq.Date(
+#       from = as.Date("2015-01-01"),  # TODO: complete this, and then sample from the vector instead, possibly character to make it less intense!
+#       to = as.Date("2020-12-31"),
+#       by = "days"
+#     ))
+
+fake_deaths <- tibble(
+  id_death = sample(x = 1:n_individuals, size = total_deaths, replace = FALSE), # unique ids of people who died
+  uprn_death = sample(x=1:n_addresses, size = total_deaths, replace = TRUE),
+  date_death = as.Date(x = rdunif(n = total_deaths,  # random dates
+                                 a = as.integer(as.Date("2015-01-01")),
+                                 b = as.integer(as.Date("2020-12-31"))
+                                 ),
+                      origin = "1970-01-01")
+)
+
+fake_chi <- 
+  tibble(
+    id_chi = 1:n_individuals,  # integer id
+    n_rows = round(runif(n = n_individuals, min = min_records, max = max_records))  # a random number of records for each id, these are "uncounted" in the next step
+    ) %>%
+  uncount(weights = n_rows) %>%  # create N entries for each id based on above random N
+  mutate(
+    uprn_chi = sample(x = 1:n_addresses, size = nrow(.), replace = TRUE),  # sample addresses with replacement
+    date_address_change = as.Date(x = rdunif(n = nrow(.),  # random dates
+                                 a = as.integer(as.Date("2015-01-01")),
+                                 b = as.integer(as.Date("2020-12-31"))),
+                      origin = "1970-01-01")
+    ) %>%
+  arrange(id_chi, date_address_change) %>%
+  group_by(id_chi) %>%
+  mutate(episode_id = 1:n()) %>%
+  ungroup
+
+
+
+# 1. Extract unique UPRN values from deaths file,
+# 2. Filter CHI records to keep records with UPRN matching unique UPRN value from step 1,
+# 3. Extract person ids from step 2,
+# 4. Get CHI records matching person ids from step 3,
+# 5. Order CHI records from step 4 by date and compute "episode" end date by using the following records' start dates
+# 6. Filter CHI records so only those matching the UPRN from death records (keep only records from step 2, i.e. UPRN "episodes")
+# 7. Join death records to CHI episodes on UPRN
+# 8. Filter to keep CHI episodes where the date of death is between date address change and date "episode" end
+
+chi_ids_with_matching_uprn <-
+  fake_chi %>% 
+  filter(uprn_chi %in% fake_deaths$uprn_death) %>%  # Step 1 + 2: get unique UPRNs and only keep CHI records where they match the UPRN
+  select(id_chi) %>%  # Step 3
+  distinct  # we omitted getting unique UPRNs, so we'll get unique IDs here instead - this is faster than running unique() on the uPRNs for some reason!
+
+chi_with_matching_uprn <- 
+  chi_ids_with_matching_uprn %>% left_join(fake_chi, by = "id_chi")  # Step 4
+
+sorted_by_date <- chi_with_matching_uprn %>%
+  arrange(id_chi, date_address_change)  # Step 5
+
+episodic_chi <-
+  sorted_by_date %>%
+  mutate(
+    date_moved_address = lead(date_address_change, n=1, default = NA_Date_),  # get date from next entry
+    id_date_end = lead(id_chi, n=1, default = NA_integer_),  # get person id from next entry - used for checking that the next entry actually belongs to the same person!
+    date_moved_address = if_else(id_chi!=id_date_end, NA_Date_, date_moved_address)  # set date to NA if it doesn't belong to same person
+  ) %>% 
+  select(-id_date_end)  # remove next entry id, no longer needed
+
+household_members <-
+  episodic_chi %>%
+  inner_join(fake_deaths, by = c("uprn_chi"="uprn_death")) %>%  # step 6 & 7: inner_join ensures only records with matching uprn are retained; step 7 joins the death records
+  filter(date_death > date_address_change & date_death < date_moved_address)  # step 8: keep only records where the death occurred during uprn "episode"
+
+## this takes forever
+# sorted_by_date %>%
+#   group_by(id_chi) %>%
+#   mutate(episode_id = 1:n()) %>%
+#   # mutate(date_moved_address = lead(date_address_change, n=1, default = ymd("2021-01-01"))) %>%  # takes forever! both with 5e5 and 5e6 people
+#   mutate(date_moved_address = lead(date_address_change, n=1, default = NA_Date_)) %>%  # takes forever! both with 5e5 and 5e6 people
+#   ungroup
+
+number_of_household_members <-
+  household_members %>%
+  group_by(id_death) %>%
+  summarise(num_household_members = n_distinct(id_chi), .groups = "drop") %>%
+  tidyr::complete(id_death = fake_deaths$id_death, fill = list(num_household_members = 0))
+
+# chis_with_matching_uprn_episodic <- 
+#   chi_with_matching_uprn %>%
+#   select(id_chi, episode_id) %>%
+#   mutate(next_episode_id = episode_id + 1) %>%
+#   left_join(fake_chi, by = c("id_chi", "next_episode_id"="episode_id")) %>%
+#   mutate(date_episode_end = replace_na(date_address_change, replace = ymd("2021-01-01")))
+#   
+
+```
