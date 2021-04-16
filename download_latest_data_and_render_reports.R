@@ -205,10 +205,16 @@ dir_reports <- "./reports"
 if (!dir.exists(dir_reports)) dir.create(dir_reports)
 
 render(
-  input = "./covid_nrs_place_of_death.Rmd",
-  output_file = paste0("covid_nrs_place_of_death_",today()),
+  input = "./covid_nrs_place_of_death_data.Rmd",
+  output_file = paste0("covid_nrs_place_of_death_data_",today()),
   output_dir = dir_reports,
-  # params = params, 
+  envir = new.env()
+)
+
+render(
+  input = "./covid_nrs_place_of_death_visualisations.Rmd",
+  output_file = paste0("covid_nrs_place_of_death_visualisations",today()),
+  output_dir = dir_reports,
   envir = new.env()
 )
 
