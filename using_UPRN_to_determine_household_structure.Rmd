@@ -15,6 +15,7 @@ editor_options:
 knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
+library(lubridate)  # for working with dates
 ```
 
 
@@ -147,13 +148,13 @@ n_deaths_year = 6e5
 years = 2015:2020
 total_deaths = length(years)*n_deaths_year
 
-# possible_dates_character <- 
-#   as.character(
-#     seq.Date(
-#       from = as.Date("2015-01-01"),  # TODO: complete this, and then sample from the vector instead, possibly character to make it less intense!
-#       to = as.Date("2020-12-31"),
-#       by = "days"
-#     ))
+possible_dates_character <-  # I thought that keeping dates as character vector until I need to compute with them would speed things up, but it's okay actually
+  as.character(
+    seq.Date(
+      from = as.Date("2015-01-01"),  # TODO: complete this, and then sample from the vector instead, possibly character to make it less intense!
+      to = as.Date("2020-12-31"),
+      by = "days"
+    ))
 
 fake_deaths <- tibble(
   id_death = sample(x = 1:n_individuals, size = total_deaths, replace = FALSE), # unique ids of people who died
@@ -164,6 +165,8 @@ fake_deaths <- tibble(
                                  ),
                       origin = "1970-01-01")
 )
+
+# fake_deaths %>% ggplot(aes(x=date_death)) + geom_bar()
 
 fake_chi <- 
   tibble(
@@ -178,12 +181,7 @@ fake_chi <-
                                  b = as.integer(as.Date("2020-12-31"))),
                       origin = "1970-01-01")
     ) %>%
-  arrange(id_chi, date_address_change) %>%
-  group_by(id_chi) %>%
-  mutate(episode_id = 1:n()) %>%
-  ungroup
-
-
+  arrange(id_chi, date_address_change)
 
 # 1. Extract unique UPRN values from deaths file,
 # 2. Filter CHI records to keep records with UPRN matching unique UPRN value from step 1,
@@ -232,14 +230,7 @@ number_of_household_members <-
   household_members %>%
   group_by(id_death) %>%
   summarise(num_household_members = n_distinct(id_chi), .groups = "drop") %>%
-  tidyr::complete(id_death = fake_deaths$id_death, fill = list(num_household_members = 0))
+  tidyr::complete(id_death = fake_deaths$id_death, fill = list(num_household_members = 0))  # add records of individuals with no household members
 
-# chis_with_matching_uprn_episodic <- 
-#   chi_with_matching_uprn %>%
-#   select(id_chi, episode_id) %>%
-#   mutate(next_episode_id = episode_id + 1) %>%
-#   left_join(fake_chi, by = c("id_chi", "next_episode_id"="episode_id")) %>%
-#   mutate(date_episode_end = replace_na(date_address_change, replace = ymd("2021-01-01")))
-#   
-
+number_of_household_members %>% ggplot(aes(x=num_household_members)) + geom_bar() + theme_minimal()
 ```
