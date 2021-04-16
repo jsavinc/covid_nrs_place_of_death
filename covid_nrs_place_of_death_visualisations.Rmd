@@ -978,14 +978,30 @@ table_deaths_by_cause_2020 %>%
   filter(year == 2020 & cause_of_death!="All" & !place_of_death %in% c("Other","All")) %>%
   # pivot_longer(cols = c(deaths, annual_deaths_mean), names_to = "deaths_type", values_to = "deaths") %>%
   ggplot() +
-  # geom_col(aes(x = cause_of_death, fill = cause_of_death, y = deaths, group = deaths_type, linetype = deaths_type), position = "dodge", colour = "grey10") +
+  # geom_col(aes(x = cause_of_death, fill = cause_of_death, y = deaths, group = deaths_type, alpha = deaths_type), position = "dodge", colour = "grey10") +
   geom_col(aes(x = cause_of_death, fill = cause_of_death, y = deaths), colour = "grey10") +
-  # geom_point(aes(x = cause_of_death, y = annual_deaths_mean), colour = "grey10") +
-  # geom_line(aes(x = cause_of_death, y = annual_deaths_mean), colour = "grey10") +
+  geom_point(aes(x = cause_of_death, y = annual_deaths_mean)) +
+  coord_flip() +
   scale_fill_viridis_d() +
   facet_wrap(~place_of_death) +
+  # scale_alpha_manual(
+  #   values = c(0.4,1), labels = c("Historic mean", "2020 deaths")
+  # ) +
+  scale_y_continuous(labels = function(x) format(x, big.mark = ",")) +
+  theme(
+    legend.position = "top", 
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    legend.title = element_blank()
+    ) +
+  labs(
+    x = NULL,
+    y = "Deaths",
+    subtitle = "Bars are 2020 deaths, dots are (•) mean annual deaths 2015-2019"
+  ) +
   NULL
 )
+
+save_output_file(filename = paste0(dir_outputs,"/figure_annual_deaths_by_cause"), extensions = c(".pdf",".svg",".png"), plot = figure_annual_deaths_by_cause, width = 12, height = 6, dpi = 300, units = "in")
 ```
 
 
