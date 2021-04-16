@@ -42,7 +42,7 @@ library(knitr)  # for printing tables nicely
 This was previously saved!
 
 ```{r}
-load(file = "./workspace.RData")
+load(file = "./workspace_with_visualisations.RData")
 ```
 
 
@@ -256,4 +256,7 @@ table_increase_home_deaths_by_hb <-
 
 write_csv(x = table_increase_home_deaths_by_hb, file = paste0(dir_blog,"/table_increase_home_deaths_by_hb.csv"))
 ```
+
+
+# Home deaths by age group
 

@@ -46,7 +46,7 @@ library(scico)  # for continuous grayscale palette
 This was previously saved!
 
 ```{r}
-load(file = "./workspace.RData")
+load(file = "./workspace_with_visualisations.RData")
 ```
 
 
