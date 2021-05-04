@@ -272,7 +272,10 @@ figure1 <-
   NULL
 
 ## figure for a bit less than half A4 page is approx 14*11cm
-save_output_file(filename = paste0(dir_paper,"/figure1"), extensions = c(".pdf",".svg",".png"), plot = figure1, width = 28, height = 11, units = "cm", dpi = 300)
+save_output_file(filename = paste0(dir_paper,"/figure1"), extensions = c(".pdf",".svg",".png",".tiff"), plot = figure1, width = 28, height = 11, units = "cm", dpi = 300)
+
+
+save_output_file(filename = paste0(dir_paper,"/figure1_hires"), extensions = c(".png"), plot = figure1, width = 28, height = 11, dpi = 1200, units = "cm")
 ```
 
 
@@ -332,7 +335,23 @@ figure2cd_bw <-
       ), 
     nrow = 1)
 
+
 save_output_file(filename = paste0(dir_paper,"/figure2ab_bw"), extensions = c(".pdf",".wmf",".png"), plot = figure2ab_bw, width = 20, height = 12, dpi = 300, units = "cm")
 save_output_file(filename = paste0(dir_paper,"/figure2cd_bw"), extensions = c(".pdf",".wmf",".png"), plot = figure2cd_bw, width = 20, height = 12, dpi = 300, units = "cm")
+
+
+
+
+figure2 <-
+  wrap_plots(
+    list(
+      figure2c_bw,
+      figure2d_bw
+      ), 
+    nrow = 1)
+
+save_output_file(filename = paste0(dir_paper,"/figure2"), extensions = c(".pdf",".wmf",".png",".tiff"), plot = figure2, width = 20, height = 12, dpi = 300, units = "cm")
+
+save_output_file(filename = paste0(dir_paper,"/figure2_hires"), extensions = c(".png"), plot = figure2, width = 20, height = 12, dpi = 1200, units = "cm")
 ```
 
