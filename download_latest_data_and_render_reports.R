@@ -72,7 +72,7 @@ if (file.exists(file_historical_data_sources)) {
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-health-board-location-15-19.xlsx"
     )
   ) %>% mutate(
-    filename = basename(url),
+    # filename = basename(url),
     last_modified = ymd_hms("2020-01-01_01:01:01"),  # start with a date in the past
     path_latest = NA_character_  
   )
@@ -98,20 +98,25 @@ if (file.exists(file_case_trends_data_sources)) {
 
 # Function to download latest data if available ---------------------------
 
-download_file_if_newer_available <- function(url, filename, last_modified, directory, record_tbl) {
+# download_file_if_newer_available <- function(url, filename, last_modified, directory, record_tbl) {
+download_file_if_newer_available <- function(url, short_name, filename=NULL, last_modified, directory, record_tbl) {  # note:removed filename argument, I can get it from the url!
   todays_file <- curl_fetch_disk(url, path = tempfile())
-  message(paste0("Checking if we have latest file for: ",filename))
+  message(paste0("Checking if we have latest file for: ",short_name))
+  message(paste0("The latest local file is: ", basename(record_tbl$path_latest[which(record_tbl$short_name == short_name)])))
   message(paste0("Latest file was last modified at: ",todays_file$modified))
   if (last_modified < todays_file$modified) {
     message("Newer file available, downloading...")
     date_string <- strftime(todays_file$modified, format = "%F")  # prefix filename with last modified date
     ## copy file to folder
-    filename_prefixed <- paste0(date_string,"_",filename)
-    file_path <- file.path(directory, filename_prefixed)
+    if (is.null(filename)) {  # if a filename is not provided infer name from url
+      filename <- basename(url)
+      }
+    file_path <-  file.path(directory, paste0(date_string,"_",filename))
     file.copy(from = todays_file$content, to = file_path, overwrite = TRUE)
     ## set last_modified date & save
-    record_tbl$last_modified[which(record_tbl$filename == filename)] <- todays_file$modified
-    record_tbl$path_latest[which(record_tbl$filename == filename)] <- file_path
+    record_tbl$last_modified[which(record_tbl$short_name == short_name)] <- todays_file$modified
+    record_tbl$filename[which(record_tbl$short_name == short_name)] <- filename
+    record_tbl$path_latest[which(record_tbl$short_name == short_name)] <- file_path
   } else {
     message("We already have the most recent file! No download needed.")
   }
@@ -136,7 +141,8 @@ for (x in 1:nrow(table_of_data_sources)) {
   table_of_data_sources <- 
     download_file_if_newer_available(
       url = table_of_data_sources$url[x],
-      filename = table_of_data_sources$filename[x],
+      # filename = table_of_data_sources$filename[x],
+      short_name = table_of_data_sources$short_name[x],
       last_modified = table_of_data_sources$last_modified[x],
       directory = download_dir, 
       record_tbl = table_of_data_sources
@@ -147,7 +153,8 @@ for (x in 1:nrow(table_of_historical_data_sources)) {
   table_of_historical_data_sources <- 
     download_file_if_newer_available(
       url = table_of_historical_data_sources$url[x],
-      filename = table_of_historical_data_sources$filename[x],
+      short_name = table_of_historical_data_sources$short_name[x],
+      # filename = table_of_historical_data_sources$filename[x],
       last_modified = table_of_historical_data_sources$last_modified[x],
       directory = historical_dir, 
       record_tbl = table_of_historical_data_sources
