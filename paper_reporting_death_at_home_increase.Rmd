@@ -132,7 +132,6 @@ write.xlsx(x = table_2_paper, file = paste0(dir_paper, "/percent_increase_and_co
 ```
 
 
-
 ### Correlation between annual covid cases & annual deaths
 
 The interesting correlation is between the ratio of 2020 home deaths to historical mean, and the covid cases, rather than the total home deaths!
@@ -161,6 +160,23 @@ correlations_home_deaths_and_cases <-
   relocate(region, year, x, y)
 
 write.xlsx(x = correlations_home_deaths_and_cases, file = paste0(dir_paper, "/correlations_home_deaths_and_cases_by_region.xlsx"))
+```
+
+## Table of deaths by age
+
+```{r}
+table_3_paper <-
+  total_deaths_age %>%
+  filter(str_starts(place_of_death, "Home") & year == 2020) %>%
+  filter(!age %in% c("0","1-14")) %>%
+  mutate(deaths_non_covid_2020 = deaths_all_causes - deaths_covid_related) %>%
+  mutate(
+    `Percent increase (All home deaths)` = scales::percent(ratio_annual_deaths_to_historical_mean - 1, accuracy = 0.1)
+    ) %>%
+  select(`Age` = age, `All Deaths (Home)` = deaths_all_causes, `Non-covid deaths (Home)` = deaths_non_covid_2020, `Percent increase (All home deaths)`)
+
+
+write.xlsx(x = table_3_paper, file = paste0(dir_paper, "/percent_increase_by_age.xlsx"))
 ```
 
 
@@ -276,6 +292,48 @@ save_output_file(filename = paste0(dir_paper,"/figure1"), extensions = c(".pdf",
 
 
 save_output_file(filename = paste0(dir_paper,"/figure1_hires"), extensions = c(".png"), plot = figure1, width = 28, height = 11, dpi = 1200, units = "cm")
+```
+
+
+## Grayscale plot of weekly deaths by age, 2020
+
+```{r}
+(figure3 <-
+  merged_deaths_age %>%
+  filter(year == 2020) %>%
+  filter(!age %in% c("0","1-14")) %>%  # remove youngest age groups
+  # filter(!place_of_death %in% c("All","Other")) %>%
+  filter(str_starts(place_of_death,"Home")) %>%
+  # mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+  mutate(fill_text = "Historical range") %>%  # added for ease of using aes(fill) later
+  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid, deaths_mean), 
+               names_to = "deaths_type", values_to = "deaths") %>%
+  mutate(deaths_type = factor(x = deaths_type, levels = c("deaths_all_causes", "deaths_non_covid", "deaths_mean"), labels = c("All deaths", "Non Covid-19 deaths", "Historical mean"))) %>%
+  ggplot(aes(x = week_number_run_over)) +
+  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max, fill = fill_text), alpha = 0.5) +
+  geom_line(aes(y = deaths, linetype = deaths_type, colour = deaths_type)) +
+  scale_colour_manual(values = c("black", "black", "gray30")) +
+  scale_x_continuous(breaks = seq(0,60,by=10)) +
+  ylim(0, NA) +  # start scale at 0 for better understanding the scale of deaths
+  facet_wrap(~age) +
+  scale_fill_manual(values = c("grey70")) +
+  theme(
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.box.spacing = unit(0, "cm"),
+    plot.caption = element_text(size = 10, colour = "gray60")
+    ) +
+  labs(x = "Week number",
+       y = "Deaths (N)",
+       caption = paste0(c(death_registrations_text, source_nrs_text), collapse="\n")
+       ) +
+  NULL
+)
+## figure for a bit less than half A4 page is approx 14*11cm
+save_output_file(filename = paste0(dir_paper,"/figure3"), extensions = c(".pdf",".svg",".png",".tiff"), plot = figure3, width = 28, height = 11, units = "cm", dpi = 300)
+
+
+save_output_file(filename = paste0(dir_paper,"/figure3_hires"), extensions = c(".png"), plot = figure3, width = 28, height = 11, dpi = 1200, units = "cm")
 ```
 
 
