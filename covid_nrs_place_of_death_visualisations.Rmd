@@ -963,6 +963,16 @@ table_deaths_by_cause_2020 <-
     ) %>%
   ungroup
 
+## get "canonical" order for causes of death in 2020
+order_of_causes_of_death <- table_deaths_by_cause_2020 %>% filter(place_of_death == "All") %>% arrange(desc(deaths)) %>% pull(cause_of_death)
+
+## sort the table by "canonical" order
+table_deaths_by_cause_2020 <-
+  table_deaths_by_cause_2020 %>%
+  group_by(year, place_of_death) %>%
+  arrange(cause_of_death = factor(cause_of_death, levels = order_of_causes_of_death), .by_group = TRUE) %>%
+  ungroup
+
 table_deaths_by_cause_2020 %>%
   mutate(across(.cols = matches("ratio|prop"), .fns = ~scales::percent(.x, accuracy=0.1))) %>%
   select(Period = year, "Place of death" = place_of_death, "Cause of death" = cause_of_death, "Annual deaths" = deaths, "Proportion of annual deaths" = proportion_annual_deaths, "Historic average" = annual_deaths_mean, "Historic proportion" = historical_proportion_annual_deaths, "Ratio 2020 to historic" = ratio_annual_deaths_to_historical_mean) %>%
@@ -977,10 +987,16 @@ table_deaths_by_cause_2020 %>%
   total_deaths_cause_of_death %>%
   filter(year == 2020 & cause_of_death!="All" & !place_of_death %in% c("Other","All")) %>%
   # pivot_longer(cols = c(deaths, annual_deaths_mean), names_to = "deaths_type", values_to = "deaths") %>%
+   mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+   mutate(
+     cause_of_death = factor(cause_of_death %>% str_wrap(., width = 15), levels = order_of_causes_of_death %>% str_wrap(., width = 15)),  # needed to allow converting to a number for plotting the line segments; str_wrap breaks the text up into lines
+     cause_of_death = fct_rev(cause_of_death)
+     ) %>%
   ggplot() +
   # geom_col(aes(x = cause_of_death, fill = cause_of_death, y = deaths, group = deaths_type, alpha = deaths_type), position = "dodge", colour = "grey10") +
-  geom_col(aes(x = cause_of_death, fill = cause_of_death, y = deaths), colour = "grey10") +
-  geom_point(aes(x = cause_of_death, y = annual_deaths_mean)) +
+  geom_col(aes(x = cause_of_death, fill = cause_of_death, y = deaths), alpha = 0.8, colour = "grey10") +
+  # geom_point(aes(x = cause_of_death, y = annual_deaths_mean)) +
+  geom_segment(aes(x = as.numeric(cause_of_death)-0.45, xend = as.numeric(cause_of_death)+0.45, y = annual_deaths_mean, yend = annual_deaths_mean), size = 1) +
   coord_flip() +
   scale_fill_viridis_d() +
   facet_wrap(~place_of_death) +
@@ -989,14 +1005,18 @@ table_deaths_by_cause_2020 %>%
   # ) +
   scale_y_continuous(labels = function(x) format(x, big.mark = ",")) +
   theme(
-    legend.position = "top", 
+    # legend.position = "top", 
+    legend.position = "none", 
     plot.caption = element_text(size = 10, colour = "gray60"),
-    legend.title = element_blank()
+    legend.title = element_blank(), 
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank()
     ) +
   labs(
     x = NULL,
     y = "Deaths",
-    subtitle = "Bars are 2020 deaths, dots are (•) mean annual deaths 2015-2019"
+    # subtitle = "Bars are 2020 deaths, dots are (•) mean annual deaths 2015-2019"
+    subtitle = "Bars are 2020 deaths, line segments are mean annual deaths 2015-2019"
   ) +
   NULL
 )
