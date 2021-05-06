@@ -413,3 +413,18 @@ save_output_file(filename = paste0(dir_paper,"/figure2"), extensions = c(".pdf",
 save_output_file(filename = paste0(dir_paper,"/figure2_hires"), extensions = c(".png"), plot = figure2, width = 20, height = 12, dpi = 1200, units = "cm")
 ```
 
+
+## Causes of death
+
+```{r}
+(figure4 <-
+  figure_annual_deaths_by_cause +
+  scale_fill_grey() +
+  labs(x = NULL, y = NULL, title = NULL, subtitle = NULL)
+)
+
+
+save_output_file(filename = paste0(dir_paper,"/figure4"), extensions = c(".pdf",".svg",".png"), plot = figure4, width = 10, height = 3, dpi = 300, units = "in")
+save_output_file(filename = paste0(dir_paper,"/figure4_hires"), extensions = c(".png"), plot = figure4, width = 10, height = 3, dpi = 1200, units = "in")
+```
+
