@@ -100,6 +100,9 @@ if (file.exists(file_case_trends_data_sources)) {
 
 # download_file_if_newer_available <- function(url, filename, last_modified, directory, record_tbl) {
 download_file_if_newer_available <- function(url, short_name, filename=NULL, last_modified, directory, record_tbl) {  # note:removed filename argument, I can get it from the url!
+  if (short_name == "main_report") {
+    url <- weekly_deaths_url_absolute  # replace with latest url of main report 
+  }
   todays_file <- curl_fetch_disk(url, path = tempfile())
   message(paste0("Checking if we have latest file for: ",short_name))
   message(paste0("The latest local file is: ", basename(record_tbl$path_latest[which(record_tbl$short_name == short_name)])))
@@ -114,6 +117,9 @@ download_file_if_newer_available <- function(url, short_name, filename=NULL, las
     file_path <-  file.path(directory, paste0(date_string,"_",filename))
     file.copy(from = todays_file$content, to = file_path, overwrite = TRUE)
     ## set last_modified date & save
+    if (short_name == "main_report") {
+      record_tbl$url <- url  # replace with latest url of main report 
+    }
     record_tbl$last_modified[which(record_tbl$short_name == short_name)] <- todays_file$modified
     record_tbl$filename[which(record_tbl$short_name == short_name)] <- filename
     record_tbl$path_latest[which(record_tbl$short_name == short_name)] <- file_path
