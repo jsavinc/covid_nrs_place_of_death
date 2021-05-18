@@ -1710,6 +1710,59 @@ merged_proportions_of_non_covid_deaths_by_place <-
 ```
 
 
+# Excess deaths
+
+## Excess deaths by place of death
+
+```{r}
+total_deaths_overall %>%
+  mutate(excess_deaths = deaths_all_causes - annual_deaths_min)
+
+excess_deaths_2020_table <-
+  past_deaths_overall %>%
+  group_by(year, place_of_death) %>%
+  summarise(annual_deaths = sum(number_of_deaths), .groups = "drop") %>%
+  filter(year==2019) %>%
+  pivot_wider(names_from = year, names_prefix = "annual_deaths_", values_from = annual_deaths) %>%
+  left_join(
+    total_deaths_overall %>% filter(year==2020), by = "place_of_death"
+    ) %>%
+  mutate(
+    excess_deaths_vs_2019 = deaths_all_causes - annual_deaths_2019,
+    # excess_deaths_vs_2019_prop = excess_deaths_vs_2019 / sum(excess_deaths_vs_2019),
+    excess_deaths_vs_mean = deaths_all_causes - annual_deaths_mean,
+    excess_deaths_vs_min = deaths_all_causes - annual_deaths_min,
+    excess_deaths_vs_max = deaths_all_causes - annual_deaths_max
+  ) %>%
+  select(year, place_of_death, annual_deaths_2019, annual_deaths_mean, deaths_all_causes, matches("excess")) %>%
+  mutate(disaggregated_place_of_death = place_of_death != "All") %>%
+  group_by(disaggregated_place_of_death) %>%
+  mutate(
+    proportion_excess_deaths_vs_2019 = excess_deaths_vs_2019 / sum(excess_deaths_vs_2019),
+    proportion_excess_deaths_vs_mean = excess_deaths_vs_mean / sum(excess_deaths_vs_mean)
+  ) %>%
+  ungroup %>%
+  select(-disaggregated_place_of_death)
+
+excess_deaths_table_2019 <-
+  excess_deaths_2020_table %>%
+  select(place_of_death, annual_deaths_2019, deaths_all_causes, excess_deaths_vs_2019, proportion_excess_deaths_vs_2019) %>%
+  mutate(
+    proportion_excess_deaths_vs_2019 = scales::percent(proportion_excess_deaths_vs_2019, accuracy = 0.1)
+    ) %>%
+  mutate_if(is.numeric, ~format(.x, big.mark=",")) %>%
+  rename(
+    "Place of death" = place_of_death,
+    "2019 deaths" = annual_deaths_2019,
+    "2020 deaths (all causes)" = deaths_all_causes,
+    "Excess deaths" = excess_deaths_vs_2019,
+    "Proportion of excess deaths by place" = proportion_excess_deaths_vs_2019
+  )
+
+write.xlsx(x = list("Excess w.r.t. 2019" = excess_deaths_table_2019), file = paste0(dir_outputs,"/excess_deaths_Scotland_compared_to_2019.xlsx"))
+```
+
+
 # Deaths over time
 
 
