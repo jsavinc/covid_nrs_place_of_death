@@ -118,7 +118,7 @@ download_file_if_newer_available <- function(url, short_name, filename=NULL, las
     file.copy(from = todays_file$content, to = file_path, overwrite = TRUE)
     ## set last_modified date & save
     if (short_name == "main_report") {
-      record_tbl$url <- url  # replace with latest url of main report 
+      record_tbl$url[which(record_tbl$short_name == short_name)] <- url  # replace with latest url of main report 
     }
     record_tbl$last_modified[which(record_tbl$short_name == short_name)] <- todays_file$modified
     record_tbl$filename[which(record_tbl$short_name == short_name)] <- filename
