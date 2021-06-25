@@ -1202,7 +1202,7 @@ save_output_file(filename = paste0(dir_outputs,"/figure_annual_deaths_by_cause")
   labs(
     x = NULL,
     y = "Deaths",
-    subtitle = paste0(c(paste0("Bars are deaths ",str_remove_all(date_range_text,"Data ")),"Line segments are mean annual deaths 2015-2019"),collapse="\n")
+    subtitle = paste0(c(paste0("Bars are deaths ",str_remove_all(date_range_text,"Data ")),"Line segments are mean deaths for same period 2015-2019"),collapse="\n")
   ) +
   NULL
 )
@@ -1240,7 +1240,7 @@ save_output_file(filename = paste0(dir_outputs,"/figure_deaths_by_cause"), exten
   labs(
     x = NULL,
     y = "Deaths",
-    subtitle = paste0(c(paste0("Bars are deaths ",str_remove_all(date_range_text,"Data ")),"Line segments are mean annual deaths 2015-2019"),collapse="\n")
+    subtitle = paste0(c(paste0("Bars are deaths ",str_remove_all(date_range_text,"Data ")),"Line segments are mean deaths for same period 2015-2019"),collapse="\n")
   ) +
   NULL
 )
@@ -1257,20 +1257,21 @@ save_output_file(filename = paste0(dir_outputs,"/figure_deaths_by_cause_all_plac
   merged_deaths_cause_of_death %>%
   filter(str_starts(place_of_death,"Home")) %>%
   filter(cause_of_death != "All") %>%
-  # filter(!place_of_death %in% c("All","Other")) %>%
   pivot_longer(cols = c(deaths_mean, number_of_deaths), names_to = "deaths_type", values_to = "number_of_deaths") %>%
-  filter(!(deaths_type=="deaths_mean"&cause_of_death=="COVID-19")) %>%  # remove historical average for covid, it's 0 anyway
+  mutate(deaths_type = if_else(deaths_type == "deaths_mean", true = "Historic mean 2015-2019", false = "Deaths in 2020 & 2021")) %>%
+  filter(!(deaths_type=="deaths_mean" & cause_of_death=="COVID-19")) %>%  # remove historical average for covid, it's 0 anyway
   mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
   ggplot(aes(x = date_w_c)) +
-  # annotate(geom = "rect", xmin = compute_start_date_from_week_number(week_number = 1, year_number = 2021), xmax = compute_start_date_from_week_number(week_number = weeks_available_2021, year_number = 2021), ymin = -Inf, ymax = Inf, fill = "grey90", alpha = 0.2) +  # shade area - geom_rect doesn't work here
+  annotate(geom = "rect", xmin = compute_start_date_from_week_number(week_number = 1, year_number = 2021), xmax = compute_start_date_from_week_number(week_number = weeks_available_2021, year_number = 2021), ymin = -Inf, ymax = Inf, fill = "skyblue", alpha = 0.2) +  # shade area - geom_rect doesn't work here
+  annotation_custom(grid::textGrob(label = "2021",  # solution to place annotation in same place in each facet
+                                 x = unit(0.75, "npc"), 
+                                 y = unit(0.95, "npc"),
+                                 gp = grid::gpar(col = "black"))) +
   scale_x_date(date_labels = "%d-%m-%y", date_breaks = "8 weeks", limits = c(earliest_date, most_recent_date_available_2021)) +
-  # geom_line(aes(y = number_of_deaths, colour = cause_of_death, linetype = deaths_type)) +
-  geom_line(aes(y = number_of_deaths, linetype = deaths_type)) +
-  scale_colour_viridis_d() +
-  scale_linetype_manual(labels = c("Historic mean 2015-2019","Deaths since 2020"), values = c("dashed","solid")) +
-  # geom_line(aes(y = number_of_deaths  , colour = deaths_type)) +
-  # geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
-  facet_wrap(cause_of_death~place_of_death, scales = "free_y") +
+  geom_line(aes(y = number_of_deaths, colour = deaths_type, linetype = deaths_type)) +
+  scale_linetype_manual(values = c("solid", "dashed")) +
+  scale_colour_manual(values = c("grey10","grey70")) +
+  facet_wrap(cause_of_death~., scales = "free_y") +
   theme(
     legend.position = "top",
     legend.title = element_blank(),
@@ -1280,7 +1281,7 @@ save_output_file(filename = paste0(dir_outputs,"/figure_deaths_by_cause_all_plac
   ) +
   labs(x = "Date w/c",
        y = "Weekly Deaths (N)",
-       subtitle = date_range_text,
+       subtitle = paste0(c("Deaths registered at home", date_range_text), collapse = "\n"),
        caption = paste0(c("Note that y-axis scale varies across panels!",death_registrations_text,source_nrs_text), collapse="\n")
        ) +
   NULL
