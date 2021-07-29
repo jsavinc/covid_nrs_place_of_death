@@ -1,0 +1,197 @@
+---
+title: "Exploring ISD(S)1 Data"
+author: "Jan Savinc"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Load packages
+
+```{r, warning=FALSE, message=FALSE}
+## install packages from github if not yet available!
+# remotes::install_github("datasciencescotland/opendatascot", force = TRUE)
+# remotes::install_github("Health-SocialCare-Scotland/phsmethods", force = TRUE)
+
+library(tidyverse)  # for tidy workflow
+library(opendatascot)  # importing data from ScotGov open data website
+library(phsmethods)  # methods for working with PHS data
+library(readxl)  # for reading excel files
+library(curl)  # for downloading stuff
+library(lubridate)  # dealing with dates
+library(janitor)  # for cleaning column names
+library(ISOweek)  # for computing date from ISO week number + year
+library(sf)  # for mapping
+library(ggrepel)  # for 'mapping'repelling' labels/texst in ggplot
+library(patchwork)  # for assembling plots
+library(extrafont)  # for working with fonts
+library(openxlsx)  # for creating xlsx files
+library(knitr)  # for displaying tables in rmd
+```
+
+
+# Introduction
+
+ISD(S)1 contains annual & quarterly statistics of hospital bed usage amongst other things. It is submitted on a monthly basis so monthly data should also be available!
+
+The structure of the file is complicated - it contains entries grouped by health board, location, and specialty, so it allocates beds to specialties within each hospital.
+
+
+From the notes accompanying ISD(S)1:
+
+>Please note this release includes Scotland going into emergency measures due to COVID-19. During this pandemic, NHS Boards, hospitals, and healthcare providers have been required to change their normal way of working to manage their COVID-19 response. As such, this is directly impacting on the volume of hospital activity and trends observed. For example, the inpatient and outpatient activity has decreased by just over a fifth when comparing October to December 2020 to the same quarter last year.
+
+>For this publication, it was decided not to contact the NHS Boards directly to ask whether they were aware of data quality issues which may affect this publication, as we would normally do. This decision was taken in order to allow the NHS Boards to focus their efforts locally on their COVID-19 response.
+
+>Many trends observed will be influenced by and attributable to the data completeness levels, small numbers, and the impact of COVID-19 highlighted above. Therefore, caution should be taken when comparing quarterly information.
+
+>From 2020 onwards, there has been a marked increase in the use of the XSU (Unspecified) specialty across many of the NHS Boards. This is most likely due to their COVID response and not allocating beds to specific specialties.
+
+>Records have been identified with potentially duplicate information coming from more than one NHS Board for the same location. The numbers concerned are very low and the impact is not significant. Additionally, there are issues with the allocation of NHS hospitals to NHS Boards and private hospital activity to the ‘non-NHS Provider code’. Data Management have investigated and found that in many of these cases, this can be attributed to visiting consultant activity and NHS Boards sending their patients to private locations.
+
+
+## Availability within ODS
+
+```{r}
+all_datasets <- ods_all_datasets()
+
+all_datasets %>% filter(str_detect(Name, pattern = regex("isd|bed|occup", ignore_case = TRUE)))
+## none of these are exactly what we're looking for
+```
+
+
+# Download data & load
+
+The latest ISD(S)1 dataset is available from the [OpenData NHS website]() - this includes a data dictionary also!
+
+ISD(S)1 is also included in the [PHS release here](https://publichealthscotland.scot/publications/acute-hospital-activity-and-nhs-beds-information-quarterly/acute-hospital-activity-and-nhs-beds-information-quarterly-quarter-ending-31-december-2020/data-summary/)
+
+the list of locations in use in the NHS is available from the [National Reference Files website of ISD](https://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/), with the layout described [at this address](https://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/SMR-reference-file-layouts.asp#2)
+
+The list of specialty codes is available [from the National Reference Files](http://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/Nat-Ref-Files/specialt?63379634), with the [layout described here](http://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/SMR-reference-file-layouts.asp#12)
+
+
+```{r}
+isds1_download_dir <- "./downloaded_data/"
+isds1_url <- "https://www.opendata.nhs.scot/dataset/554b0e7a-ccac-4bb6-82db-1a8b306fcb36/resource/f272bb7d-5320-4491-84c1-614a2c064007/download/beds_by_nhs_board_of_treatment_and_specialty.csv"
+isd1_local_path <- file.path(isds1_download_dir, "beds_by_nhs_board_of_treatment_and_specialty.csv")
+if (!file.exists(isd1_local_path)) curl_download(url = isds1_url, destfile = isds1_local_path, quiet = FALSE)
+
+location_codes_url <- "http://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/Nat-Ref-Files/location?63379634"
+location_codes_local_path <- file.path(isds1_download_dir, "location_codes")
+if (!file.exists(location_codes_local_path)) curl_download(url = location_codes_url, destfile = location_codes_local_path, quiet = FALSE)
+
+location_codes <- read_fwf(file = location_codes_local_path, fwf_cols(
+  location_code = c(1,5),
+  location_name = c(6,75)
+))
+
+specialty_codes_url <- "http://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/Nat-Ref-Files/specialt?63379634"
+specialty_codes_local_path <- file.path(isds1_download_dir, "specialty_codes")
+if (!file.exists(specialty_codes_local_path)) curl_download(url = specialty_codes_url, destfile = specialty_codes_local_path, quiet = FALSE)
+
+specialty_codes <- read_fwf(file = specialty_codes_local_path, fwf_cols(
+  specialty_code = c(1,4),
+  specialty_description = c(5,54)#,
+  # lower_age = c(55,57),
+  # upper_age = c(58,60)
+))
+```
+
+# Human-readable fields
+
+```{r}
+isds1 <- read_csv(isd1_local_path, guess_max = 1e5) %>%
+  mutate(
+    year = as.integer(str_sub(Quarter, 1, 4)),
+    quarter = as.integer(str_sub(Quarter, 6, 6)),
+    health_board = match_area(HB),
+    AvailableBeds = AllStaffedBeds - TotalOccupiedBeds
+  ) %>%
+  left_join(location_codes, by = c("Location" = "location_code")) %>%
+  left_join(specialty_codes, by = c("Specialty" = "specialty_code"))
+  
+```
+
+# Printing some of the ISD(S)1 data
+
+```{r}
+isds1 %>% count(health_board)
+
+isds1 %>%
+  filter(year == 2020 & quarter == 4) %>%
+  filter(health_board == "Orkney") %>%
+  count(location_name)
+
+## palliative medicine data
+isds1 %>%
+  filter(year == 2020) %>%
+  filter(!is.na(location_name)) %>%
+  filter(specialty_description == "Palliative Medicine") %>%
+  select(year, quarter, health_board, location_name, SpecialtyName, PercentageOccupancy, PercentageOccupancyQF) %>%
+  print(n = nrow(.))
+
+isds1 %>% 
+  filter(!is.na(location_name)) %>%
+  filter(year %in% 2015:2021) %>%
+  filter(specialty_description == "Palliative Medicine") %>%
+  select(Quarter, health_board, location_name, AllStaffedBeds, TotalOccupiedBeds, PercentageOccupancy) # %>%
+  # mutate(testp = round(TotalOccupiedBeds/AllStaffedBeds*100, digits=1))  # this is exactly it
+
+## occupancy plot
+isds1 %>% 
+  filter(!is.na(location_name)) %>%
+  filter(year %in% 2015:2021) %>%
+  filter(specialty_description == "Palliative Medicine") %>%
+  ggplot(data = .) +
+  geom_point(aes(x = Quarter, y = PercentageOccupancy, group = location_name, colour = location_name), position = position_dodge()) +
+  geom_line(aes(x = Quarter, y = PercentageOccupancy, group = location_name, colour = location_name)) +
+  facet_wrap(health_board ~ .) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45))
+
+## total beds occupied
+isds1 %>% 
+  filter(!is.na(location_name)) %>%
+  filter(year %in% 2015:2021) %>%
+  filter(specialty_description == "Palliative Medicine") %>%
+  ggplot(data = .) +
+  geom_point(aes(x = Quarter, y = TotalOccupiedBeds, group = location_name, colour = location_name), position = position_dodge()) +
+  geom_line(aes(x = Quarter, y = TotalOccupiedBeds, group = location_name, colour = location_name)) +
+  facet_wrap(health_board ~ .) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45))
+
+## available beds (all beds - total occ.)
+isds1 %>% 
+  filter(!is.na(location_name)) %>%
+  filter(year %in% 2015:2021) %>%
+  filter(specialty_description == "Palliative Medicine") %>%
+  ggplot(data = .) +
+  geom_point(aes(x = Quarter, y = AvailableBeds, group = location_name, colour = location_name), position = position_dodge()) +
+  geom_line(aes(x = Quarter, y = AvailableBeds, group = location_name, colour = location_name)) +
+  facet_wrap(health_board ~ .) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45))
+```
+
+There seems to be quite a bit of year to year variation in hospital occupancy in palliative medicine specialty entries, so it's not clear that it changed with Covid (i.e. Q2 of 2020 and later)
+It might still help explain the variation of home deaths during covid, when looked at regionally
+
+# Print session info
+
+```{r}
+sessionInfo()
+```
+
