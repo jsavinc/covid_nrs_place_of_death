@@ -587,12 +587,6 @@ weekly_deaths_overall <-
   recalculate_number_of_deaths_after_recoding_cause_of_death %>%  # not needed here probably, but no harm in including it
   pivot_wider(names_from = cause_of_death, values_from = number_of_deaths) %>%  # this dataset is well-formatted and has no implicit missing values!
   mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related)  # compute non-covid deaths from the other two figures - will be NA where either is missing
-  
-
-# weekly_deaths_sex_age_file <-
-#   curl_download(url = "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-age-sex.xlsx",
-#                 destfile = tempfile(),
-#                 quiet = FALSE)
 
 
 weekly_deaths_sex_age <-  # structure here is a bit more complicated - headers in row 3, but sex & age headers in row 4
@@ -689,6 +683,37 @@ weekly_deaths_age <-
   filter(sex!="all") %>%
   group_by(week_number, week_number_run_over, year, date_w_c, age, place_of_death) %>%
   summarise(across(starts_with("deaths_"), ~sum(.x)), .groups = "drop")
+```
+
+#### Fixing overall weekly deaths
+
+As of 28 July 2021, the [ScotGov open data website](https://statistics.gov.scot/data/deaths-involving-coronavirus-covid-19) reports the non-covid deaths as if they were all-cause deaths, and this messed up my entire pipeline! Below is a quick fix, where instead of using the open data API, I construct the 'overall' weekly deaths data, `weekly_deaths_overall`, from the NRS-published ad-hoc query data on deaths by sex.
+
+```{r}
+## quick fix whilst the open data for overall deaths doesn't work...
+# TODO: remove this chunk once no longer needed
+
+
+weekly_deaths_overall_averages_and_other_bits <-  # keep the nrs-computed past averages from the broken data, as well as other columns needed
+  weekly_deaths_overall %>%
+  select(-c(deaths_covid_related, deaths_non_covid, deaths_all_causes))
+  # select(age, sex, place_of_death, week_number_run_over, deaths_nrs_past_average_all_causes, ref_area, ref_period)
+
+weekly_deaths_overall <-  # this rewrites weekly_deaths_overall!
+  weekly_deaths_sex %>%
+  group_by_all() %>%
+  ungroup(sex, starts_with("deaths_")) %>%
+  summarise(across(starts_with("deaths_"), .fns = sum), .groups = "drop") %>%  # adds together figures between F & M
+  ({function (x) bind_rows(  # this takes the data at this point and a copy of it, and then summarises the copy across place of death, creating an 'All' category, the figures for which are sums across place of death
+    x,
+    x %>% group_by_all() %>% ungroup(place_of_death, starts_with("deaths_")) %>% summarise(across(starts_with("deaths_"), .fns = sum), .groups = "drop") %>% mutate(place_of_death = "All")
+  )}) %>%
+  mutate(sex = "all", age = "all") %>%  # add these so that I don't end up breaking any further analysis
+  arrange(week_number_run_over, place_of_death) %>%
+  left_join(
+    weekly_deaths_overall_averages_and_other_bits,
+    by = c("week_number", "week_number_run_over", "year", "date_w_c", "place_of_death", "sex", "age")
+    )  # add the average numbers in also so I don't break any further analysis
 ```
 
 
