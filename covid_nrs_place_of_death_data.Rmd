@@ -694,26 +694,26 @@ As of 28 July 2021, the [ScotGov open data website](https://statistics.gov.scot/
 # TODO: remove this chunk once no longer needed
 
 
-weekly_deaths_overall_averages_and_other_bits <-  # keep the nrs-computed past averages from the broken data, as well as other columns needed
-  weekly_deaths_overall %>%
-  select(-c(deaths_covid_related, deaths_non_covid, deaths_all_causes))
-  # select(age, sex, place_of_death, week_number_run_over, deaths_nrs_past_average_all_causes, ref_area, ref_period)
-
-weekly_deaths_overall <-  # this rewrites weekly_deaths_overall!
-  weekly_deaths_sex %>%
-  group_by_all() %>%
-  ungroup(sex, starts_with("deaths_")) %>%
-  summarise(across(starts_with("deaths_"), .fns = sum), .groups = "drop") %>%  # adds together figures between F & M
-  ({function (x) bind_rows(  # this takes the data at this point and a copy of it, and then summarises the copy across place of death, creating an 'All' category, the figures for which are sums across place of death
-    x,
-    x %>% group_by_all() %>% ungroup(place_of_death, starts_with("deaths_")) %>% summarise(across(starts_with("deaths_"), .fns = sum), .groups = "drop") %>% mutate(place_of_death = "All")
-  )}) %>%
-  mutate(sex = "all", age = "all") %>%  # add these so that I don't end up breaking any further analysis
-  arrange(week_number_run_over, place_of_death) %>%
-  left_join(
-    weekly_deaths_overall_averages_and_other_bits,
-    by = c("week_number", "week_number_run_over", "year", "date_w_c", "place_of_death", "sex", "age")
-    )  # add the average numbers in also so I don't break any further analysis
+# weekly_deaths_overall_averages_and_other_bits <-  # keep the nrs-computed past averages from the broken data, as well as other columns needed
+#   weekly_deaths_overall %>%
+#   select(-c(deaths_covid_related, deaths_non_covid, deaths_all_causes))
+#   # select(age, sex, place_of_death, week_number_run_over, deaths_nrs_past_average_all_causes, ref_area, ref_period)
+# 
+# weekly_deaths_overall <-  # this rewrites weekly_deaths_overall!
+#   weekly_deaths_sex %>%
+#   group_by_all() %>%
+#   ungroup(sex, starts_with("deaths_")) %>%
+#   summarise(across(starts_with("deaths_"), .fns = sum), .groups = "drop") %>%  # adds together figures between F & M
+#   ({function (x) bind_rows(  # this takes the data at this point and a copy of it, and then summarises the copy across place of death, creating an 'All' category, the figures for which are sums across place of death
+#     x,
+#     x %>% group_by_all() %>% ungroup(place_of_death, starts_with("deaths_")) %>% summarise(across(starts_with("deaths_"), .fns = sum), .groups = "drop") %>% mutate(place_of_death = "All")
+#   )}) %>%
+#   mutate(sex = "all", age = "all") %>%  # add these so that I don't end up breaking any further analysis
+#   arrange(week_number_run_over, place_of_death) %>%
+#   left_join(
+#     weekly_deaths_overall_averages_and_other_bits,
+#     by = c("week_number", "week_number_run_over", "year", "date_w_c", "place_of_death", "sex", "age")
+#     )  # add the average numbers in also so I don't break any further analysis
 ```
 
 
