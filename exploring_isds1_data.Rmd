@@ -81,6 +81,8 @@ the list of locations in use in the NHS is available from the [National Referenc
 
 The list of specialty codes is available [from the National Reference Files](http://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/Nat-Ref-Files/specialt?63379634), with the [layout described here](http://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/SMR-reference-file-layouts.asp#12)
 
+An alternative location for downloading [hospital bed data is here](https://publichealthscotland.scot/media/7634/beds-by-nhs-board-of-treatment-and-specialty-to-december-2020.csv). This appears to be somewhat more neatly formatted and ready for analysis.
+
 
 ```{r}
 isds1_download_dir <- "./downloaded_data/"
@@ -127,6 +129,8 @@ isds1 <- read_csv(isd1_local_path, guess_max = 1e5) %>%
 # Printing some of the ISD(S)1 data
 
 ```{r}
+if (!dir.exists("./isd(s)1_exploration")) dir.create("./isd(s)1_exploration")
+
 isds1 %>% count(health_board)
 
 isds1 %>%
@@ -150,16 +154,21 @@ isds1 %>%
   # mutate(testp = round(TotalOccupiedBeds/AllStaffedBeds*100, digits=1))  # this is exactly it
 
 ## occupancy plot
-isds1 %>% 
+(occupancy_2020_palliative_specialty_hospitals <-
+  isds1 %>% 
   filter(!is.na(location_name)) %>%
   filter(year %in% 2015:2021) %>%
   filter(specialty_description == "Palliative Medicine") %>%
   ggplot(data = .) +
-  geom_point(aes(x = Quarter, y = PercentageOccupancy, group = location_name, colour = location_name), position = position_dodge()) +
-  geom_line(aes(x = Quarter, y = PercentageOccupancy, group = location_name, colour = location_name)) +
+  geom_point(aes(x = Quarter, y = PercentageOccupancy, group = location_name, colour = location_name), position = position_dodge(width = 0.5)) +
+  geom_line(aes(x = Quarter, y = PercentageOccupancy, group = location_name, colour = location_name), position = position_dodge(width = 0.5)) +
+  annotate(geom = "rect", xmin = "2020Q2", xmax = "2020Q4", ymin = -Inf, ymax = Inf, fill = "grey90", alpha = 0.4) +
   facet_wrap(health_board ~ .) +
   theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45))
+  theme(axis.text.x = element_text(angle = 80, vjust = 0))
+  )
+occupancy_2020_palliative_specialty_hospitals %>%
+  ggsave(plot = ., filename = "./isd(s)1_exploration/occupancy_2020_palliative_specialty_hospitals.png", width = 15, height = 6, dpi = 300)
 
 ## total beds occupied
 isds1 %>% 
@@ -167,8 +176,9 @@ isds1 %>%
   filter(year %in% 2015:2021) %>%
   filter(specialty_description == "Palliative Medicine") %>%
   ggplot(data = .) +
-  geom_point(aes(x = Quarter, y = TotalOccupiedBeds, group = location_name, colour = location_name), position = position_dodge()) +
-  geom_line(aes(x = Quarter, y = TotalOccupiedBeds, group = location_name, colour = location_name)) +
+  geom_point(aes(x = Quarter, y = TotalOccupiedBeds, group = location_name, colour = location_name), position = position_dodge(width = 0.5)) +
+  geom_line(aes(x = Quarter, y = TotalOccupiedBeds, group = location_name, colour = location_name), position = position_dodge(width = 0.5)) +
+  annotate(geom = "rect", xmin = "2020Q2", xmax = "2020Q4", ymin = -Inf, ymax = Inf, fill = "grey90", alpha = 0.4) +
   facet_wrap(health_board ~ .) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45))
@@ -179,8 +189,9 @@ isds1 %>%
   filter(year %in% 2015:2021) %>%
   filter(specialty_description == "Palliative Medicine") %>%
   ggplot(data = .) +
-  geom_point(aes(x = Quarter, y = AvailableBeds, group = location_name, colour = location_name), position = position_dodge()) +
-  geom_line(aes(x = Quarter, y = AvailableBeds, group = location_name, colour = location_name)) +
+  geom_point(aes(x = Quarter, y = AvailableBeds, group = location_name, colour = location_name), position = position_dodge(width = 0.5)) +
+  geom_line(aes(x = Quarter, y = AvailableBeds, group = location_name, colour = location_name), position = position_dodge(width = 0.5)) +
+  annotate(geom = "rect", xmin = "2020Q2", xmax = "2020Q4", ymin = -Inf, ymax = Inf, fill = "grey90", alpha = 0.4) +
   facet_wrap(health_board ~ .) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45))
