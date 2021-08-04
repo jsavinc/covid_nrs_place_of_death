@@ -1,5 +1,5 @@
 ---
-title: "Mocking up distance/time to travel calculations for hospitals in Scotland"
+title: "Distance/time to travel calculations for hospitals in Scotland"
 author: "Jan Savinc"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output: 
@@ -44,31 +44,29 @@ library(tictoc)  # for measuring time taken for calculations
 
 # Introduction
 
-# Download files
+# Download files & load
 
-The hospitals data needs to be downloaded, whereas the centroids file was provided by Dr Laurie Berry!
+The following data needs downloading:
+
+* Hospitals with geographic coordinates
+* Datazone centroids with geographic coordinates (provided by Dr Laurie Berrie!)
+* Postcodes with geographic coordinates
+
+The coordinates are given in Easting & Northing coordinates in the OS National Grid basis. We can compute the straight-line distance between them using the Pythagorean identity function:
+
+```{r}
+pythagorean_distance <- function(x1, y1, x2, y2) {
+  distance <- sqrt((x1 - x2)^2 + (y1 - y2)^2)
+}
+```
+
+## Hospitals
 
 ```{r}
 url_hospitals <- "https://www.opendata.nhs.scot/dataset/cbd1802e-0e04-4282-88eb-d7bdcfb120f0/resource/c698f450-eeed-41a0-88f7-c1e40a568acc/download/current-hospital_flagged20210506.csv"
 
 if (!file.exists("./distance_to_hospital/current-hospital_flagged20210506.csv")) download.file(url = url_hospitals, destfile = "./distance_to_hospital/current-hospital_flagged20210506.csv")
-
-# 
-# url_datazones <- "https://maps.gov.scot/ATOM/shapefiles/SG_DataZoneCent_2011.zip"
-# 
-# if (!file.exists("./distance_to_hospital/SG_DataZoneCent_2011.zip")) download.file(url = url_datazones, destfile = "./distance_to_hospital/SG_DataZoneCent_2011.zip")
-```
-
-# Load data
-
-```{r}
 hospitals <- read_csv(file = "./distance_to_hospital/current-hospital_flagged20210506.csv")
-
-datazones <- read_excel("./distance_to_hospital/datazone2011 centroids.xlsx", sheet = 1)
-
-pythagorean_distance <- function(x1, y1, x2, y2) {
-  distance <- sqrt((x1 - x2)^2 + (y1 - y2)^2)
-}
 
 ## check that the XCoordinate and YCoordinate and Easting and Northing are the same thing, by checking the DataZone centroid location against hospital location
 hospitals %>%
@@ -76,11 +74,9 @@ hospitals %>%
   left_join(datazones, by = c("DataZone")) %>%
   mutate(distance = pythagorean_distance(XCoordinate, YCoordinate, Easting, Northing)) %>%
   arrange(desc(distance))
-
-isds1 <- read_csv("./distance_to_hospital/beds_by_nhs_board_of_treatment_and_specialty.csv", guess=1e5)
 ```
 
-## Defining acute hospitals
+### Defining acute hospitals
 
 From the [Hospital care website of ISD Scotland](https://www.isdscotland.org/health-topics/hospital-care/):
 
@@ -89,10 +85,45 @@ From the [Hospital care website of ISD Scotland](https://www.isdscotland.org/hea
 Therefore, we can use an ISD(S)1 publication, in this case on Bed Occupancy (https://www.isdscotland.org/Health-Topics/Hospital-Care/Publications/2019-11-26/Acute-Hospital-Publication/data-files/docs/20191126_Beds_by_Health_Board_of_Treatment_and_Specialty.csv), to define Acute hospitals - all hospitals included in this publication are considered acute!
 
 ```{r}
+isds1 <- read_csv("./distance_to_hospital/beds_by_nhs_board_of_treatment_and_specialty.csv", guess=1e5)
+
 acute_hospitals <- hospitals %>% semi_join(isds1, by = "Location")  # keep only hospitals present in the isd(s)1 dataset
 ```
 
 This reduces the number of hospitals from `r n_distinct(hospitals$LocationName)` to `r n_distinct(acute_hospitals$LocationName)`!
+
+## DataZones
+
+```{r}
+# url_datazones <- "https://maps.gov.scot/ATOM/shapefiles/SG_DataZoneCent_2011.zip"
+# 
+# if (!file.exists("./distance_to_hospital/SG_DataZoneCent_2011.zip")) download.file(url = url_datazones, destfile = "./distance_to_hospital/SG_DataZoneCent_2011.zip")
+datazones <- read_excel("./distance_to_hospital/datazone2011 centroids.xlsx", sheet = 1)
+```
+
+## Postcode directory
+
+~~I'm using the August 2020 postcode directory [available here](https://geoportal.statistics.gov.uk/datasets/ons::ons-postcode-directory-august-2020/about)
+
+I've opted for the `.csv` version and limited the columns to read because it is over 1GB in size!~~
+
+The 2021-1 version of the Scottish postcode directory is [available here](https://www.nrscotland.gov.uk/statistics-and-data/geography/our-products/scottish-postcode-directory/2021-1)
+
+There are a few postcodes with duplicate entries for the same postcode where the geographical location is slightly different between them. I've opted to keep the last entry in a series of duplicates, as it probably reflects the most recent information available.
+
+```{r}
+# postcodes <- read_csv(file = "./distance_to_hospital/ONSPD_AUG_2020_UK.csv", col_names = c("postcode_PCDS","easting","northing"), col_types = "__c________ii_____________________________________", skip = 1)  # this format ensures we only read the postcode and the easting & northing data
+
+# paste0(rep("_", times = 50), collapse="")  # used for precisely specifying number of skipped columns!
+
+postcodes <- read_csv(file = "./distance_to_hospital/SPD_PostcodeIndex_Cut_21_1_CSV/SmallUser.csv", col_names = c("postcode","easting","northing"), col_types = "c____ii__________________________________________________", skip = 1)  # this format ensures we only read the postcode and the easting & northing data
+
+postcodes <-  # keep last entry where there is more than one record per postcode
+  postcodes %>%
+  group_by(postcode) %>%
+  slice(n()) %>%
+  ungroup
+```
 
 
 # Compute straight-line distance for each datazone to nearest hospital
@@ -111,7 +142,8 @@ smallest_distance_straight_line_datazones <-
   mutate(distance = pythagorean_distance(x1 = Easting, x2 = XCoordinate, y1 = Northing, y2 = YCoordinate)) %>%
   group_by(DataZone) %>%
   slice_min(order_by = distance, n = 1) %>%
-  ungroup
+  ungroup %>%
+  select(DataZone, LocationName, distance)
 toc(log = TRUE)
 ```
 
@@ -129,10 +161,33 @@ smallest_distance_straight_line_datazones_acute_hospitals <-
   mutate(distance = pythagorean_distance(x1 = Easting, x2 = XCoordinate, y1 = Northing, y2 = YCoordinate)) %>%
   group_by(DataZone) %>%
   slice_min(order_by = distance, n = 1) %>%
-  ungroup
+  ungroup %>%
+  select(DataZone, LocationName, distance)
 toc(log = TRUE)
 ```
 
+# Postcode straight-line distance to acute hospitals
+
+```{r}
+tic()
+smallest_distance_straight_line_postcodes_acute_hospitals <-
+  crossing(
+    postcodes %>% select(postcode), 
+    acute_hospitals %>% select(LocationName)
+    ) %>%
+  left_join(postcodes %>% select(postcode, easting, northing), by = "postcode") %>%
+  left_join(hospitals %>% select(LocationName, XCoordinate, YCoordinate), by = "LocationName") %>%
+  mutate(distance = pythagorean_distance(x1 = easting, x2 = XCoordinate, y1 = northing, y2 = YCoordinate)) %>%
+  group_by(postcode) %>%
+  slice_min(order_by = distance, n = 1) %>%
+  ungroup %>%
+  select(postcode, LocationName, distance) %>%
+  distinct
+toc(log = TRUE)
+
+smallest_distance_straight_line_postcodes_acute_hospitals %>%
+  write_csv(file = "./distance_to_hospital/postcode_distance_to_nearest_acute_hospital_straightline.csv")
+```
 
 # Print session info
 
