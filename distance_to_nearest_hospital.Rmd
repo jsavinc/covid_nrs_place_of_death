@@ -11,7 +11,6 @@ editor_options:
   chunk_output_type: console
 ---
   
-  
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -25,24 +24,31 @@ knitr::opts_chunk$set(echo = TRUE)
 # remotes::install_github("Health-SocialCare-Scotland/phsmethods", force = TRUE)
 
 library(tidyverse)  # for tidy workflow
-library(opendatascot)  # importing data from ScotGov open data website
-library(phsmethods)  # methods for working with PHS data
 library(readxl)  # for reading excel files
-library(curl)  # for downloading stuff
-library(lubridate)  # dealing with dates
-library(janitor)  # for cleaning column names
-library(ISOweek)  # for computing date from ISO week number + year
-library(sf)  # for mapping
-library(ggrepel)  # for 'mapping'repelling' labels/texst in ggplot
-library(patchwork)  # for assembling plots
-library(extrafont)  # for working with fonts
-library(openxlsx)  # for creating xlsx files
-library(knitr)  # for displaying tables in rmd
 library(tictoc)  # for measuring time taken for calculations
 ```
 
 
 # Introduction
+
+For investigating increased numbers of deaths at home & other non-institutional settings in Scotland, we'll take into account the distance/travel time to the nearest hospital. For this purpose, we need to compute the distance to nearest hospital.
+
+There are two basic approaches: straight-line distance, and road distance / road travel time:
+
+## Straight-line distance
+
+This can be computed using OS National Grid Reference values (Easting & Northing), using the locations of hospitals, and either:
+
+* data zones
+* postcodes
+
+Postcodes are more precise, but also more privacy-invasive when working with administrative records. For this reason, we would ideally provide the computed distances at data linkage rather than after data delivery.
+
+Straight-line distances don't necessarily represent a realistic measure of distance or travel time to hospital, however! The main benefit is its ease of calculation.
+
+## Road distance / travel time
+
+This is more realistic & representative than straight-line distance, but more difficult to obtain, since road distances and road spee (used in calculating travel time) aren't openly available like the OS grid reference data are.
 
 # Download files & load
 
@@ -66,6 +72,7 @@ pythagorean_distance <- function(x1, y1, x2, y2) {
 url_hospitals <- "https://www.opendata.nhs.scot/dataset/cbd1802e-0e04-4282-88eb-d7bdcfb120f0/resource/c698f450-eeed-41a0-88f7-c1e40a568acc/download/current-hospital_flagged20210506.csv"
 
 if (!file.exists("./distance_to_hospital/current-hospital_flagged20210506.csv")) download.file(url = url_hospitals, destfile = "./distance_to_hospital/current-hospital_flagged20210506.csv")
+
 hospitals <- read_csv(file = "./distance_to_hospital/current-hospital_flagged20210506.csv")
 
 ## check that the XCoordinate and YCoordinate and Easting and Northing are the same thing, by checking the DataZone centroid location against hospital location
@@ -126,9 +133,9 @@ postcodes <-  # keep last entry where there is more than one record per postcode
 ```
 
 
-# Compute straight-line distance for each datazone to nearest hospital
+# DataZone straight-line distance to nearest hospital
 
-For this purpose, I've removed some specialist units that operate within a larger hospital department and are listed at the same geographical grid reference! Otherwise we get two units that are equidistant for some data zones.
+For this purpose, I've removed some duplicate entries in the list of hospitals - I think they are specialist units that operate within a larger hospital and are listed at the same geographical grid reference! Otherwise we get two units that are equidistant for some data zones.
 
 ```{r}
 tic()
@@ -194,4 +201,3 @@ smallest_distance_straight_line_postcodes_acute_hospitals %>%
 ```{r}
 sessionInfo()
 ```
-
