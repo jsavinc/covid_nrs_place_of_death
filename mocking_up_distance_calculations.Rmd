@@ -1,0 +1,142 @@
+---
+title: "Mocking up distance/time to travel calculations for hospitals in Scotland"
+author: "Jan Savinc"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+  code_folding: hide
+toc: true
+toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+  
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Load packages
+
+```{r, warning=FALSE, message=FALSE}
+## install packages from github if not yet available!
+# remotes::install_github("datasciencescotland/opendatascot", force = TRUE)
+# remotes::install_github("Health-SocialCare-Scotland/phsmethods", force = TRUE)
+
+library(tidyverse)  # for tidy workflow
+library(opendatascot)  # importing data from ScotGov open data website
+library(phsmethods)  # methods for working with PHS data
+library(readxl)  # for reading excel files
+library(curl)  # for downloading stuff
+library(lubridate)  # dealing with dates
+library(janitor)  # for cleaning column names
+library(ISOweek)  # for computing date from ISO week number + year
+library(sf)  # for mapping
+library(ggrepel)  # for 'mapping'repelling' labels/texst in ggplot
+library(patchwork)  # for assembling plots
+library(extrafont)  # for working with fonts
+library(openxlsx)  # for creating xlsx files
+library(knitr)  # for displaying tables in rmd
+library(tictoc)  # for measuring time taken for calculations
+```
+
+
+# Introduction
+
+# Download files
+
+The hospitals data needs to be downloaded, whereas the centroids file was provided by Dr Laurie Berry!
+
+```{r}
+url_hospitals <- "https://www.opendata.nhs.scot/dataset/cbd1802e-0e04-4282-88eb-d7bdcfb120f0/resource/c698f450-eeed-41a0-88f7-c1e40a568acc/download/current-hospital_flagged20210506.csv"
+
+if (!file.exists("./distance_to_hospital/current-hospital_flagged20210506.csv")) download.file(url = url_hospitals, destfile = "./distance_to_hospital/current-hospital_flagged20210506.csv")
+
+# 
+# url_datazones <- "https://maps.gov.scot/ATOM/shapefiles/SG_DataZoneCent_2011.zip"
+# 
+# if (!file.exists("./distance_to_hospital/SG_DataZoneCent_2011.zip")) download.file(url = url_datazones, destfile = "./distance_to_hospital/SG_DataZoneCent_2011.zip")
+```
+
+# Load data
+
+```{r}
+hospitals <- read_csv(file = "./distance_to_hospital/current-hospital_flagged20210506.csv")
+
+datazones <- read_excel("./distance_to_hospital/datazone2011 centroids.xlsx", sheet = 1)
+
+pythagorean_distance <- function(x1, y1, x2, y2) {
+  distance <- sqrt((x1 - x2)^2 + (y1 - y2)^2)
+}
+
+## check that the XCoordinate and YCoordinate and Easting and Northing are the same thing, by checking the DataZone centroid location against hospital location
+hospitals %>%
+  select(LocationName, DataZone, XCoordinate, YCoordinate, BasedOnPostcode) %>%
+  left_join(datazones, by = c("DataZone")) %>%
+  mutate(distance = pythagorean_distance(XCoordinate, YCoordinate, Easting, Northing)) %>%
+  arrange(desc(distance))
+
+isds1 <- read_csv("./distance_to_hospital/beds_by_nhs_board_of_treatment_and_specialty.csv", guess=1e5)
+```
+
+## Defining acute hospitals
+
+From the [Hospital care website of ISD Scotland](https://www.isdscotland.org/health-topics/hospital-care/):
+
+> This section of our website brings together information on different aspects of acute hospital care, sourced from hospital administrative systems across Scotland. Note that 'Acute' hospital care excludes obstetric, psychiatric and long stay care services that are covered elsewhere on the ISD website. For reference, a listing of all Scottish hospitals (acute and non-acute) can be found by following the Hospitals link on the menu to the left of this page.
+
+Therefore, we can use an ISD(S)1 publication, in this case on Bed Occupancy (https://www.isdscotland.org/Health-Topics/Hospital-Care/Publications/2019-11-26/Acute-Hospital-Publication/data-files/docs/20191126_Beds_by_Health_Board_of_Treatment_and_Specialty.csv), to define Acute hospitals - all hospitals included in this publication are considered acute!
+
+```{r}
+acute_hospitals <- hospitals %>% semi_join(isds1, by = "Location")  # keep only hospitals present in the isd(s)1 dataset
+```
+
+This reduces the number of hospitals from `r n_distinct(hospitals$LocationName)` to `r n_distinct(acute_hospitals$LocationName)`!
+
+
+# Compute straight-line distance for each datazone to nearest hospital
+
+For this purpose, I've removed some specialist units that operate within a larger hospital department and are listed at the same geographical grid reference! Otherwise we get two units that are equidistant for some data zones.
+
+```{r}
+tic()
+smallest_distance_straight_line_datazones <-
+  crossing(
+    datazones %>% select(DataZone), 
+    hospitals %>% select(LocationName) %>% filter(!LocationName %in% c("Orchard View","William Fraser Centre", "Gartnavel General Hospital (Admin Purposes)"))  # remove units located in same place as another hospital
+    ) %>%
+  left_join(datazones %>% select(DataZone, Easting, Northing), by = "DataZone") %>%
+  left_join(hospitals %>% select(LocationName, XCoordinate, YCoordinate), by = "LocationName") %>%
+  mutate(distance = pythagorean_distance(x1 = Easting, x2 = XCoordinate, y1 = Northing, y2 = YCoordinate)) %>%
+  group_by(DataZone) %>%
+  slice_min(order_by = distance, n = 1) %>%
+  ungroup
+toc(log = TRUE)
+```
+
+## Acute hospital distances
+
+```{r}
+tic()
+smallest_distance_straight_line_datazones_acute_hospitals <-
+  crossing(
+    datazones %>% select(DataZone), 
+    acute_hospitals %>% select(LocationName)
+    ) %>%
+  left_join(datazones %>% select(DataZone, Easting, Northing), by = "DataZone") %>%
+  left_join(hospitals %>% select(LocationName, XCoordinate, YCoordinate), by = "LocationName") %>%
+  mutate(distance = pythagorean_distance(x1 = Easting, x2 = XCoordinate, y1 = Northing, y2 = YCoordinate)) %>%
+  group_by(DataZone) %>%
+  slice_min(order_by = distance, n = 1) %>%
+  ungroup
+toc(log = TRUE)
+```
+
+
+# Print session info
+
+```{r}
+sessionInfo()
+```
+
