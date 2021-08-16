@@ -1598,38 +1598,73 @@ save_output_file(filename = paste0(dir_outputs,"/figure_map_home_deaths_ratios_2
 ## HB
 
 ```{r}
-# (figure_proportion_home_deaths_over_time <-
+(figure_proportion_of_deaths_by_place_by_hb <-
   proportions_of_deaths_by_place_by_geography %>%
   filter(geography == "hb") %>%
   mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
+  mutate(ref_area = factor(x = ref_area, levels = order_hb_by_population)) %>%  # arrange hb/la by population size
   ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
   geom_point() +
   geom_line(size = 1) +
-  geom_text(data = ~filter(.x, year==2021), aes(x=2021.1, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
-  # facet_wrap(~ ref_area, scales = "free_x") +
+  geom_text(data = ~filter(.x, year==2021), aes(x=2021.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
   facet_rep_wrap(~ ref_area, repeat.tick.labels = TRUE) +
   scale_x_continuous(breaks = 2015:2021) +
-  # scale_y_continuous(breaks = seq(0.1, 0.6, by = 0.1), label = function(x) scales::percent(x, accuracy = 1)) +
   scale_y_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
   scale_colour_viridis_d(option="C") +
-  # theme_minimal() +
   theme(
-    legend.position = "top", 
+    legend.position = "top",
+    legend.text = element_text(size = 12),
     plot.caption = element_text(size = 10, colour = "gray60"),
     panel.border = element_rect(fill = NA, colour = "gray80"),  # draw a transparent rectangle as the border
     strip.background = element_rect(fill = NA, colour = "gray80")
     ) +
   labs(
-    x = "Year", y= "Proportion of yearly deaths (%)",
-    colour = "",
+    x = NULL, y= "Proportion of yearly deaths (%)",
+    colour = NULL,
     subtitle = paste0("* ",only_2021_text),
-    caption = paste0(c(source_nrs_text),collapse="\n")
+    caption = paste0(c("Health boards sorted by 2020 population",source_nrs_text),collapse="\n")
     ) +
   guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
   NULL
-# )
+)
 
-save_output_file(filename = paste0(dir_outputs,"/figure_proportion_home_deaths_over_time"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_home_deaths_over_time, width = 12, height = 10, units = "cm", dpi = 300)
+save_output_file(filename = paste0(dir_outputs,"/figure_proportion_of_deaths_by_place_by_hb"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_of_deaths_by_place_by_hb, width = 12, height = 10, units = "in", dpi = 300)
+```
+
+## LA
+
+```{r}
+(figure_proportion_of_deaths_by_place_by_la <-
+  proportions_of_deaths_by_place_by_geography %>%
+  filter(geography == "la") %>%
+  mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
+  mutate(ref_area = factor(x = ref_area, levels = order_la_by_population)) %>%  # arrange hb/la by population size
+  ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
+  geom_point() +
+  geom_line(size = 1) +
+  geom_text(data = ~filter(.x, year==2021), aes(x=2021.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+  facet_rep_wrap(~ ref_area, repeat.tick.labels = TRUE, ncol = 4) +
+  scale_x_continuous(breaks = 2015:2021) +
+  scale_y_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
+  scale_colour_viridis_d(option="C") +
+  theme(
+    legend.position = "top",
+    legend.text = element_text(size = 12),
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    panel.border = element_rect(fill = NA, colour = "gray80"),  # draw a transparent rectangle as the border
+    strip.background = element_rect(fill = NA, colour = "gray80")
+    ) +
+  labs(
+    x = NULL, y= "Proportion of yearly deaths (%)",
+    colour = NULL,
+    subtitle = paste0("* ",only_2021_text),
+    caption = paste0(c("Local Authorities sorted by 2020 population",source_nrs_text),collapse="\n")
+    ) +
+  guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
+  NULL
+)
+
+save_output_file(filename = paste0(dir_outputs,"/figure_proportion_of_deaths_by_place_by_la"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_of_deaths_by_place_by_la, width = 12, height = 14, units = "in", dpi = 300)
 ```
 
 
