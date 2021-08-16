@@ -208,6 +208,24 @@ la_shapefile_url <- "https://opendata.arcgis.com/datasets/910f48f3c4b3400aa9eb0a
 # download_shapefile(url = la_shapefile_url, directory = dir_map_data, subdirectory = "la")
 # download_shapefile(url = health_boards_uk_wide_url, directory = dir_map_data, subdirectory = "hb_uk_wide")
 
+# Download population estimates data --------------------------------------
+
+dir_population_estimates <- "./population_estimates"
+if (!dir.exists(dir_population_estimates)) dir.create(dir_population_estimates)
+
+population_estimates_2019_la_url <- "https://www.opendata.nhs.scot/dataset/7f010430-6ce1-4813-b25c-f7f335bdc4dc/resource/09ebfefb-33f4-4f6a-8312-2d14e2b02ace/download/ca2019_pop_est_29062021.csv"
+population_estimates_2019_hb_url <- "https://www.opendata.nhs.scot/dataset/7f010430-6ce1-4813-b25c-f7f335bdc4dc/resource/27a72cc8-d6d8-430c-8b4f-3109a9ceadb1/download/hb2019_pop_est_29062021.csv"
+
+population_estimates_2019_la_file <- "ca2019_pop_est_29062021.csv"
+population_estimates_2019_hb_file <- "hb2019_pop_est_29062021.csv"
+
+if (!file.exists(file.path(dir_population_estimates, population_estimates_2019_la_file))) {
+  curl_download(url = population_estimates_2019_la_url, destfile = file.path(dir_population_estimates, population_estimates_2019_la_file), quiet = FALSE)
+}
+if (!file.exists(file.path(dir_population_estimates, population_estimates_2019_hb_file))) {
+  curl_download(url = population_estimates_2019_hb_url, destfile = file.path(dir_population_estimates, population_estimates_2019_hb_file), quiet = FALSE)
+}
+
 # Import Calibri font -----------------------------------------------------
 
 if (!any(fonttable()$FullName=="Calibri")) font_import(pattern = "calibri", prompt = FALSE)  # only run first time if Calibri not yet imported

@@ -1587,6 +1587,46 @@ earliest_date <- min(merged_deaths_age$date_w_c)
 ```
 
 
+# Ordering geographical data by population size
+
+The latest population estimates by HB/LA are available [from NRS Scotland here](https://www.opendata.nhs.scot/dataset/population-estimates).
+
+I'm using the estimates for 2020 (based on 2019 data) to compute the relative sizes of health boards!
+
+```{r}
+population_estimate_la_2019 <- read_csv(file = "./population_estimates/ca2019_pop_est_29062021.csv") %>%
+  select(Year, CA, Sex, AllAges) %>%
+  clean_names() %>%
+  make_human_readable_ref_area(ref_area = ca) %>%
+  filter(year==2020) %>%
+  filter(ca != "Scotland") %>%
+  filter(sex == "All") %>%
+  rename(la = ca)
+
+population_estimate_hb_2019 <- read_csv(file = "./population_estimates/hb2019_pop_est_29062021.csv") %>%
+  select(Year, HB, Sex, AllAges) %>%
+  clean_names() %>%
+  make_human_readable_ref_area(ref_area = hb) %>%
+  filter(year==2020) %>%
+  filter(hb != "Scotland") %>%
+  filter(sex == "All")
+```
+
+## Compute order
+
+```{r}
+order_la_by_population <-
+  population_estimate_la_2019 %>%
+  arrange(desc(all_ages)) %>%
+  .$la
+
+order_hb_by_population <-
+  population_estimate_hb_2019 %>%
+  arrange(desc(all_ages)) %>%
+  .$hb
+```
+
+
 # Comparisons of annual rates with current rates
 
 ```{r}
