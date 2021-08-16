@@ -38,6 +38,7 @@ library(patchwork)  # for assembling plots
 library(extrafont)  # for working with fonts
 library(openxlsx)  # for creating xlsx files
 library(knitr)  # for displaying tables in rmd
+library(lemon)  # for showing axis & axis labels in every facet in ggplot
 ```
 
 
@@ -106,13 +107,13 @@ Saving to multiple formats is easy enough - the trouble is with saving PDF files
 ```{r}
 save_output_file <- function(filename, extensions, plot, width, height, units, dpi) {
   
-walk(
-  .x = extensions,
-  .f = function(ext) {
-  # if (tolower(ext)==".pdf") device <- cairo_pdf
-  ggsave(filename = paste0(filename, ext), plot = plot, width = width, height = height, units = units, dpi = dpi, device = if (tolower(ext)==".pdf") cairo_pdf else NULL)
-  }
-)
+  walk(
+    .x = extensions,
+    .f = function(ext) {
+    # if (tolower(ext)==".pdf") device <- cairo_pdf
+    ggsave(filename = paste0(filename, ext), plot = plot, width = width, height = height, units = units, dpi = dpi, device = if (tolower(ext)==".pdf") cairo_pdf else NULL)
+    }
+  )
 
 # TODO: remove below bit, not needed when using device=device_cairo
 # if (any(str_detect(string = tolower(extensions), pattern = "pdf"))) {
@@ -128,7 +129,7 @@ walk(
 # Proportion home deaths over time
 
 ```{r}
-figure_proportion_home_deaths_over_time <-
+(figure_proportion_home_deaths_over_time <-
   merged_proportions_of_deaths_by_place %>%
   mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
   ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
@@ -148,10 +149,9 @@ figure_proportion_home_deaths_over_time <-
     ) +
   guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
   NULL
+)
 
 save_output_file(filename = paste0(dir_outputs,"/figure_proportion_home_deaths_over_time"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_home_deaths_over_time, width = 12, height = 10, units = "cm", dpi = 300)
-
-figure_proportion_home_deaths_over_time
 ```
 
 
@@ -1591,6 +1591,48 @@ figure_map_home_deaths_ratios_2020_and_per_capita_cases <-
   
 save_output_file(filename = paste0(dir_outputs,"/figure_map_home_deaths_ratios_2020_and_per_capita_cases"), extensions = c(".pdf",".svg",".png"), plot = figure_map_home_deaths_ratios_2020_and_per_capita_cases, width = 20, height = 10, dpi = 300, units = "cm")
 ```
+
+
+# Proportions of home deaths by geography
+
+## HB
+
+```{r}
+# (figure_proportion_home_deaths_over_time <-
+  proportions_of_deaths_by_place_by_geography %>%
+  filter(geography == "hb") %>%
+  mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
+  ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
+  geom_point() +
+  geom_line(size = 1) +
+  geom_text(data = ~filter(.x, year==2021), aes(x=2021.1, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+  # facet_wrap(~ ref_area, scales = "free_x") +
+  facet_rep_wrap(~ ref_area, repeat.tick.labels = TRUE) +
+  scale_x_continuous(breaks = 2015:2021) +
+  # scale_y_continuous(breaks = seq(0.1, 0.6, by = 0.1), label = function(x) scales::percent(x, accuracy = 1)) +
+  scale_y_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
+  scale_colour_viridis_d(option="C") +
+  # theme_minimal() +
+  theme(
+    legend.position = "top", 
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    panel.border = element_rect(fill = NA, colour = "gray80"),  # draw a transparent rectangle as the border
+    strip.background = element_rect(fill = NA, colour = "gray80")
+    ) +
+  labs(
+    x = "Year", y= "Proportion of yearly deaths (%)",
+    colour = "",
+    subtitle = paste0("* ",only_2021_text),
+    caption = paste0(c(source_nrs_text),collapse="\n")
+    ) +
+  guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
+  NULL
+# )
+
+save_output_file(filename = paste0(dir_outputs,"/figure_proportion_home_deaths_over_time"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_home_deaths_over_time, width = 12, height = 10, units = "cm", dpi = 300)
+```
+
+
 
 # Save most recent workspace for further analyses
 
