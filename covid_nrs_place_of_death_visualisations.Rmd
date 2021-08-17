@@ -497,6 +497,58 @@ figure_place_of_death
 save_output_file(filename = paste0(dir_outputs,"/figure_place_of_death_deviation_from_mean"), extensions = c(".pdf",".svg",".png"), plot = figure_place_of_death_deviation_from_mean, width = 28, height = 14, dpi = 300, units = "cm")
 ```
 
+## 2020 and 2021 on same graph
+
+For these graphs, we use the week number, and superimpose lines for 2020 and 2021!
+
+### Home deaths, both years
+
+```{r}
+(figure_deaths_at_home_2020_and_2021 <-
+  merged_deaths_overall %>%
+  filter(sex == "all" & age == "all") %>%
+  filter(place_of_death %in% c("Home & other non-institution")) %>%
+  select(-c(date_w_c, week_number_run_over, ref_period, ref_area)) %>%
+  mutate(year = factor(year)) %>%
+  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid),
+               names_to = "deaths_type", values_to = "deaths") %>%
+  ggplot(aes(x = week_number)) +
+  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
+  geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
+  # geom_line(data = . %>% filter(year==2020), aes(y = deaths, colour = deaths_type, alpha = week_number, group = deaths_type), show.legend = FALSE) +
+  geom_line(data = . %>% filter(year==2020), aes(y = deaths, colour = deaths_type, group = deaths_type), show.legend = FALSE, alpha = 0.3) +  # use a fixed alpha value, otherwise the lines are chopped up into rectangular segments and don't look good zoomed in
+  geom_line(data = . %>% filter(year==2021), aes(y = deaths, colour = deaths_type)) +
+  scale_x_continuous(breaks = seq(0,60,by=12)) +
+  ylim(0, 600) +  # start scale at 0 for better understanding the scale of deaths
+  facet_grid(~place_of_death) +
+  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+                      labels = c("All deaths",
+                                 "Non Covid-19 deaths"),
+                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+                      ) +
+  scale_alpha_continuous(range = c(0.2, 0.6), guide = NULL) +
+  annotate(geom = "text", x = 18, y = 550, label = "2020", alpha = 0.4) +
+  annotate(geom = "text", x = 4, y = 530, label = "2021") +
+  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
+  labs(x = "Week number",
+       y = "Weekly deaths (N)",
+       subtitle = date_range_text,
+       caption = paste0(c(death_registrations_text, source_nrs_text), collapse="\n"),
+       colour = "Cause of death"
+       ) +
+  ## annotate historic range
+  annotate(geom = "text", x = 10, y = 100, label = "Historic range (min & max)", colour = "grey20") +
+  annotate(geom = "curve", x = 10, xend = 14, y = 110, yend = 250, curvature = 0.20, colour = "#4477aa", alpha = 0.5, arrow = arrow(length = unit(0.2, "cm"))) +
+  annotate(geom = "text", x = 20, y = 50, label = "Historic mean", colour = "grey20") +
+  annotate(geom = "curve", x = 20, xend = 25, y = 60, yend = 270, curvature = 0.20, colour = "grey20", linetype="dashed", arrow = arrow(length = unit(0.2, "cm"))) +
+  NULL
+)
+
+save_output_file(filename = paste0(dir_outputs,"/figure_deaths_at_home_2020_and_2021"), extensions = c(".pdf",".svg",".png"), plot = figure_deaths_at_home_2020_and_2021, width = 18, height = 14, dpi = 300, units = "cm")
+```
+
+
+
 ## Deaths at home, for policy briefing
 
 ```{r, fig.width=12, fig.height=9, warning=FALSE}
@@ -1043,56 +1095,6 @@ figure_deaths_at_home_by_sex
 ```
 
 
-## 2020 and 2021 on same graph
-
-For these graphs, we use the week number, and superimpose lines for 2020 and 2021!
-
-### Home deaths, both years
-
-```{r}
-(figure_deaths_at_home_2020_and_2021 <-
-  merged_deaths_overall %>%
-  filter(sex == "all" & age == "all") %>%
-  filter(place_of_death %in% c("Home & other non-institution")) %>%
-  select(-c(date_w_c, week_number_run_over, ref_period, ref_area)) %>%
-  mutate(year = factor(year)) %>%
-  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid),
-               names_to = "deaths_type", values_to = "deaths") %>%
-  ggplot(aes(x = week_number)) +
-  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
-  geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
-  # geom_line(aes(y = deaths, colour = deaths_type, alpha = year)) +
-  geom_line(data = . %>% filter(year==2020), aes(y = deaths, colour = deaths_type, alpha = week_number), show.legend = FALSE) +
-  geom_line(data = . %>% filter(year==2021), aes(y = deaths, colour = deaths_type)) +
-  scale_x_continuous(breaks = seq(0,60,by=12)) +
-  ylim(0, 600) +  # start scale at 0 for better understanding the scale of deaths
-  facet_grid(~place_of_death) +
-  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
-                      labels = c("All deaths",
-                                 "Non Covid-19 deaths"),
-                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
-                      ) +
-  scale_alpha_continuous(range = c(0.2, 0.8), guide = NULL) +
-  annotate(geom = "text", x = 18, y = 550, label = "2020", alpha = 0.6) +
-  annotate(geom = "text", x = 4, y = 530, label = "2021") +
-  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
-  labs(x = "Week number",
-       y = "Weekly deaths (N)",
-       subtitle = date_range_text,
-       caption = paste0(c(death_registrations_text, source_nrs_text), collapse="\n"),
-       colour = "Cause of death"
-       ) +
-  ## annotate historic range
-  annotate(geom = "text", x = 10, y = 100, label = "Historic range (min & max)", colour = "grey20") +
-  annotate(geom = "curve", x = 10, xend = 14, y = 110, yend = 250, curvature = 0.20, colour = "#4477aa", alpha = 0.5, arrow = arrow(length = unit(0.2, "cm"))) +
-  annotate(geom = "text", x = 20, y = 50, label = "Historic mean", colour = "grey20") +
-  annotate(geom = "curve", x = 20, xend = 25, y = 60, yend = 270, curvature = 0.20, colour = "grey20", linetype="dashed", arrow = arrow(length = unit(0.2, "cm"))) +
-  NULL
-)
-
-save_output_file(filename = paste0(dir_outputs,"/figure_deaths_at_home_2020_and_2021"), extensions = c(".pdf",".svg",".png"), plot = figure_deaths_at_home_2020_and_2021, width = 18, height = 14, dpi = 300, units = "cm")
-```
-
 
 
 # Deaths by cause of death
@@ -1595,7 +1597,7 @@ save_output_file(filename = paste0(dir_outputs,"/figure_map_home_deaths_ratios_2
 
 # Proportions of home deaths by geography
 
-## HB
+## all places of death, HB
 
 ```{r}
 (figure_proportion_of_deaths_by_place_by_hb <-
@@ -1604,13 +1606,14 @@ save_output_file(filename = paste0(dir_outputs,"/figure_map_home_deaths_ratios_2
   mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
   mutate(ref_area = factor(x = ref_area, levels = order_hb_by_population)) %>%  # arrange hb/la by population size
   ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
-  geom_point() +
-  geom_line(size = 1) +
+  geom_point(aes(size = place_of_death)) +
+  geom_line(aes(size = place_of_death)) +
   geom_text(data = ~filter(.x, year==2021), aes(x=2021.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
   facet_rep_wrap(~ ref_area, repeat.tick.labels = TRUE) +
+  scale_size_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
   scale_x_continuous(breaks = 2015:2021) +
   scale_y_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
-  scale_colour_viridis_d(option="C") +
+  scale_colour_viridis_d(option="C", name="Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
   theme(
     legend.position = "top",
     legend.text = element_text(size = 12),
@@ -1620,18 +1623,18 @@ save_output_file(filename = paste0(dir_outputs,"/figure_map_home_deaths_ratios_2
     ) +
   labs(
     x = NULL, y= "Proportion of yearly deaths (%)",
-    colour = NULL,
-    subtitle = paste0("* ",only_2021_text),
-    caption = paste0(c("Health boards sorted by 2020 population",source_nrs_text),collapse="\n")
+    subtitle = paste0(c(paste0("* ",only_2021_text),"Health boards sorted by 2020 population estimate."),collapse="\n"),
+    caption = paste0(c(source_nrs_text),collapse="\n")
     ) +
-  guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
+  guides(colour = guide_legend(nrow=2, title = NULL), 
+         size = guide_legend(nrow=2, title = NULL)) +
   NULL
 )
 
 save_output_file(filename = paste0(dir_outputs,"/figure_proportion_of_deaths_by_place_by_hb"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_of_deaths_by_place_by_hb, width = 12, height = 10, units = "in", dpi = 300)
 ```
 
-## LA
+## all places of death, LA
 
 ```{r}
 (figure_proportion_of_deaths_by_place_by_la <-
@@ -1640,13 +1643,130 @@ save_output_file(filename = paste0(dir_outputs,"/figure_proportion_of_deaths_by_
   mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
   mutate(ref_area = factor(x = ref_area, levels = order_la_by_population)) %>%  # arrange hb/la by population size
   ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
-  geom_point() +
-  geom_line(size = 1) +
+  geom_point(aes(size = place_of_death)) +
+  geom_line(aes(size = place_of_death)) +
   geom_text(data = ~filter(.x, year==2021), aes(x=2021.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
   facet_rep_wrap(~ ref_area, repeat.tick.labels = TRUE, ncol = 4) +
+  scale_size_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
   scale_x_continuous(breaks = 2015:2021) +
   scale_y_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
-  scale_colour_viridis_d(option="C") +
+  scale_colour_viridis_d(option="C", name="Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
+  theme(
+    legend.position = "top",
+    legend.text = element_text(size = 12),
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    panel.border = element_rect(fill = NA, colour = "gray80"),  # draw a transparent rectangle as the border
+    strip.background = element_rect(fill = NA, colour = "gray80")
+    ) +
+  labs(
+    x = NULL, y= "Proportion of yearly deaths (%)",
+    subtitle = paste0(c(paste0("* ",only_2021_text),"Local authorities sorted by 2020 population estimate."),collapse="\n"),
+    caption = paste0(c(source_nrs_text),collapse="\n")
+    ) +
+  guides(colour = guide_legend(nrow=2, title = NULL), 
+         size = guide_legend(nrow=2, title = NULL)) +
+  NULL
+)
+
+save_output_file(filename = paste0(dir_outputs,"/figure_proportion_of_deaths_by_place_by_la"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_of_deaths_by_place_by_la, width = 12, height = 14, units = "in", dpi = 300)
+```
+
+## Home deaths + Scottish average, HB
+
+```{r}
+(figure_proportion_of_deaths_at_home_by_hb <-
+  proportions_of_deaths_by_place_by_geography %>%
+  filter(geography == "hb") %>%
+  filter(place_of_death == "Home & other non-institution") %>%
+  left_join(merged_proportions_of_deaths_by_place %>% select(year, place_of_death, proportion_scotland = proportion_of_total), by = c("year","place_of_death")) %>%
+  mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
+  mutate(ref_area = factor(x = ref_area, levels = order_hb_by_population)) %>%  # arrange hb/la by population size
+  pivot_longer(cols = c(proportion_of_total, proportion_scotland), names_to = "measure", values_to = "proportion_of_total") %>%
+  mutate(measure = if_else(measure == "proportion_of_total", true = "Health board", false = "Scotland")) %>%
+  ggplot(., aes(x=year, y=proportion_of_total, linetype = measure)) +
+  geom_point() +
+  geom_line() +
+  geom_text(data = ~filter(.x, year==2021), aes(x=2021.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+  facet_rep_wrap(~ ref_area, repeat.tick.labels = TRUE) +
+  scale_size_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
+  scale_x_continuous(breaks = 2015:2021) +
+  scale_y_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
+  scale_colour_viridis_d(option="C", name="Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
+  theme(
+    legend.position = "top",
+    legend.text = element_text(size = 12),
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    panel.border = element_rect(fill = NA, colour = "gray80"),  # draw a transparent rectangle as the border
+    strip.background = element_rect(fill = NA, colour = "gray80")
+    ) +
+  labs(
+    x = NULL, y= "Proportion of yearly deaths that happened at home or other non-institution (%)",
+    linetype = NULL,
+    subtitle = paste0(c(paste0("* ",only_2021_text),"Health boards sorted by 2020 population estimate."),collapse="\n"),
+    caption = paste0(c(source_nrs_text),collapse="\n")
+    ) +
+  NULL
+)
+
+save_output_file(filename = paste0(dir_outputs,"/figure_proportion_of_deaths_at_home_by_hb"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_of_deaths_at_home_by_hb, width = 12, height = 10, units = "in", dpi = 300)
+```
+
+## Home deaths + Scottish average, LA
+
+```{r}
+(figure_proportion_of_deaths_at_home_by_la <-
+  proportions_of_deaths_by_place_by_geography %>%
+  filter(geography == "la") %>%
+  filter(place_of_death == "Home & other non-institution") %>%
+  left_join(merged_proportions_of_deaths_by_place %>% select(year, place_of_death, proportion_scotland = proportion_of_total), by = c("year","place_of_death")) %>%
+  mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
+  mutate(ref_area = factor(x = ref_area, levels = order_la_by_population)) %>%  # arrange la/la by population size
+  pivot_longer(cols = c(proportion_of_total, proportion_scotland), names_to = "measure", values_to = "proportion_of_total") %>%
+  mutate(measure = if_else(measure == "proportion_of_total", true = "Health board", false = "Scotland")) %>%
+  ggplot(., aes(x=year, y=proportion_of_total, linetype = measure)) +
+  geom_point() +
+  geom_line() +
+  geom_text(data = ~filter(.x, year==2021), aes(x=2021.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+  facet_rep_wrap(~ ref_area, repeat.tick.labels = TRUE, ncol = 4) +
+  scale_size_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
+  scale_x_continuous(breaks = 2015:2021) +
+  scale_y_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
+  scale_colour_viridis_d(option="C", name="Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
+  theme(
+    legend.position = "top",
+    legend.text = element_text(size = 12),
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    panel.border = element_rect(fill = NA, colour = "gray80"),  # draw a transparent rectangle as the border
+    strip.background = element_rect(fill = NA, colour = "gray80")
+    ) +
+  labs(
+    x = NULL, y= "Proportion of yearly deaths that happened at home or other non-institution (%)",
+    linetype = NULL,
+    subtitle = paste0(c(paste0("* ",only_2021_text),"Local authorities sorted by 2020 population estimate."),collapse="\n"),
+    caption = paste0(c(source_nrs_text),collapse="\n")
+    ) +
+  NULL
+)
+
+save_output_file(filename = paste0(dir_outputs,"/figure_proportion_of_deaths_at_home_by_la"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_of_deaths_at_home_by_la, width = 12, height = 14, units = "in", dpi = 300)
+```
+
+
+## HB: compact plot of home deaths only
+
+```{r}
+
+# (figure_proportion_of_deaths_by_place_by_hb <-
+  proportions_of_deaths_by_place_by_geography %>%
+  filter(geography == "hb") %>%
+  filter(place_of_death == "Home & other non-institution") %>%
+  mutate(ref_area = factor(x = ref_area, levels = order_hb_by_population)) %>%  # arrange hb/la by population size
+  mutate(year = factor(x = year, levels = 2015:2021)) %>%  # arrange hb/la by population size
+  ggplot(., aes(x=proportion_of_total, y=ref_area, colour=year, shape=year)) +
+  geom_point(size = 2) +
+  scale_shape_manual(values = c(rep(4, times = 5), rep(16, times = 2))) +
+  scale_x_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
+  scale_colour_viridis_d(option="D", direction = -1) +
   theme(
     legend.position = "top",
     legend.text = element_text(size = 12),
@@ -1658,15 +1778,12 @@ save_output_file(filename = paste0(dir_outputs,"/figure_proportion_of_deaths_by_
     x = NULL, y= "Proportion of yearly deaths (%)",
     colour = NULL,
     subtitle = paste0("* ",only_2021_text),
-    caption = paste0(c("Local Authorities sorted by 2020 population",source_nrs_text),collapse="\n")
+    caption = paste0(c("Health boards sorted by 2020 population estimate",source_nrs_text),collapse="\n")
     ) +
-  guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
+  # guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
   NULL
-)
-
-save_output_file(filename = paste0(dir_outputs,"/figure_proportion_of_deaths_by_place_by_la"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_of_deaths_by_place_by_la, width = 12, height = 14, units = "in", dpi = 300)
+# )
 ```
-
 
 
 # Save most recent workspace for further analyses
