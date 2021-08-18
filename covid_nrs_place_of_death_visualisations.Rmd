@@ -175,7 +175,7 @@ save_output_file(filename = paste0(dir_outputs,"/figure_proportion_home_deaths_o
   geom_line(data = . %>% filter(covid_status == "Non Covid-19 deaths"), aes(group = place_of_death, linetype = covid_status)) +
   geom_point(data = . %>% filter(!covid_status=="Non Covid-19 deaths" | !year==2019)) +
   geom_text(data = . %>% filter(year==2016) %>% mutate(y_pos = c(3.1e4, 1.1e4, 1.8e4)), aes(y = y_pos, label = place_of_death), hjust = 0) +
-  geom_text(data = ~filter(.x, year==2021), aes(x=2021.1, y=y, label="*"), inherit.aes = FALSE) +
+  geom_text(data = ~filter(.x, year==2021), aes(x=2021.1, y=number_of_deaths, label="*"), inherit.aes = FALSE) +
   scale_colour_viridis_d(option="C", end = 0.8, guide = FALSE) +
   scale_linetype_manual(values = c("solid", "dashed")) +
   scale_x_continuous(breaks = 2015:2021) +
@@ -196,6 +196,48 @@ save_output_file(filename = paste0(dir_outputs,"/figure_proportion_home_deaths_o
 
 save_output_file(filename = paste0(dir_outputs,"/figure_number_of_deaths_by_place_by_year"), extensions = c(".pdf",".svg",".png"), plot = figure_number_of_deaths_by_place_by_year, width = 15, height = 11, dpi = 300, units = "cm")
 ```
+
+### Only up to incl. 2020
+
+```{r}
+(figure_number_of_deaths_by_place_by_year_2020 <-
+  bind_rows(
+    proportions_of_historical_deaths_by_place %>% filter(year==2019) %>% mutate(covid_status = "Non Covid-19 deaths"),  # add extra rows of 2019 data for plotting line between 2019 and 2020
+    proportions_of_historical_deaths_by_place %>% mutate(covid_status = "All deaths"),
+    proportions_of_current_non_covid_deaths_by_place %>% mutate(covid_status = "Non Covid-19 deaths"),
+    proportions_of_current_deaths_by_place %>% mutate(covid_status = "All deaths")
+  ) %>%
+  filter(!place_of_death %in% c("All","Other")) %>%  # don't show Other
+  filter(year != 2021) %>%  # don't include 2021
+  mutate(
+    place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])   # move home to 2nd position to match order in plot
+    ) %>%
+  ggplot(., aes(x=year, y=number_of_deaths, colour = place_of_death)) +
+  geom_line(data = . %>% filter(covid_status == "All deaths"), aes(group = place_of_death, linetype = covid_status)) +
+  geom_line(data = . %>% filter(covid_status == "Non Covid-19 deaths"), aes(group = place_of_death, linetype = covid_status)) +
+  geom_point(data = . %>% filter(!covid_status=="Non Covid-19 deaths" | !year==2019)) +
+  geom_text(data = . %>% filter(year==2016) %>% mutate(y_pos = c(3.1e4, 1.1e4, 1.8e4)), aes(y = y_pos, label = place_of_death), hjust = 0) +
+  scale_colour_viridis_d(option="C", end = 0.8, guide = FALSE) +
+  scale_linetype_manual(values = c("solid", "dashed")) +
+  scale_x_continuous(breaks = 2015:2021) +
+  theme(
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.box="vertical",
+    legend.margin=margin()
+    ) +
+  scale_y_continuous(labels = function(x) format(x, big.mark = ","), limits = c(0, NA)) +
+  labs(
+    x = "Year", y = "Deaths (N)",
+    caption = paste0(c(death_registrations_text,source_nrs_text), collapse="\n")
+  ) +
+  NULL
+)
+
+save_output_file(filename = paste0(dir_outputs,"/figure_number_of_deaths_by_place_by_year_2020"), extensions = c(".pdf",".svg",".png"), plot = figure_number_of_deaths_by_place_by_year_2020, width = 15, height = 11, dpi = 300, units = "cm")
+```
+
+
 
 ## Overall, regardless of place
 
