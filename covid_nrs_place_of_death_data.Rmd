@@ -433,6 +433,11 @@ headers_in_nrs_data_2021 <-
     "blank_remove",  # this and the rest are irrelevant entries that we'll remove
     "remove_1"
   )
+## in week 32 of 2021, the format changed somewhat and the blank column in penultimate location in Table 3 (2021) was removed
+## so this is a hack that gets around that!
+expected_ncol_2021 <- length(headers_in_nrs_data_2021)
+actual_ncol_2021 <- ncol(readxl::read_excel(files_weekly_deaths$main_report, sheet = nrs_weekly_data_sheet_2021))
+headers_in_nrs_data_2021 <- headers_in_nrs_data_2021[1:actual_ncol_2021]  # subset the first N of the defined headers, where N is actual number of columns in file
 
 ## extract data... this is dense but I've tried to annotate it clearly!
 weekly_deaths_cause_of_death_before_split_2020 <-
