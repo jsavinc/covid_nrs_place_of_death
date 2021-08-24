@@ -151,7 +151,7 @@ save_output_file <- function(filename, extensions, plot, width, height, units, d
   NULL
 )
 
-save_output_file(filename = paste0(dir_outputs,"/figure_proportion_home_deaths_over_time"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_home_deaths_over_time, width = 12, height = 10, units = "cm", dpi = 300)
+save_output_file(filename = paste0(dir_outputs,"/figure_proportion_home_deaths_over_time"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_home_deaths_over_time, width = 13, height = 10, units = "cm", dpi = 300)
 ```
 
 
