@@ -593,6 +593,72 @@ save_output_file(filename = paste0(dir_outputs,"/figure_deaths_at_home_2020_and_
 ```
 
 
+### Deaths by place, both years
+
+
+```{r}
+annotations_deaths_by_place_2020_and_2021 <- tribble(
+  ~place_of_death, ~x, ~y, ~label,
+  "Hospital", 4, 400, 2021,
+  "Hospital", 18, 800, 2020,
+  "Home & other non-institution", 4, 540, 2021,
+  "Home & other non-institution", 18, 610, 2020,
+  "Care home", 4, 160, 2021,
+  "Care home", 11, 600, 2020
+) %>% mutate(alpha = if_else(label==2021, 1, 0.4)) %>%   # change alpha for 2020
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home")))  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+
+arrows_deaths_by_place_2020_and_2021 <- tribble(
+   ~geom, ~place_of_death, ~label, ~x, ~y, ~xend, ~yend,
+  "text", "Home & other non-institution", "Historic range (min & max)", 15, 90, NA, NA,
+  "curve", "Home & other non-institution", NA, 10, 110, 14, 250,
+  "text", "Home & other non-institution", "Historic mean", 34, 40, NA, NA,
+  "curve", "Home & other non-institution", NA, 34, 60, 39, 275
+) %>% 
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home")))  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+
+(figure_deaths_by_place_2020_and_2021 <-
+  merged_deaths_overall %>%
+  filter(sex == "all" & age == "all") %>%
+  filter(!place_of_death %in% c("All","Other")) %>%
+  select(-c(date_w_c, week_number_run_over, ref_period, ref_area)) %>%
+  mutate(year = factor(year)) %>%
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))) %>%
+  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid),
+               names_to = "deaths_type", values_to = "deaths") %>%
+  ggplot(aes(x = week_number)) +
+  # geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
+  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "grey", alpha = 0.3) +
+  geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
+  geom_line(data = . %>% filter(year==2020), aes(y = deaths, colour = deaths_type, group = deaths_type), show.legend = FALSE, alpha = 0.5) +  # use a fixed alpha value, otherwise the lines are chopped up into rectangular segments and don't look good zoomed in
+  geom_line(data = . %>% filter(year==2021), aes(y = deaths, colour = deaths_type), size = 1.1) +
+  scale_x_continuous(breaks = seq(0,60,by=12)) +
+  ylim(0, 850) +  # start scale at 0 for better understanding the scale of deaths
+  facet_grid(~place_of_death) +
+  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+                      labels = c("All deaths",
+                                 "Non Covid-19 deaths"),
+                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+                      ) +
+  geom_text(data = annotations_deaths_by_place_2020_and_2021 %>% filter(label==2021), aes(x=x, y=y, label=label), fontface = "bold") +
+  geom_text(data = annotations_deaths_by_place_2020_and_2021 %>% filter(label==2020), aes(x=x, y=y, label=label), alpha = 0.6) +
+  geom_text(data = arrows_deaths_by_place_2020_and_2021 %>% filter(geom=="text"), aes(x=x,y=y,label=label)) +
+  geom_curve(data = arrows_deaths_by_place_2020_and_2021 %>% filter(geom=="curve") %>% slice(1), aes(x=x,y=y,xend=xend,yend=yend), curvature = 0.20, arrow = arrow(length = unit(0.2, "cm")), alpha = 0.5) +
+  geom_curve(data = arrows_deaths_by_place_2020_and_2021 %>% filter(geom=="curve") %>% slice(2), aes(x=x,y=y,xend=xend,yend=yend), curvature = 0.20, arrow = arrow(length = unit(0.2, "cm")), linetype = "dashed") +
+  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
+  labs(x = "Week number",
+       y = "Weekly deaths (N)",
+       subtitle = date_range_text,
+       caption = paste0(c(death_registrations_text, source_nrs_text), collapse="\n"),
+       colour = "Cause of death"
+       ) +
+  ## annotate historic range
+  NULL
+)
+
+save_output_file(filename = paste0(dir_outputs,"/figure_deaths_by_place_2020_and_2021"), extensions = c(".pdf",".svg",".png"), plot = figure_deaths_by_place_2020_and_2021, width = 28, height = 14, dpi = 300, units = "cm")
+```
+
 
 ## Deaths at home, for policy briefing
 
