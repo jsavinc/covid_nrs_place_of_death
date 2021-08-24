@@ -623,11 +623,10 @@ arrows_deaths_by_place_2020_and_2021 <- tribble(
   filter(!place_of_death %in% c("All","Other")) %>%
   select(-c(date_w_c, week_number_run_over, ref_period, ref_area)) %>%
   mutate(year = factor(year)) %>%
-  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))) %>%
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
   pivot_longer(cols = c(deaths_all_causes, deaths_non_covid),
                names_to = "deaths_type", values_to = "deaths") %>%
   ggplot(aes(x = week_number)) +
-  # geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "grey", alpha = 0.3) +
   geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
   geom_line(data = . %>% filter(year==2020), aes(y = deaths, colour = deaths_type, group = deaths_type), show.legend = FALSE, alpha = 0.5) +  # use a fixed alpha value, otherwise the lines are chopped up into rectangular segments and don't look good zoomed in
@@ -652,7 +651,6 @@ arrows_deaths_by_place_2020_and_2021 <- tribble(
        caption = paste0(c(death_registrations_text, source_nrs_text), collapse="\n"),
        colour = "Cause of death"
        ) +
-  ## annotate historic range
   NULL
 )
 
@@ -1894,6 +1892,25 @@ save_output_file(filename = paste0(dir_outputs,"/figure_proportion_of_deaths_at_
   # guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
   NULL
 # )
+```
+
+
+# Covid as underlying vs contributory cause
+
+```{r}
+(figure_covid_contributory_vs_underlying_cause <-
+annual_covid_contributory_vs_underlying_cause %>%
+  pivot_longer(cols = -c(year, place_of_death, deaths_covid_related), names_to = "covid_category", values_to = "value") %>%
+  extract(col = covid_category, into = c("measure", "covid_category"), regex = "(covid_19|proportion)_(.*)", remove = TRUE) %>%
+  mutate(
+    measure = if_else(measure == "covid_19", "n", measure),
+    covid_category = str_remove(covid_category, pattern = "\\_.*$"),
+    covid_category = paste0(covid_category, " cause")
+  ) %>%
+  ggplot(aes(x = place_of_death, y = value, group = covid_category, fill = covid_category)) +
+    facet_wrap(year~measure,scales = "free", nrow = 3) +
+    geom_col(position = position_dodge(width = 1))
+)
 ```
 
 

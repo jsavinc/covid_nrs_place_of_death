@@ -722,6 +722,74 @@ As of 28 July 2021, the [ScotGov open data website](https://statistics.gov.scot/
 ```
 
 
+#### Weekly Covid as contributory vs underlying cause of death
+
+```{r}
+weekly_covid_contributory_vs_underlying_cause <-
+  readxl::read_excel(files_weekly_deaths$sex_age, sheet = 2, skip = 4, col_names = c("week_number","place_of_death","sex","age","cause_of_death","number_of_deaths"), guess_max = 1e5) %>%
+  drop_na(number_of_deaths) %>%    # remove empty rows & one row where it's just the copyright notice
+  mutate(
+    year = 2000L + parse_integer(str_sub(week_number, 1, 2)),
+    week_number = parse_integer(str_sub(week_number, 4, 5)),
+    date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
+    week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)  # invent a "run-over" week number - weeks 54+ are in 2021
+  ) %>%
+  filter(
+    cause_of_death %in% c("COVID-19 contributory factor", "COVID-19 underlying cause")
+  ) %>%
+  tidyr::complete(  # complete implicit missing entries and make them 0
+    nesting(week_number,week_number_run_over,date_w_c,year),
+    age,sex,place_of_death,cause_of_death,
+    fill = list(number_of_deaths = 0)
+  ) %>%
+  recode_place_of_death() %>%  # this needs to be done after recoding cause of death, otherwise we also include the "all" figure which isn't included in this dataset
+  pivot_wider(names_from = cause_of_death, values_from = number_of_deaths) %>%   # make separate columns for causes of death figures
+  clean_names() %>%
+  filter(age!="all") %>%
+  filter(sex!="all") %>%
+  filter(place_of_death != "All") %>%
+  group_by(week_number, week_number_run_over, year, date_w_c, place_of_death) %>%  # sum over age & sex
+  summarise(across(starts_with("covid_"), ~sum(.x)), .groups = "drop") %>%
+  ({function(x)
+    bind_rows(
+      x,
+      x %>% 
+        group_by(week_number, week_number_run_over, year, date_w_c) %>%  # sum across place of death
+        summarise(across(starts_with("covid_"), ~sum(.x)), .groups = "drop") %>%
+        mutate(place_of_death = "All")
+    )
+  })
+
+## check that the figures actually make sense! i.e. the two figures add up to the total covid-related figure
+stopifnot(
+  (weekly_deaths_overall %>%
+  filter(sex=="all" & age=="all") %>%
+  inner_join(weekly_covid_contributory_vs_underlying_cause) %>%
+  filter(deaths_covid_related != covid_19_contributory_factor + covid_19_underlying_cause) %>%
+  nrow) == 0
+)
+
+annual_covid_contributory_vs_underlying_cause <-
+  weekly_covid_contributory_vs_underlying_cause %>%
+  group_by(year, place_of_death) %>%
+  summarise(across(starts_with("covid_"), ~sum(.x)), .groups = "drop") %>%
+  ({function(x)
+    bind_rows(
+      x %>% mutate(year = as.character(year)),
+      x %>% 
+        group_by(place_of_death) %>%  # sum across eyars
+        summarise(across(starts_with("covid_"), ~sum(.x)), .groups = "drop") %>%
+        mutate(year = "2020-2021")
+    )
+  }) %>%
+  mutate(deaths_covid_related = covid_19_contributory_factor + covid_19_underlying_cause) %>%
+  mutate(
+    proportion_contributory = covid_19_contributory_factor / deaths_covid_related,
+    proportion_underlying = covid_19_underlying_cause / deaths_covid_related
+    )
+```
+
+
 ### Checking week number coding
 
 ```{r}
