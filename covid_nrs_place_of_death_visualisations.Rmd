@@ -1241,7 +1241,7 @@ table_deaths_by_cause_2020 %>%
 ```
 
 
-## Annual deaths by cause
+## Annual deaths by cause, 2020 only
 
 ```{r}
 (figure_annual_deaths_by_cause <-
@@ -1278,7 +1278,7 @@ save_output_file(filename = paste0(dir_outputs,"/figure_annual_deaths_by_cause")
 ```
 
 
-## Deaths by cause, from 2020 until current day
+## Deaths by cause, 2020 to now
 
 ```{r}
 (figure_deaths_by_cause <-
