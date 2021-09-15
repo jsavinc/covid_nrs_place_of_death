@@ -1,0 +1,133 @@
+---
+title: "Compiling avoidable deaths codes (as coded by NRS)"
+author: "Jan Savinc"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Introduction
+
+NRS publish an annual report on the number of avoidable/treatable deaths. The latest report is from December 2020 and reports on data from 2019, available on [the NRS website](https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/vital-events/deaths/avoidable-mortality).
+
+The data used in the report can be downloaded in .csv and .xlsx format - I'll extract the code list for avoidable deaths from the excel file (.xlsx): [https://www.nrscotland.gov.uk/files//statistics/avoidable-mortality/2019/avoid-mortality-19-all-tabs.xlsx](https://www.nrscotland.gov.uk/files//statistics/avoidable-mortality/2019/avoid-mortality-19-all-tabs.xlsx)
+
+
+# Load packages
+
+```{r}
+library(tidyverse)
+library(readxl)  # for loading excel files
+library(janitor)  # for cleaning data
+library(knitr)  # for pretty tables in the report
+```
+
+
+# Download file
+
+```{r}
+url_avoidable_deaths_2019 <- "https://www.nrscotland.gov.uk/files//statistics/avoidable-mortality/2019/avoid-mortality-19-all-tabs.xlsx"
+path_avoidable_deaths_2019 <- "./downloaded_data/avoid-mortality-19-all-tabs.xlsx"
+
+if (!file.exists(path_avoidable_deaths_2019)) download.file(url = url_avoidable_deaths_2019, destfile = path_avoidable_deaths_2019, mode = "wb")
+```
+
+
+# Load definitions
+
+The excel sheet containing definitions is helpfully named 'Definitions':
+
+```{r}
+avoidable_deaths_raw <- read_excel(path = path_avoidable_deaths_2019, sheet = "Definitions", range = "A4:E225") %>%
+  clean_names
+```
+
+
+## Inclusions and exclusions
+
+The column `ICD-10 codes` lists codes in the following formats:
+
+* most codes are listed as comma-separated values (e.g. `A35, A36, A80`) - these can be easily 'split' into several rows with one value per row
+* some codes are listed as ranges (using dash/hyphen, e.g. `A00-A09`) - these need to be parsed. This can be done in a 'dumb' manner without reference to the specifics of ICD-10 where not all codes in such a range exist, because invalid codes simply won't match actual data
+* some codes are listed with exclusions, which are always listed in parentheses (e.g. `A40 (excl. A40.3), A41 (excl. A41.3)`). This could be somewhat complex because we might need to track which exclusion applies to which code. However, it looks like there are only 2 entries with excepetions, and there is only ever one exception per listed code or code range, which means the exclusion can simply go in a new column.
+    - Note that it is possible that the same death record may contain both codes that are included under avoidable deaths and excluded. This is something to check in the actual data!
+
+```{r}
+avoidable_deaths_raw %>% filter(str_detect(string = icd_10_codes, pattern = regex("excl", ignore_case = TRUE))) %>% kable(caption = "Entries with exclusions listed")
+
+avoidable_deaths_raw %>% filter(str_detect(string = icd_10_codes, pattern = regex("\\-", ignore_case = TRUE))) %>% kable(caption = "Entries specifying code ranges")
+
+# TODO: add code to check length so we can handle decimal codes also!
+parse_icd_10_range <- function(code_range) {
+  ## helper function for generating code ranges - based on the icd package, function .icd10cm_get_majors_possible()
+  if (is.na(code_range) | !str_detect(string = code_range, pattern="\\-")) return(code_range)
+  
+  letter_1 <- str_replace(string = code_range, pattern = "^([A-Za-z]).*$", replacement = "\\1")
+  letter_2 <- str_replace(string = code_range, pattern = "^.+\\-([A-Za-z]).*$", replacement = "\\1")
+  letters <- LETTERS[which(LETTERS==letter_1) : which(LETTERS==letter_2)]
+  
+  decimal <- str_detect(string = code_range, pattern = "\\.")
+  number_of_digits <- 2
+  if (decimal) number_of_digits <- 3
+  
+  number_1 <- str_replace(string = str_remove_all(code_range, pattern="\\."), pattern = "^[A-Za-z](\\d{1,3})\\-.*$", replacement = "\\1")
+  number_2 <- str_replace(string = str_remove_all(code_range, pattern="\\."), pattern = "^.+\\-[A-Za-z](\\d{1,3})$", replacement = "\\1")
+
+  code_1 <- paste0(letter_1,number_1)
+  code_2 <- paste0(letter_2,number_2)
+  
+  if (decimal) {
+    candidates <- sort(apply(
+        expand.grid(letters, 0:9, 0:9, 0:9),
+        MARGIN = 1,
+        FUN = paste0,
+        collapse = ""
+      ))
+  } else {
+    candidates <- sort(apply(
+        expand.grid(letters, 0:9, 0:9),
+        MARGIN = 1,
+        FUN = paste0,
+        collapse = ""
+      ))
+  }
+  
+  parsed_codes <- candidates[seq.int(
+    from = which(candidates == code_1),
+    to = which(candidates == code_2)
+  )]
+  if (decimal) parsed_codes <- paste0(str_sub(parsed_codes, 1, 3), ".", str_sub(parsed_codes, 4, 4))
+  parsed_codes <- paste0(parsed_codes, collapse=",")
+  return(parsed_codes)
+}
+```
+
+
+```{r}
+# TODO: show how the ranges have been parsed just to be sure
+avoidable_deaths <-
+  avoidable_deaths_raw %>%
+  drop_na(condition_group_and_cause) %>%  # remove blank rows used for blank space in the excel file
+  separate_rows(icd_10_codes, sep=",\\s*") %>%  # separate comma-separated values into rows so we have one entry per row
+  extract(col = icd_10_codes, into = "exclusions", regex = "\\(excl\\.\\s*(.+)\\)", remove = FALSE) %>%  # extract the exclusions and put them in a separate column
+  mutate(
+    icd_10_codes = str_remove_all(string = icd_10_codes, pattern = "\\s*\\(excl.+\\)"),  # remove the exclusions from the code ranges
+    icd_10_codes = map_chr(.x = icd_10_codes, .f = ~parse_icd_10_range(.x))
+  )
+```
+
+
+# Notes on usage
+
+When using this with real-world data, make sure to check whether the same record contains both an inclusion and an exclusion code according to this list! What to do in this case will differ from case to case.
