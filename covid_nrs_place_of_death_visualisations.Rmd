@@ -1280,6 +1280,8 @@ save_output_file(filename = paste0(dir_outputs,"/figure_annual_deaths_by_cause")
 
 ## Deaths by cause, 2020 to now
 
+It would be great to have a separate 2019 bar to show changes from last year only, however, cause of death data are only provided as an average 2015-2019!
+
 ```{r}
 (figure_deaths_by_cause <-
   merged_deaths_cause_of_death %>%
