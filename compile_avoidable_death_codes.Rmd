@@ -68,7 +68,6 @@ avoidable_deaths_raw %>% filter(str_detect(string = icd_10_codes, pattern = rege
 
 avoidable_deaths_raw %>% filter(str_detect(string = icd_10_codes, pattern = regex("\\-", ignore_case = TRUE))) %>% kable(caption = "Entries specifying code ranges")
 
-# TODO: add code to check length so we can handle decimal codes also!
 parse_icd_10_range <- function(code_range) {
   ## helper function for generating code ranges - based on the icd package, function .icd10cm_get_majors_possible()
   if (is.na(code_range) | !str_detect(string = code_range, pattern="\\-")) return(code_range)
@@ -115,19 +114,63 @@ parse_icd_10_range <- function(code_range) {
 
 
 ```{r}
-# TODO: show how the ranges have been parsed just to be sure
 avoidable_deaths <-
   avoidable_deaths_raw %>%
   drop_na(condition_group_and_cause) %>%  # remove blank rows used for blank space in the excel file
-  separate_rows(icd_10_codes, sep=",\\s*") %>%  # separate comma-separated values into rows so we have one entry per row
+  mutate(
+    group = if_else(condition = is.na(icd_10_codes), true = condition_group_and_cause, false = NA_character_),
+    original_codes = icd_10_codes
+    ) %>%
+  fill(group, .direction = "down") %>%  # forward-fill group
+  drop_na(icd_10_codes) %>%
+  separate_rows(icd_10_codes, sep=",\\s*", ) %>%  # separate comma-separated values into rows so we have one entry per row
   extract(col = icd_10_codes, into = "exclusions", regex = "\\(excl\\.\\s*(.+)\\)", remove = FALSE) %>%  # extract the exclusions and put them in a separate column
   mutate(
     icd_10_codes = str_remove_all(string = icd_10_codes, pattern = "\\s*\\(excl.+\\)"),  # remove the exclusions from the code ranges
     icd_10_codes = map_chr(.x = icd_10_codes, .f = ~parse_icd_10_range(.x))
-  )
+  ) %>%
+  separate_rows(icd_10_codes, sep=",\\s*") %>%  # separate comma-separated values again now that we've converted them from the ranges
+  separate(col = age, into = c("age_min", "age_max") ,sep = "\\-", remove = TRUE) %>%
+  mutate(
+    treatable = case_when(  # make more explicit the treatable/preventable distinction
+      str_detect(treatable, pattern = "50") ~ 0.5,
+      str_detect(treatable, pattern = "\\*") ~ 1,
+      TRUE ~ 0
+    ),
+    preventable = case_when(
+      str_detect(preventable, pattern = "50") ~ 0.5,
+      str_detect(preventable, pattern = "\\•") ~ 1,
+      TRUE ~ 0
+    ),
+  ) %>%
+  relocate(group, condition_group_and_cause, original_codes)
+```
+
+## Checking parsing of ranges
+
+```{r}
+avoidable_deaths_raw %>%
+  drop_na(condition_group_and_cause) %>%  # remove blank rows used for blank space in the excel file
+  separate_rows(icd_10_codes, sep=",\\s*") %>%  # separate comma-separated values into rows so we have one entry per row
+  extract(col = icd_10_codes, into = "exclusions", regex = "\\(excl\\.\\s*(.+)\\)", remove = FALSE) %>%  # extract the exclusions and put them in a separate column
+  filter(str_detect(string = icd_10_codes, pattern = "\\-")) %>%
+  mutate(
+    icd_10_codes = str_remove_all(string = icd_10_codes, pattern = "\\s*\\(excl.+\\)"),  # remove the exclusions from the code ranges
+    icd_10_codes_parsed = map_chr(.x = icd_10_codes, .f = ~parse_icd_10_range(.x))
+  ) %>%
+  select(icd_10_codes, icd_10_codes_parsed) %>% 
+  kable(caption = "Parsing of codes defined as ranges.")
 ```
 
 
 # Notes on usage
 
 When using this with real-world data, make sure to check whether the same record contains both an inclusion and an exclusion code according to this list! What to do in this case will differ from case to case.
+
+# Save as `.csv`
+
+```{r}
+if (!dir.exists("./avoidable_deaths")) dir.create("./avoidable_deaths")
+write_csv(avoidable_deaths, file = "./avoidable_deaths/avoidable_deaths_2019_inclusions.csv")
+```
+
