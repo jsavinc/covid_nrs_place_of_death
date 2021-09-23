@@ -1,0 +1,914 @@
+group,condition_group_and_cause,original_codes,icd_10_codes,exclusions,age_min,age_max,treatable,preventable
+Infectious diseases,Intestinal diseases,A00-A09,A00,NA,0,74,0,1
+Infectious diseases,Intestinal diseases,A00-A09,A01,NA,0,74,0,1
+Infectious diseases,Intestinal diseases,A00-A09,A02,NA,0,74,0,1
+Infectious diseases,Intestinal diseases,A00-A09,A03,NA,0,74,0,1
+Infectious diseases,Intestinal diseases,A00-A09,A04,NA,0,74,0,1
+Infectious diseases,Intestinal diseases,A00-A09,A05,NA,0,74,0,1
+Infectious diseases,Intestinal diseases,A00-A09,A06,NA,0,74,0,1
+Infectious diseases,Intestinal diseases,A00-A09,A07,NA,0,74,0,1
+Infectious diseases,Intestinal diseases,A00-A09,A08,NA,0,74,0,1
+Infectious diseases,Intestinal diseases,A00-A09,A09,NA,0,74,0,1
+Infectious diseases,"Diphtheria, Tetanus, Poliomyelitis","A35, A36, A80",A35,NA,0,74,0,1
+Infectious diseases,"Diphtheria, Tetanus, Poliomyelitis","A35, A36, A80",A36,NA,0,74,0,1
+Infectious diseases,"Diphtheria, Tetanus, Poliomyelitis","A35, A36, A80",A80,NA,0,74,0,1
+Infectious diseases,Whooping cough,A37,A37,NA,0,74,0,1
+Infectious diseases,Meningococcal infection,A39,A39,NA,0,74,0,1
+Infectious diseases,Sepsis due to streptococcus pneumonia and sepsis due to haemophilus influenzae,"A40.3, A41.3",A40.3,NA,0,74,0,1
+Infectious diseases,Sepsis due to streptococcus pneumonia and sepsis due to haemophilus influenzae,"A40.3, A41.3",A41.3,NA,0,74,0,1
+Infectious diseases,Haemophilus influenza infections,A49.2,A49.2,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A50,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A51,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A52,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A53,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A54,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A55,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A56,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A57,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A58,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A59,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A60,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A63,NA,0,74,0,1
+Infectious diseases,Sexually transmitted infections (except HIV/AIDS),"A50-A60, A63, A64",A64,NA,0,74,0,1
+Infectious diseases,Varicella,B01,B01,NA,0,74,0,1
+Infectious diseases,Measles,B05,B05,NA,0,74,0,1
+Infectious diseases,Rubella,B06,B06,NA,0,74,0,1
+Infectious diseases,Viral Hepatitis,B15-B19,B15,NA,0,74,0,1
+Infectious diseases,Viral Hepatitis,B15-B19,B16,NA,0,74,0,1
+Infectious diseases,Viral Hepatitis,B15-B19,B17,NA,0,74,0,1
+Infectious diseases,Viral Hepatitis,B15-B19,B18,NA,0,74,0,1
+Infectious diseases,Viral Hepatitis,B15-B19,B19,NA,0,74,0,1
+Infectious diseases,HIV/AIDS,B20-B24,B20,NA,0,74,0,1
+Infectious diseases,HIV/AIDS,B20-B24,B21,NA,0,74,0,1
+Infectious diseases,HIV/AIDS,B20-B24,B22,NA,0,74,0,1
+Infectious diseases,HIV/AIDS,B20-B24,B23,NA,0,74,0,1
+Infectious diseases,HIV/AIDS,B20-B24,B24,NA,0,74,0,1
+Infectious diseases,Malaria,B50-B54,B50,NA,0,74,0,1
+Infectious diseases,Malaria,B50-B54,B51,NA,0,74,0,1
+Infectious diseases,Malaria,B50-B54,B52,NA,0,74,0,1
+Infectious diseases,Malaria,B50-B54,B53,NA,0,74,0,1
+Infectious diseases,Malaria,B50-B54,B54,NA,0,74,0,1
+Infectious diseases,Haemophilus and pneumococcal meningitis,"G00.0, G00.1",G00.0,NA,0,74,0,1
+Infectious diseases,Haemophilus and pneumococcal meningitis,"G00.0, G00.1",G00.1,NA,0,74,0,1
+Infectious diseases,Tuberculosis,"A15-A19, B90, J65",A15,NA,0,74,0.5,0.5
+Infectious diseases,Tuberculosis,"A15-A19, B90, J65",A16,NA,0,74,0.5,0.5
+Infectious diseases,Tuberculosis,"A15-A19, B90, J65",A17,NA,0,74,0.5,0.5
+Infectious diseases,Tuberculosis,"A15-A19, B90, J65",A18,NA,0,74,0.5,0.5
+Infectious diseases,Tuberculosis,"A15-A19, B90, J65",A19,NA,0,74,0.5,0.5
+Infectious diseases,Tuberculosis,"A15-A19, B90, J65",B90,NA,0,74,0.5,0.5
+Infectious diseases,Tuberculosis,"A15-A19, B90, J65",J65,NA,0,74,0.5,0.5
+Infectious diseases,Scarlet fever,A38,A38,NA,0,74,0,0
+Infectious diseases,Sepsis,"A40 (excl. A40.3), A41 (excl. A41.3)",A40,A40.3,0,74,0,0
+Infectious diseases,Sepsis,"A40 (excl. A40.3), A41 (excl. A41.3)",A41,A41.3,0,74,0,0
+Infectious diseases,Cellulitis,"A46, L03",A46,NA,0,74,0,0
+Infectious diseases,Cellulitis,"A46, L03",L03,NA,0,74,0,0
+Infectious diseases,Legionnaires disease,A48.1,A48.1,NA,0,74,0,0
+Infectious diseases,Streptococcal and enterococci infection,A49.1,A49.1,NA,0,74,0,0
+Infectious diseases,Other meningitis,"G00.2, G00.3, G00.8, G00.9",G00.2,NA,0,74,0,0
+Infectious diseases,Other meningitis,"G00.2, G00.3, G00.8, G00.9",G00.3,NA,0,74,0,0
+Infectious diseases,Other meningitis,"G00.2, G00.3, G00.8, G00.9",G00.8,NA,0,74,0,0
+Infectious diseases,Other meningitis,"G00.2, G00.3, G00.8, G00.9",G00.9,NA,0,74,0,0
+Infectious diseases,Meningitis due to other and unspecified causes,G03,G03,NA,0,74,0,0
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C00,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C01,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C02,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C03,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C04,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C05,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C06,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C07,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C08,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C09,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C10,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C11,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C12,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C13,NA,0,74,0,1
+Neoplasms,"Lip, oral cavity and pharynx cancer",C00-C14,C14,NA,0,74,0,1
+Neoplasms,Oesophageal cancer,C15,C15,NA,0,74,0,1
+Neoplasms,Stomach cancer,C16,C16,NA,0,74,0,1
+Neoplasms,Liver cancer,C22,C22,NA,0,74,0,1
+Neoplasms,Lung cancer,C33-C34,C33,NA,0,74,0,1
+Neoplasms,Lung cancer,C33-C34,C34,NA,0,74,0,1
+Neoplasms,Mesothelioma,C45,C45,NA,0,74,0,1
+Neoplasms,Skin (melanoma) cancer,C43,C43,NA,0,74,0,1
+Neoplasms,Bladder cancer,C67,C67,NA,0,74,0,1
+Neoplasms,Cervical cancer,C53,C53,NA,0,74,0.5,0.5
+Neoplasms,Colorectal cancer,C18-C21,C18,NA,0,74,0,0
+Neoplasms,Colorectal cancer,C18-C21,C19,NA,0,74,0,0
+Neoplasms,Colorectal cancer,C18-C21,C20,NA,0,74,0,0
+Neoplasms,Colorectal cancer,C18-C21,C21,NA,0,74,0,0
+Neoplasms,Breast cancer (female only),C50,C50,NA,0,74,0,0
+Neoplasms,Uterus cancer,"C54, C55",C54,NA,0,74,0,0
+Neoplasms,Uterus cancer,"C54, C55",C55,NA,0,74,0,0
+Neoplasms,Testicular cancer,C62,C62,NA,0,74,0,0
+Neoplasms,Thyroid cancer,C73,C73,NA,0,74,0,0
+Neoplasms,Hodgkin's disease,C81,C81,NA,0,74,0,0
+Neoplasms,Lymphoid leukaemia,"C91.0, C91.1",C91.0,NA,0,74,0,0
+Neoplasms,Lymphoid leukaemia,"C91.0, C91.1",C91.1,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D10,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D11,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D12,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D13,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D14,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D15,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D16,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D17,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D18,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D19,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D20,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D21,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D22,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D23,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D24,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D25,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D26,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D27,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D28,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D29,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D30,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D31,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D32,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D33,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D34,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D35,NA,0,74,0,0
+Neoplasms,Benign neoplasm,D10-D36,D36,NA,0,74,0,0
+Endocrine and metabolic diseases,Nutritional deficiency anaemia,D50-D53,D50,NA,0,74,0,1
+Endocrine and metabolic diseases,Nutritional deficiency anaemia,D50-D53,D51,NA,0,74,0,1
+Endocrine and metabolic diseases,Nutritional deficiency anaemia,D50-D53,D52,NA,0,74,0,1
+Endocrine and metabolic diseases,Nutritional deficiency anaemia,D50-D53,D53,NA,0,74,0,1
+Endocrine and metabolic diseases,Diabetes mellitus,E10-E14,E10,NA,0,74,0.5,0.5
+Endocrine and metabolic diseases,Diabetes mellitus,E10-E14,E11,NA,0,74,0.5,0.5
+Endocrine and metabolic diseases,Diabetes mellitus,E10-E14,E12,NA,0,74,0.5,0.5
+Endocrine and metabolic diseases,Diabetes mellitus,E10-E14,E13,NA,0,74,0.5,0.5
+Endocrine and metabolic diseases,Diabetes mellitus,E10-E14,E14,NA,0,74,0.5,0.5
+Endocrine and metabolic diseases,Thyroid disorders,E00-E07,E00,NA,0,74,0,0
+Endocrine and metabolic diseases,Thyroid disorders,E00-E07,E01,NA,0,74,0,0
+Endocrine and metabolic diseases,Thyroid disorders,E00-E07,E02,NA,0,74,0,0
+Endocrine and metabolic diseases,Thyroid disorders,E00-E07,E03,NA,0,74,0,0
+Endocrine and metabolic diseases,Thyroid disorders,E00-E07,E04,NA,0,74,0,0
+Endocrine and metabolic diseases,Thyroid disorders,E00-E07,E05,NA,0,74,0,0
+Endocrine and metabolic diseases,Thyroid disorders,E00-E07,E06,NA,0,74,0,0
+Endocrine and metabolic diseases,Thyroid disorders,E00-E07,E07,NA,0,74,0,0
+Endocrine and metabolic diseases,Adrenal disorders,"E24-E25 (excl. E24.4), E27",E24,E24.4,0,74,0,0
+Endocrine and metabolic diseases,Adrenal disorders,"E24-E25 (excl. E24.4), E27",E25,E24.4,0,74,0,0
+Endocrine and metabolic diseases,Adrenal disorders,"E24-E25 (excl. E24.4), E27",E27,NA,0,74,0,0
+Diseases of the nervous system,Epilepsy,"G40, G41",G40,NA,0,74,0,0
+Diseases of the nervous system,Epilepsy,"G40, G41",G41,NA,0,74,0,0
+Diseases of the circulatory system,Aortic aneurysm,I71,I71,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Hypertensive diseases,"I10-I13, I15",I10,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Hypertensive diseases,"I10-I13, I15",I11,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Hypertensive diseases,"I10-I13, I15",I12,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Hypertensive diseases,"I10-I13, I15",I13,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Hypertensive diseases,"I10-I13, I15",I15,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Ischaemic heart diseases,I20-I25,I20,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Ischaemic heart diseases,I20-I25,I21,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Ischaemic heart diseases,I20-I25,I22,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Ischaemic heart diseases,I20-I25,I23,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Ischaemic heart diseases,I20-I25,I24,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Ischaemic heart diseases,I20-I25,I25,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Cerebrovascular diseases,I60-I69,I60,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Cerebrovascular diseases,I60-I69,I61,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Cerebrovascular diseases,I60-I69,I62,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Cerebrovascular diseases,I60-I69,I63,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Cerebrovascular diseases,I60-I69,I64,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Cerebrovascular diseases,I60-I69,I65,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Cerebrovascular diseases,I60-I69,I66,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Cerebrovascular diseases,I60-I69,I67,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Cerebrovascular diseases,I60-I69,I68,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Cerebrovascular diseases,I60-I69,I69,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Other atherosclerosis,"I70, I73.9",I70,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Other atherosclerosis,"I70, I73.9",I73.9,NA,0,74,0.5,0.5
+Diseases of the circulatory system,Rheumatic and other heart diseases,I00-I09,I00,NA,0,74,0,0
+Diseases of the circulatory system,Rheumatic and other heart diseases,I00-I09,I01,NA,0,74,0,0
+Diseases of the circulatory system,Rheumatic and other heart diseases,I00-I09,I02,NA,0,74,0,0
+Diseases of the circulatory system,Rheumatic and other heart diseases,I00-I09,I03,NA,0,74,0,0
+Diseases of the circulatory system,Rheumatic and other heart diseases,I00-I09,I04,NA,0,74,0,0
+Diseases of the circulatory system,Rheumatic and other heart diseases,I00-I09,I05,NA,0,74,0,0
+Diseases of the circulatory system,Rheumatic and other heart diseases,I00-I09,I06,NA,0,74,0,0
+Diseases of the circulatory system,Rheumatic and other heart diseases,I00-I09,I07,NA,0,74,0,0
+Diseases of the circulatory system,Rheumatic and other heart diseases,I00-I09,I08,NA,0,74,0,0
+Diseases of the circulatory system,Rheumatic and other heart diseases,I00-I09,I09,NA,0,74,0,0
+Diseases of the circulatory system,Venous thromboembolism,"I26, I80",I26,NA,0,74,0,0
+Diseases of the circulatory system,Venous thromboembolism,"I26, I80",I80,NA,0,74,0,0
+Diseases of the respiratory system,Influenza,J09-J11,J09,NA,0,74,0,1
+Diseases of the respiratory system,Influenza,J09-J11,J10,NA,0,74,0,1
+Diseases of the respiratory system,Influenza,J09-J11,J11,NA,0,74,0,1
+Diseases of the respiratory system,Pneumonia due to streptococcus pneumonia or haemophilus influenza,J13-J14,J13,NA,0,74,0,1
+Diseases of the respiratory system,Pneumonia due to streptococcus pneumonia or haemophilus influenza,J13-J14,J14,NA,0,74,0,1
+Diseases of the respiratory system,Chronic lower respiratory diseases,J40-J44,J40,NA,0,74,0,1
+Diseases of the respiratory system,Chronic lower respiratory diseases,J40-J44,J41,NA,0,74,0,1
+Diseases of the respiratory system,Chronic lower respiratory diseases,J40-J44,J42,NA,0,74,0,1
+Diseases of the respiratory system,Chronic lower respiratory diseases,J40-J44,J43,NA,0,74,0,1
+Diseases of the respiratory system,Chronic lower respiratory diseases,J40-J44,J44,NA,0,74,0,1
+Diseases of the respiratory system,Lung diseases due to external agents,"J60-J64, J66-J70, J82, J92",J60,NA,0,74,0,1
+Diseases of the respiratory system,Lung diseases due to external agents,"J60-J64, J66-J70, J82, J92",J61,NA,0,74,0,1
+Diseases of the respiratory system,Lung diseases due to external agents,"J60-J64, J66-J70, J82, J92",J62,NA,0,74,0,1
+Diseases of the respiratory system,Lung diseases due to external agents,"J60-J64, J66-J70, J82, J92",J63,NA,0,74,0,1
+Diseases of the respiratory system,Lung diseases due to external agents,"J60-J64, J66-J70, J82, J92",J64,NA,0,74,0,1
+Diseases of the respiratory system,Lung diseases due to external agents,"J60-J64, J66-J70, J82, J92",J66,NA,0,74,0,1
+Diseases of the respiratory system,Lung diseases due to external agents,"J60-J64, J66-J70, J82, J92",J67,NA,0,74,0,1
+Diseases of the respiratory system,Lung diseases due to external agents,"J60-J64, J66-J70, J82, J92",J68,NA,0,74,0,1
+Diseases of the respiratory system,Lung diseases due to external agents,"J60-J64, J66-J70, J82, J92",J69,NA,0,74,0,1
+Diseases of the respiratory system,Lung diseases due to external agents,"J60-J64, J66-J70, J82, J92",J70,NA,0,74,0,1
+Diseases of the respiratory system,Lung diseases due to external agents,"J60-J64, J66-J70, J82, J92",J82,NA,0,74,0,1
+Diseases of the respiratory system,Lung diseases due to external agents,"J60-J64, J66-J70, J82, J92",J92,NA,0,74,0,1
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J00,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J01,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J02,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J03,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J04,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J05,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J06,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J30,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J31,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J32,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J33,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J34,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J35,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J36,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J37,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J38,NA,0,74,0,0
+Diseases of the respiratory system,Upper respiratory infections,"J00-J06, J30-J39",J39,NA,0,74,0,0
+Diseases of the respiratory system,"Pneumonia, not elsewhere classified or organism unspecified","J12, J15, J16-J18",J12,NA, 0,74,0,0
+Diseases of the respiratory system,"Pneumonia, not elsewhere classified or organism unspecified","J12, J15, J16-J18",J15,NA, 0,74,0,0
+Diseases of the respiratory system,"Pneumonia, not elsewhere classified or organism unspecified","J12, J15, J16-J18",J16,NA, 0,74,0,0
+Diseases of the respiratory system,"Pneumonia, not elsewhere classified or organism unspecified","J12, J15, J16-J18",J17,NA, 0,74,0,0
+Diseases of the respiratory system,"Pneumonia, not elsewhere classified or organism unspecified","J12, J15, J16-J18",J18,NA, 0,74,0,0
+Diseases of the respiratory system,Acute lower respiratory infections,J20-J22,J20,NA, 0,74,0,0
+Diseases of the respiratory system,Acute lower respiratory infections,J20-J22,J21,NA, 0,74,0,0
+Diseases of the respiratory system,Acute lower respiratory infections,J20-J22,J22,NA, 0,74,0,0
+Diseases of the respiratory system,Asthma and bronchiectasis,J45-J47,J45,NA,0,74 ,0,0
+Diseases of the respiratory system,Asthma and bronchiectasis,J45-J47,J46,NA,0,74 ,0,0
+Diseases of the respiratory system,Asthma and bronchiectasis,J45-J47,J47,NA,0,74 ,0,0
+Diseases of the respiratory system,Adult respiratory distress syndrome,J80,J80,NA, 0,74,0,0
+Diseases of the respiratory system,Pulmonary oedema,J81,J81,NA,0,74,0,0
+Diseases of the respiratory system,Abscess of lung and mediastinum pyothorax,"J85, J86",J85,NA,0,74,0,0
+Diseases of the respiratory system,Abscess of lung and mediastinum pyothorax,"J85, J86",J86,NA,0,74,0,0
+Diseases of the respiratory system,Other pleural disorders,"J90, J93, J94",J90,NA,0,74,0,0
+Diseases of the respiratory system,Other pleural disorders,"J90, J93, J94",J93,NA,0,74,0,0
+Diseases of the respiratory system,Other pleural disorders,"J90, J93, J94",J94,NA,0,74,0,0
+Diseases of the digestive system,Gastric and duodenal ulcer,K25-K28,K25,NA,0,74,0,0
+Diseases of the digestive system,Gastric and duodenal ulcer,K25-K28,K26,NA,0,74,0,0
+Diseases of the digestive system,Gastric and duodenal ulcer,K25-K28,K27,NA,0,74,0,0
+Diseases of the digestive system,Gastric and duodenal ulcer,K25-K28,K28,NA,0,74,0,0
+Diseases of the digestive system,Appendicitis,K35-K38,K35,NA,0,74,0,0
+Diseases of the digestive system,Appendicitis,K35-K38,K36,NA,0,74,0,0
+Diseases of the digestive system,Appendicitis,K35-K38,K37,NA,0,74,0,0
+Diseases of the digestive system,Appendicitis,K35-K38,K38,NA,0,74,0,0
+Diseases of the digestive system,Abdominal hernia,K40-K46,K40,NA,0,74,0,0
+Diseases of the digestive system,Abdominal hernia,K40-K46,K41,NA,0,74,0,0
+Diseases of the digestive system,Abdominal hernia,K40-K46,K42,NA,0,74,0,0
+Diseases of the digestive system,Abdominal hernia,K40-K46,K43,NA,0,74,0,0
+Diseases of the digestive system,Abdominal hernia,K40-K46,K44,NA,0,74,0,0
+Diseases of the digestive system,Abdominal hernia,K40-K46,K45,NA,0,74,0,0
+Diseases of the digestive system,Abdominal hernia,K40-K46,K46,NA,0,74,0,0
+Diseases of the digestive system,Cholelithiasis and cholecystitis,K80-K81,K80,NA,0,74,0,0
+Diseases of the digestive system,Cholelithiasis and cholecystitis,K80-K81,K81,NA,0,74,0,0
+Diseases of the digestive system,Other diseases of gallbladder or biliary tract,K82-K83,K82,NA,0,74,0,0
+Diseases of the digestive system,Other diseases of gallbladder or biliary tract,K82-K83,K83,NA,0,74,0,0
+Diseases of the digestive system,Acute pancreatitis,"K85.0, K85.1, K85.3, K85.8, K85.9",K85.0,NA,0,74,0,0
+Diseases of the digestive system,Acute pancreatitis,"K85.0, K85.1, K85.3, K85.8, K85.9",K85.1,NA,0,74,0,0
+Diseases of the digestive system,Acute pancreatitis,"K85.0, K85.1, K85.3, K85.8, K85.9",K85.3,NA,0,74,0,0
+Diseases of the digestive system,Acute pancreatitis,"K85.0, K85.1, K85.3, K85.8, K85.9",K85.8,NA,0,74,0,0
+Diseases of the digestive system,Acute pancreatitis,"K85.0, K85.1, K85.3, K85.8, K85.9",K85.9,NA,0,74,0,0
+Diseases of the digestive system,Other diseases of pancreas,"K86.1, K86.2, K86.3, K86.8, K86.9",K86.1,NA,0,74,0,0
+Diseases of the digestive system,Other diseases of pancreas,"K86.1, K86.2, K86.3, K86.8, K86.9",K86.2,NA,0,74,0,0
+Diseases of the digestive system,Other diseases of pancreas,"K86.1, K86.2, K86.3, K86.8, K86.9",K86.3,NA,0,74,0,0
+Diseases of the digestive system,Other diseases of pancreas,"K86.1, K86.2, K86.3, K86.8, K86.9",K86.8,NA,0,74,0,0
+Diseases of the digestive system,Other diseases of pancreas,"K86.1, K86.2, K86.3, K86.8, K86.9",K86.9,NA,0,74,0,0
+Diseases of the genitourinary system,Nephritis and nephrosis,N00-N07,N00,NA,0,74,0,0
+Diseases of the genitourinary system,Nephritis and nephrosis,N00-N07,N01,NA,0,74,0,0
+Diseases of the genitourinary system,Nephritis and nephrosis,N00-N07,N02,NA,0,74,0,0
+Diseases of the genitourinary system,Nephritis and nephrosis,N00-N07,N03,NA,0,74,0,0
+Diseases of the genitourinary system,Nephritis and nephrosis,N00-N07,N04,NA,0,74,0,0
+Diseases of the genitourinary system,Nephritis and nephrosis,N00-N07,N05,NA,0,74,0,0
+Diseases of the genitourinary system,Nephritis and nephrosis,N00-N07,N06,NA,0,74,0,0
+Diseases of the genitourinary system,Nephritis and nephrosis,N00-N07,N07,NA,0,74,0,0
+Diseases of the genitourinary system,Obstructive uropathy,"N13, N20-N21, N35",N13,NA,0,74,0,0
+Diseases of the genitourinary system,Obstructive uropathy,"N13, N20-N21, N35",N20,NA,0,74,0,0
+Diseases of the genitourinary system,Obstructive uropathy,"N13, N20-N21, N35",N21,NA,0,74,0,0
+Diseases of the genitourinary system,Obstructive uropathy,"N13, N20-N21, N35",N35,NA,0,74,0,0
+Diseases of the genitourinary system,Renal failure,N17-N19,N17,NA,0,74,0,0
+Diseases of the genitourinary system,Renal failure,N17-N19,N18,NA,0,74,0,0
+Diseases of the genitourinary system,Renal failure,N17-N19,N19,NA,0,74,0,0
+Diseases of the genitourinary system,Renal colic,N23,N23,NA,0,74,0,0
+Diseases of the genitourinary system,Disorders resulting from renal tubular dysfunction,N25,N25,NA,0,74,0,0
+Diseases of the genitourinary system,"Unspecified contracted kidney, small kidney of unknown cause",N26-N27,N26,NA,0,74,0,0
+Diseases of the genitourinary system,"Unspecified contracted kidney, small kidney of unknown cause",N26-N27,N27,NA,0,74,0,0
+Diseases of the genitourinary system,Inflammatory diseases of genitourinary system,"N34.1, N70-N73, N75.0, N75.1, N76.4, N76.6",N34.1,NA,0,74,0,0
+Diseases of the genitourinary system,Inflammatory diseases of genitourinary system,"N34.1, N70-N73, N75.0, N75.1, N76.4, N76.6",N70,NA,0,74,0,0
+Diseases of the genitourinary system,Inflammatory diseases of genitourinary system,"N34.1, N70-N73, N75.0, N75.1, N76.4, N76.6",N71,NA,0,74,0,0
+Diseases of the genitourinary system,Inflammatory diseases of genitourinary system,"N34.1, N70-N73, N75.0, N75.1, N76.4, N76.6",N72,NA,0,74,0,0
+Diseases of the genitourinary system,Inflammatory diseases of genitourinary system,"N34.1, N70-N73, N75.0, N75.1, N76.4, N76.6",N73,NA,0,74,0,0
+Diseases of the genitourinary system,Inflammatory diseases of genitourinary system,"N34.1, N70-N73, N75.0, N75.1, N76.4, N76.6",N75.0,NA,0,74,0,0
+Diseases of the genitourinary system,Inflammatory diseases of genitourinary system,"N34.1, N70-N73, N75.0, N75.1, N76.4, N76.6",N75.1,NA,0,74,0,0
+Diseases of the genitourinary system,Inflammatory diseases of genitourinary system,"N34.1, N70-N73, N75.0, N75.1, N76.4, N76.6",N76.4,NA,0,74,0,0
+Diseases of the genitourinary system,Inflammatory diseases of genitourinary system,"N34.1, N70-N73, N75.0, N75.1, N76.4, N76.6",N76.6,NA,0,74,0,0
+Diseases of the genitourinary system,Prostatic hyperplasia,N40,N40,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Tetanus neonatorum,A33,A33,NA,0,74,0,1
+"Pregnancy, childbirth and the perinatal period",Obstetrical tetanus,A34,A34,NA,0,74,0,1
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O00,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O01,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O02,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O03,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O04,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O05,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O06,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O07,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O08,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O09,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O10,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O11,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O12,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O13,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O14,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O15,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O16,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O17,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O18,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O19,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O20,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O21,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O22,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O23,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O24,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O25,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O26,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O27,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O28,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O29,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O30,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O31,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O32,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O33,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O34,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O35,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O36,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O37,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O38,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O39,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O40,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O41,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O42,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O43,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O44,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O45,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O46,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O47,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O48,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O49,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O50,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O51,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O52,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O53,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O54,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O55,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O56,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O57,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O58,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O59,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O60,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O61,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O62,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O63,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O64,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O65,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O66,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O67,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O68,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O69,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O70,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O71,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O72,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O73,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O74,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O75,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O76,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O77,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O78,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O79,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O80,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O81,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O82,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O83,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O84,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O85,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O86,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O87,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O88,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O89,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O90,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O91,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O92,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O93,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O94,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O95,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O96,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O97,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O98,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period","Pregnancy, childbirth and the puerperium",O00-O99,O99,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P00,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P01,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P02,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P03,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P04,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P05,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P06,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P07,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P08,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P09,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P10,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P11,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P12,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P13,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P14,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P15,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P16,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P17,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P18,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P19,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P20,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P21,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P22,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P23,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P24,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P25,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P26,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P27,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P28,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P29,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P30,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P31,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P32,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P33,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P34,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P35,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P36,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P37,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P38,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P39,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P40,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P41,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P42,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P43,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P44,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P45,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P46,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P47,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P48,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P49,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P50,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P51,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P52,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P53,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P54,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P55,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P56,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P57,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P58,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P59,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P60,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P61,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P62,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P63,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P64,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P65,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P66,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P67,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P68,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P69,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P70,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P71,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P72,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P73,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P74,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P75,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P76,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P77,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P78,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P79,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P80,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P81,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P82,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P83,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P84,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P85,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P86,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P87,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P88,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P89,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P90,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P91,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P92,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P93,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P94,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P95,NA,0,74,0,0
+"Pregnancy, childbirth and the perinatal period",Certain conditions originating in the perinatal period,P00-P96,P96,NA,0,74,0,0
+Congenital malformations,Certain congenital malformations (neural tube defects),"Q00, Q01, Q05",Q00,NA,0,74,0,1
+Congenital malformations,Certain congenital malformations (neural tube defects),"Q00, Q01, Q05",Q01,NA,0,74,0,1
+Congenital malformations,Certain congenital malformations (neural tube defects),"Q00, Q01, Q05",Q05,NA,0,74,0,1
+Congenital malformations,Congenital malformations of the circulatory system (heart defects),Q20-Q28,Q20,NA,0,74,0,0
+Congenital malformations,Congenital malformations of the circulatory system (heart defects),Q20-Q28,Q21,NA,0,74,0,0
+Congenital malformations,Congenital malformations of the circulatory system (heart defects),Q20-Q28,Q22,NA,0,74,0,0
+Congenital malformations,Congenital malformations of the circulatory system (heart defects),Q20-Q28,Q23,NA,0,74,0,0
+Congenital malformations,Congenital malformations of the circulatory system (heart defects),Q20-Q28,Q24,NA,0,74,0,0
+Congenital malformations,Congenital malformations of the circulatory system (heart defects),Q20-Q28,Q25,NA,0,74,0,0
+Congenital malformations,Congenital malformations of the circulatory system (heart defects),Q20-Q28,Q26,NA,0,74,0,0
+Congenital malformations,Congenital malformations of the circulatory system (heart defects),Q20-Q28,Q27,NA,0,74,0,0
+Congenital malformations,Congenital malformations of the circulatory system (heart defects),Q20-Q28,Q28,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y40,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y41,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y42,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y43,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y44,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y45,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y46,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y47,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y48,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y49,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y50,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y51,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y52,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y53,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y54,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y55,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y56,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y57,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y58,NA,0,74,0,0
+Adverse effects of medical and surgical care,"Drugs, medicaments and biological substances causing adverse effects in therapeutic use",Y40-Y59,Y59,NA,0,74,0,0
+Adverse effects of medical and surgical care,Misadventures to patients during surgical and medical care,"Y60-Y69, Y83-Y84",Y60,NA,0,74,0,0
+Adverse effects of medical and surgical care,Misadventures to patients during surgical and medical care,"Y60-Y69, Y83-Y84",Y61,NA,0,74,0,0
+Adverse effects of medical and surgical care,Misadventures to patients during surgical and medical care,"Y60-Y69, Y83-Y84",Y62,NA,0,74,0,0
+Adverse effects of medical and surgical care,Misadventures to patients during surgical and medical care,"Y60-Y69, Y83-Y84",Y63,NA,0,74,0,0
+Adverse effects of medical and surgical care,Misadventures to patients during surgical and medical care,"Y60-Y69, Y83-Y84",Y64,NA,0,74,0,0
+Adverse effects of medical and surgical care,Misadventures to patients during surgical and medical care,"Y60-Y69, Y83-Y84",Y65,NA,0,74,0,0
+Adverse effects of medical and surgical care,Misadventures to patients during surgical and medical care,"Y60-Y69, Y83-Y84",Y66,NA,0,74,0,0
+Adverse effects of medical and surgical care,Misadventures to patients during surgical and medical care,"Y60-Y69, Y83-Y84",Y67,NA,0,74,0,0
+Adverse effects of medical and surgical care,Misadventures to patients during surgical and medical care,"Y60-Y69, Y83-Y84",Y68,NA,0,74,0,0
+Adverse effects of medical and surgical care,Misadventures to patients during surgical and medical care,"Y60-Y69, Y83-Y84",Y69,NA,0,74,0,0
+Adverse effects of medical and surgical care,Misadventures to patients during surgical and medical care,"Y60-Y69, Y83-Y84",Y83,NA,0,74,0,0
+Adverse effects of medical and surgical care,Misadventures to patients during surgical and medical care,"Y60-Y69, Y83-Y84",Y84,NA,0,74,0,0
+Adverse effects of medical and surgical care,Medical devices associated with adverse incidents in diagnostic and therapeutic use,Y70–Y82,Y70–Y82,NA,0,74,0,0
+Injuries,Transport Accidents,V01-V99,V01,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V02,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V03,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V04,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V05,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V06,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V07,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V08,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V09,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V10,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V11,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V12,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V13,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V14,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V15,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V16,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V17,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V18,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V19,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V20,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V21,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V22,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V23,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V24,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V25,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V26,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V27,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V28,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V29,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V30,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V31,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V32,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V33,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V34,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V35,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V36,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V37,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V38,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V39,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V40,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V41,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V42,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V43,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V44,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V45,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V46,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V47,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V48,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V49,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V50,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V51,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V52,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V53,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V54,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V55,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V56,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V57,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V58,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V59,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V60,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V61,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V62,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V63,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V64,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V65,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V66,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V67,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V68,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V69,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V70,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V71,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V72,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V73,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V74,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V75,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V76,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V77,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V78,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V79,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V80,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V81,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V82,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V83,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V84,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V85,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V86,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V87,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V88,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V89,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V90,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V91,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V92,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V93,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V94,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V95,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V96,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V97,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V98,NA,0,74,0,1
+Injuries,Transport Accidents,V01-V99,V99,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W00,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W01,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W02,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W03,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W04,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W05,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W06,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W07,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W08,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W09,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W10,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W11,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W12,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W13,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W14,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W15,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W16,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W17,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W18,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W19,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W20,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W21,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W22,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W23,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W24,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W25,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W26,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W27,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W28,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W29,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W30,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W31,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W32,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W33,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W34,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W35,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W36,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W37,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W38,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W39,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W40,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W41,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W42,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W43,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W44,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W45,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W46,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W47,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W48,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W49,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W50,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W51,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W52,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W53,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W54,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W55,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W56,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W57,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W58,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W59,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W60,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W61,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W62,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W63,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W64,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W65,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W66,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W67,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W68,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W69,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W70,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W71,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W72,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W73,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W74,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W75,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W76,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W77,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W78,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W79,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W80,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W81,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W82,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W83,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W84,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W85,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W86,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W87,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W88,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W89,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W90,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W91,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W92,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W93,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W94,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W95,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W96,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W97,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W98,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",W99,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X00,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X01,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X02,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X03,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X04,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X05,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X06,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X07,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X08,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X09,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X10,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X11,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X12,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X13,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X14,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X15,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X16,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X17,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X18,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X19,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X20,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X21,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X22,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X23,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X24,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X25,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X26,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X27,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X28,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X29,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X30,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X31,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X32,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X33,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X34,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X35,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X36,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X37,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X38,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X39,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X46,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X47,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X48,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X49,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X50,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X51,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X52,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X53,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X54,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X55,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X56,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X57,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X58,NA,0,74,0,1
+Injuries,Accidental Injuries,"W00-X39, X46-X59",X59,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X66,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X67,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X68,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X69,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X70,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X71,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X72,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X73,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X74,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X75,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X76,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X77,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X78,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X79,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X80,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X81,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X82,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X83,NA,0,74,0,1
+Injuries,Intentional self-harm,X66-X84,X84,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y16,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y17,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y18,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y19,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y20,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y21,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y22,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y23,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y24,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y25,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y26,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y27,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y28,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y29,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y30,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y31,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y32,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y33,NA,0,74,0,1
+Injuries,Event of undetermined intent,Y16-Y34,Y34,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X86,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X87,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X88,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X89,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X90,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X91,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X92,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X93,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X94,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X95,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X96,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X97,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X98,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",X99,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",Y00,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",Y01,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",Y02,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",Y03,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",Y04,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",Y05,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",Y06,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",Y07,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",Y08,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",Y09,NA,0,74,0,1
+Injuries,Assault,"X86-Y09, U50.9",U50.9,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",E24.4,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",F10,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",G31.2,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",G62.1,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",G72.1,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",I42.6,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",K29.2,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",K70,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",K85.2,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",K86.0,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",Q86.0,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",R78.0,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",X45,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",X65,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Alcohol-specific disorders and poisonings,"E24.4, F10, G31.2, G62.1, G72.1, I42.6, K29.2, K70, K85.2, K86.0, Q86.0, R78.0, X45, X65, Y15",Y15,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Other alcohol-related disorders,"K73, K74.0-K74.2, K74.6-K74.9",K73,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Other alcohol-related disorders,"K73, K74.0-K74.2, K74.6-K74.9",K74.0,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Other alcohol-related disorders,"K73, K74.0-K74.2, K74.6-K74.9",K74.1,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Other alcohol-related disorders,"K73, K74.0-K74.2, K74.6-K74.9",K74.2,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Other alcohol-related disorders,"K73, K74.0-K74.2, K74.6-K74.9",K74.6,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Other alcohol-related disorders,"K73, K74.0-K74.2, K74.6-K74.9",K74.7,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Other alcohol-related disorders,"K73, K74.0-K74.2, K74.6-K74.9",K74.8,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Other alcohol-related disorders,"K73, K74.0-K74.2, K74.6-K74.9",K74.9,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",F11,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",F12,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",F13,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",F14,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",F15,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",F16,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",F18,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",F19,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",X40,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",X41,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",X42,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",X43,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",X44,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",X85,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",Y10,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",Y11,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",Y12,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",Y13,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Drug disorders and poisonings,"F11-F16, F18-F19, X40-X44, X85, Y10-Y14",Y14,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Intentional self-poisoning by drugs,X60-X64,X60,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Intentional self-poisoning by drugs,X60-X64,X61,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Intentional self-poisoning by drugs,X60-X64,X62,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Intentional self-poisoning by drugs,X60-X64,X63,NA,0,74,0,1
+Alcohol-related and drug-related deaths,Intentional self-poisoning by drugs,X60-X64,X64,NA,0,74,0,1
