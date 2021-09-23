@@ -1,0 +1,134 @@
+---
+title: "Hospital classification in Scotland"
+author: "Jan Savinc"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+  code_folding: hide
+toc: true
+toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Load packages
+
+```{r, warning=FALSE, message=FALSE}
+## install packages from github if not yet available!
+# remotes::install_github("datasciencescotland/opendatascot", force = TRUE)
+# remotes::install_github("Health-SocialCare-Scotland/phsmethods", force = TRUE)
+
+library(tidyverse)  # for tidy workflow
+library(readxl)  # for reading excel files
+library(knitr)  # for printing tables
+```
+
+
+# Classifications overview
+
+A simple (with no classifications) list of Scotland's NHS hospitals is available from the [Scottish Open Data website]("https://www.opendata.nhs.scot/dataset/cbd1802e-0e04-4282-88eb-d7bdcfb120f0/resource/c698f450-eeed-41a0-88f7-c1e40a568acc/download/current-hospital_flagged20210506.csv")
+
+From my research so far it appears there is not a single NHS-wide classification of hospitals. Different departments/units use classifications for their own purposes, it seems. For our purposes, we need hospitals that 'a person nearing their end of life might go to/be taken to' - in other words, we are looking for hospitals providing acute treatment, but probably also hospitals with particular specialties. However, there are probably specifics to which hospitals, if any, people migh use in any geographical area for a particular situation, which is probably not possible to infer from administrative data alone.
+
+The two classifications I have found so far:
+
+* `Acute hospitals` as defined within ISD(S)1 reports on hospital activity, for example on [Bed Occupancy]("https://www.isdscotland.org/Health-Topics/Hospital-Care/Publications/2019-11-26/Acute-Hospital-Publication/data-files/docs/20191126_Beds_by_Health_Board_of_Treatment_and_Specialty.csv"). Whilst this does not include an explicit list of hospitals, we can infer the acute hospitals as the unique locations reported in the data.
+* `Hospital classifications` as reported in the `Costs` section of ISD Scotland's website: there are two files, one listing the [classification code for each hospital]("https://beta.isdscotland.org/media/7790/hospital_profile_2020.xlsx"), and another listing the [descriptions of the codes]("https://beta.isdscotland.org/media/7786/costs_hospital_classification_2020.xlsx).
+
+
+The above can be combined and cross-checked (e.g. are all teaching hospitals also acute hospitals?) to form one or more listings of relevant hospitals.
+
+# Downloading classifications
+
+```{r}
+dir_classifications <- "./hospital_classification/"
+if (!dir.exists(dir_classifications)) dir.create(dir_classifications)
+
+url_isds1 <- "https://www.isdscotland.org/Health-Topics/Hospital-Care/Publications/2019-11-26/Acute-Hospital-Publication/data-files/docs/20191126_Beds_by_Health_Board_of_Treatment_and_Specialty.csv"
+url_hospital_classifications <- "https://beta.isdscotland.org/media/7790/hospital_profile_2020.xlsx"
+url_hospital_classifications_descriptions <- "https://beta.isdscotland.org/media/7786/costs_hospital_classification_2020.xlsx"
+
+walk(  # download files if they aren't already there
+  .x = list(url_isds1,url_hospital_classifications,url_hospital_classifications_descriptions),
+  .f = function(x) {
+    url <- x
+    filename <- basename(x)
+    path <- file.path(dir_classifications,filename)
+    if (!file.exists(path)) {
+      download.file(url = url, destfile = path, quiet = TRUE)
+      }
+  }
+)
+```
+
+
+# Parsing classifications
+
+```{r}
+hospital_classification <- 
+  read_excel(path  = "./hospital_classification/hospital_profile_2020.xlsx", sheet = 1) %>%
+  rename(sub_classification = HospGroup)  # rename to match below
+
+classification_descriptions <- 
+  read_excel(path  = "./hospital_classification/costs_hospital_classification_2020.xlsx", sheet = 1, skip = 2) %>% 
+  slice(-c(1:2)) %>%
+  fill(Main, .direction = "down") %>%
+  mutate(
+    main_classification = if_else(condition = is.na(Sub), true = Title, false = NA_character_),
+    sub_classification = paste0(Main, Sub)
+    ) %>%
+  fill(main_classification, .direction = "down") %>%
+  drop_na(Sub) %>%
+  select(-Main, -Sub) %>%
+  rename(description = Title)
+
+acute_hospitals <- read_csv("./hospital_classification/20191126_Beds_by_Health_Board_of_Treatment_and_Specialty.csv") %>%
+  select(hb_code, loc_code) %>% distinct
+
+hospital_classification <-
+  hospital_classification %>%
+  left_join(classification_descriptions, by = "sub_classification") %>%
+  mutate(acute = location %in% acute_hospitals$loc_code)
+```
+
+
+# Checking classifications
+
+## Are all acute hospitals general/teaching hospitals?
+
+```{r}
+hospital_classification %>%
+  count(main_classification, acute) %>%
+  kable(caption = "Table of Acute hospital status by main classification.")
+
+hospital_classification %>%
+  filter((main_classification == "General Hospitals (mainly acute)" & !acute) | (main_classification == "Other" & acute)) %>%
+  select(org_loc:acute) %>%
+  kable(caption = "Unexpected combinations - acute non-general hospitals, and general non-acute hospitals.")
+```
+
+## Which hospital sub-classifications are in `Acute hospitals`?
+
+```{r}
+hospital_classification %>%
+  filter(acute) %>%
+  count(sub_classification, description) %>%
+  kable(caption = "Acute hospitals by sub-classification.")
+```
+
+
+# Conclusion
+
+It looks like for our purposes, `Acute` hospitals as per above are the best fit - they capture all general hospitals. Just using the `General hospital` classification would omit a few hospitals in `Other` that are also classed as `Acute`, and would also include `Hospitals for sick children` unless  sub-classifications were used.
+
+
+# Save classification as `.csv`
+
+```{r}
+write_csv(hospital_classification, file = "./hospital_classification/hospital_classification.csv")
+```

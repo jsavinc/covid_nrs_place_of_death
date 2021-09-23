@@ -1,0 +1,171 @@
+cipher,board,location,unitcode,org_loc,sub_classification,description,main_classification,acute
+A,SAA20,A101H,SAA20A101H,Arran War Memorial,A3,"General hospitals - mixed specialist hospitals (may have maternity units). Consultant type surgery undertaken, usually 250 and under average staffed beds.",General Hospitals (mainly acute),TRUE
+A,SAA20,A103H,SAA20A103H,Ayrshire Central,B8,Long stay/acute hospitals - long stay geriatric units with some medical and surgical services.,Long Stay Hospitals,FALSE
+A,SAA20,A110H,SAA20A110H,"Lady Margaret, Millport",J26,Community Hospitals,Clinics,FALSE
+A,SAA20,A111H,SAA20A111H,Crosshouse Hospital,A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+A,SAA20,A201H,SAA20A201H,"Ailsa, Ayr",C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+A,SAA20,A208H,SAA20A208H,"Biggart, Prestwick",B6,Long stay hospitals (over 100 average staffed beds) - long stay geriatric units controlled by geriatrician. May be with young chronic sick unit.,Long Stay Hospitals,FALSE
+A,SAA20,A210H,SAA20A210H,The Ayr Hospital,A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+A,SAA20,A211H,SAA20A211H,Arrol Park Hospital,D17,Learning disabilities hospitals (150 and under average staffed beds).,Psychiatry of Learning Disabilities Hospitals,FALSE
+A,SAA20,A215H,SAA20A215H,East Ayrshire Community Hospital,J26,Community Hospitals,Clinics,FALSE
+A,SAA20,A216H,SAA20A216H,Girvan Community Hospital,J26,Community Hospitals,Clinics,FALSE
+B,SBA20,B103H,SBA20B103H,"Knoll, Duns",J26,Community Hospitals,Clinics,FALSE
+B,SBA20,B104H,SBA20B104H,East West Brig,G22,Other - New/Closed Locations - Hospitals subject to cost but in the process of retraction or closure (may include new hospitals with costs for part year).,Other,FALSE
+B,SBA20,B105H,SBA20B105H,Hawick Community Hospital,J26,Community Hospitals,Clinics,FALSE
+B,SBA20,B114H,SBA20B114H,Kelso Hospital,J26,Community Hospitals,Clinics,FALSE
+B,SBA20,B118H,SBA20B118H,"Hay Lodge, Peebles",J26,Community Hospitals,Clinics,FALSE
+B,SBA20,B120H,SBA20B120H,Borders General,A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+B,SBA20,B120Z,SBA20B120Z,Cauldshiels,C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+B,SBA20,B129H,SBA20B129H,Melburn Lodge,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+B,SBA20,B130H,SBA20B130H,Huntlyburn House,C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+D,SDA01,D101H,SDA01D101H,State Hospital,C12,Teaching mental illness hospitals with major teaching or research units.,Mental Hospitals,FALSE
+D,SDA02,D102H,SDA02D102H,Golden Jubilee National Hospital,G21,Other - Miscellaneous hospitals in which function and/or costs are not comparable with other hospitals.,Other,TRUE
+F,SFA20,F701H,SFA20F701H,"Cameron, Windygates",B7,Small long stay hospitals (100 and under average staffed beds) - long stay geriatric units controlled by geriatrician. May be with young chronic sick unit.,Long Stay Hospitals,FALSE
+F,SFA20,F704H,SFA20F704H,Victoria Kirkcaldy,A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+F,SFA20,F708H,SFA20F708H,"Adamson, Cupar",J26,Community Hospitals,Clinics,FALSE
+F,SFA20,F709H,SFA20F709H,St Andrews Community Hospital,J26,Community Hospitals,Clinics,FALSE
+F,SFA20,F710H,SFA20F710H,Randolph Wemyss,J26,Community Hospitals,Clinics,FALSE
+F,SFA20,F711H,SFA20F711H,Whytemans Brae Hospital,C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+F,SFA20,F712H,SFA20F712H,"Stratheden, Cupar",C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+F,SFA20,F716H,SFA20F716H,Glenrothes,J26,Community Hospitals,Clinics,FALSE
+F,SFA20,F805H,SFA20F805H,Queen Margaret Hospital,A3,"General hospitals - mixed specialist hospitals (may have maternity units). Consultant type surgery undertaken, usually 250 and under average staffed beds.",General Hospitals (mainly acute),TRUE
+F,SFA20,F810H,SFA20F810H,Lynebank,D17,Learning disabilities hospitals (150 and under average staffed beds).,Psychiatry of Learning Disabilities Hospitals,FALSE
+G,SGA20,C204H,SGA20C204H,Dumbarton Joint,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+G,SGA20,C206H,SGA20C206H,"Vale of Leven, Alexandria",A3,"General hospitals - mixed specialist hospitals (may have maternity units). Consultant type surgery undertaken, usually 250 and under average staffed beds.",General Hospitals (mainly acute),TRUE
+G,SGA20,C313H,SGA20C313H,Inverclyde Royal Hospital,A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+G,SGA20,C403H,SGA20C403H,"Dykebar, Paisley",C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+G,SGA20,C418H,SGA20C418H,Royal Alexandra Hospital,A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+G,SGA20,G107H,SGA20G107H,Glasgow Royal Infirmary,A1,Teaching hospitals - major teaching hospitals covering a full range of services and with special units.,General Hospitals (mainly acute),TRUE
+G,SGA20,G109H,SGA20G109H,Lightburn,B6,Long stay hospitals (over 100 average staffed beds) - long stay geriatric units controlled by geriatrician. May be with young chronic sick unit.,Long Stay Hospitals,FALSE
+G,SGA20,G207H,SGA20G207H,New Stobhill Hospital,G21,Other - Miscellaneous hospitals in which function and/or costs are not comparable with other hospitals.,Other,TRUE
+G,SGA20,G207X,SGA20G207X,Stobhill - GGPCD,C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+G,SGA20,G302H,SGA20G302H,"Leverndale, Glasgow",C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+G,SGA20,G306H,SGA20G306H,New Victoria Hospital,G21,Other - Miscellaneous hospitals in which function and/or costs are not comparable with other hospitals.,Other,TRUE
+G,SGA20,G405H,SGA20G405H,Queen Elizabeth University Hospital,A1,Teaching hospitals - major teaching hospitals covering a full range of services and with special units.,General Hospitals (mainly acute),TRUE
+G,SGA20,G505H,SGA20G505H,"Gartnavel Royal, Glasgow",C12,Teaching mental illness hospitals with major teaching or research units.,Mental Hospitals,FALSE
+G,SGA20,G513H,SGA20G513H,"Royal Hospital For Children, Glasgow",A4,Sick children's hospitals - large teaching hospitals for children covering a range of medicine and surgery.,General Hospitals (mainly acute),FALSE
+G,SGA20,G516H,SGA20G516H,West Hospitals,A1,Teaching hospitals - major teaching hospitals covering a full range of services and with special units.,General Hospitals (mainly acute),TRUE
+G,SGA20,G541V,SGA20G541V,Birdston Nursing Home,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+G,SGA20,G614H,SGA20G614H,Orchard View,C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+G,SGA20,G997Z,SGA20G997Z,GGPCD LD Partnership,D17,Learning disabilities hospitals (150 and under average staffed beds).,Psychiatry of Learning Disabilities Hospitals,FALSE
+H,SHA20,C106H,SHA20C106H,Cowal Community Hospital,J26,Community Hospitals,Clinics,FALSE
+H,SHA20,C108H,SHA20C108H,"Islay, Bowmore",J26,Community Hospitals,Clinics,FALSE
+H,SHA20,C113H,SHA20C113H,Rothesay Victoria Hospital,J26,Community Hospitals,Clinics,FALSE
+H,SHA20,C121H,SHA20C121H,Lorn & Islands District G.H.,A3,"General hospitals - mixed specialist hospitals (may have maternity units). Consultant type surgery undertaken, usually 250 and under average staffed beds.",General Hospitals (mainly acute),TRUE
+H,SHA20,C122H,SHA20C122H,Campbeltown Hospital,J26,Community Hospitals,Clinics,FALSE
+H,SHA20,H101H,SHA20H101H,"Dunbar, Thurso",J26,Community Hospitals,Clinics,FALSE
+H,SHA20,H103H,SHA20H103H,Caithness General,A3,"General hospitals - mixed specialist hospitals (may have maternity units). Consultant type surgery undertaken, usually 250 and under average staffed beds.",General Hospitals (mainly acute),TRUE
+H,SHA20,H104H,SHA20H104H,"Town & County, Wick",B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+H,SHA20,H106H,SHA20H106H,Lawson Memorial,J26,Community Hospitals,Clinics,FALSE
+H,SHA20,H201H,SHA20H201H,RNI Community Hospital,J26,Community Hospitals,Clinics,FALSE
+H,SHA20,H202H,SHA20H202H,"Raigmore, Inverness",A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+H,SHA20,H208H,SHA20H208H,Nairn,J26,Community Hospitals,Clinics,FALSE
+H,SHA20,H210H,SHA20H210H,Ian Charles,J26,Community Hospitals,Clinics,FALSE
+H,SHA20,H211H,SHA20H211H,"St. Vincent's, Kingussie",J26,Community Hospitals,Clinics,FALSE
+H,SHA20,H212H,SHA20H212H,Belford,A3,"General hospitals - mixed specialist hospitals (may have maternity units). Consultant type surgery undertaken, usually 250 and under average staffed beds.",General Hospitals (mainly acute),TRUE
+H,SHA20,H214H,SHA20H214H,Mackinnon Memorial,J26,Community Hospitals,Clinics,FALSE
+H,SHA20,H215H,SHA20H215H,Portree,J26,Community Hospitals,Clinics,FALSE
+H,SHA20,H217H,SHA20H217H,Ross Memorial,J26,Community Hospitals,Clinics,FALSE
+H,SHA20,H219H,SHA20H219H,Invergordon County,J26,Community Hospitals,Clinics,FALSE
+H,SHA20,H223H,SHA20H223H,New Craigs Hospital,C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+H,SHA20,H224H,SHA20H224H,Mid-Argyll Community Hospital and Integrated Care Centre,J26,Community Hospitals,Clinics,FALSE
+H,SHA20,H226H,SHA20H226H,"Migdale, Bonar Bridge",B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+H,SHA20,H227H,SHA20H227H,Mull & Iona Community Hospital,J26,Community Hospitals,Clinics,FALSE
+L,SLA20,L103H,SLA20L103H,"Coathill, Coatbridge",B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+L,SLA20,L104H,SLA20L104H,"Victoria Cottage, Kilsyth",J26,Community Hospitals,Clinics,FALSE
+L,SLA20,L105H,SLA20L105H,"Wester Moffat, Airdrie",B7,Small long stay hospitals (100 and under average staffed beds) - long stay geriatric units controlled by geriatrician. May be with young chronic sick unit.,Long Stay Hospitals,FALSE
+L,SLA20,L106H,SLA20L106H,Monklands Hospital,A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+L,SLA20,L203H,SLA20L203H,Cleland,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+L,SLA20,L206H,SLA20L206H,"Kello, Biggar",J26,Community Hospitals,Clinics,FALSE
+L,SLA20,L207H,SLA20L207H,"Lady Home, Douglas",J26,Community Hospitals,Clinics,FALSE
+L,SLA20,L216H,SLA20L216H,"Kirklands, Bothwell",D17,Learning disabilities hospitals (150 and under average staffed beds).,Psychiatry of Learning Disabilities Hospitals,FALSE
+L,SLA20,L218H,SLA20L218H,"Airbles Rd Cnt, Motherwell",B7,Small long stay hospitals (100 and under average staffed beds) - long stay geriatric units controlled by geriatrician. May be with young chronic sick unit.,Long Stay Hospitals,FALSE
+L,SLA20,L302H,SLA20L302H,"Hairmyres, East Kilbride",A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+L,SLA20,L304H,SLA20L304H,Stonehouse Hospital,B7,Small long stay hospitals (100 and under average staffed beds) - long stay geriatric units controlled by geriatrician. May be with young chronic sick unit.,Long Stay Hospitals,FALSE
+L,SLA20,L305H,SLA20L305H,Udston,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+L,SLA20,L307H,SLA20L307H,"Beckford Lodge, Hamilton",C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+L,SLA20,L308H,SLA20L308H,Wishaw General,A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+N,SNA20,N101H,SNA20N101H,Aberdeen Royal Infirmary,A1,Teaching hospitals - major teaching hospitals covering a full range of services and with special units.,General Hospitals (mainly acute),TRUE
+N,SNA20,N102H,SNA20N102H,"Woodend General, Aberdeen",B8,Long stay/acute hospitals - long stay geriatric units with some medical and surgical services.,Long Stay Hospitals,FALSE
+N,SNA20,N121H,SNA20N121H,Royal Aberdeen Children's,A4,Sick children's hospitals - large teaching hospitals for children covering a range of medicine and surgery.,General Hospitals (mainly acute),FALSE
+N,SNA20,N151H,SNA20N151H,Aboyne,J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N161H,SNA20N161H,Aberdeen Maternity,E19,Maternity Hospitals,Psychiatry of Learning Disabilities Hospitals,FALSE
+N,SNA20,N181H,SNA20N181H,"Glen O'Dee, Banchory",J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N183H,SNA20N183H,Roxburghe House Day Hospital,G21,Other - Miscellaneous hospitals in which function and/or costs are not comparable with other hospitals.,Other,FALSE
+N,SNA20,N198H,SNA20N198H,"Royal Cornhill, Aberdeen",C12,Teaching mental illness hospitals with major teaching or research units.,Mental Hospitals,FALSE
+N,SNA20,N331H,SNA20N331H,Inverurie,J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N332H,SNA20N332H,Insch and District War Mem,J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N333H,SNA20N333H,Peterhead Comm. Hosp.,J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N334H,SNA20N334H,Fraserburgh,J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N335H,SNA20N335H,Huntly Jubilee,J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N336H,SNA20N336H,Turriff Cottage,J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N337H,SNA20N337H,"Chalmers, Banff",J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N352H,SNA20N352H,"Ugie, Peterhead",J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N411H,SNA20N411H,"Dr. Gray's, Elgin",A3,"General hospitals - mixed specialist hospitals (may have maternity units). Consultant type surgery undertaken, usually 250 and under average staffed beds.",General Hospitals (mainly acute),TRUE
+N,SNA20,N431H,SNA20N431H,"Seafield, Buckie",J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N432H,SNA20N432H,"Stephen Cottage, Dufftown",J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N433H,SNA20N433H,"Turner Memorial, Keith",J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N451H,SNA20N451H,"Fleming Cottage, Aberlour",J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N492H,SNA20N492H,"Polmuir Road, Aberdeen",C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+N,SNA20,N494H,SNA20N494H,Kincardine Community Hospital,J26,Community Hospitals,Clinics,FALSE
+N,SNA20,N496H,SNA20N496H,Great Western Lodge,C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+N,SNA20,N499H,SNA20N499H,"Elmwood, Aberdeen",D17,Learning disabilities hospitals (150 and under average staffed beds).,Psychiatry of Learning Disabilities Hospitals,FALSE
+R,SRA01,R101H,SRA01R101H,"Balfour, Kirkwall",A3,"General hospitals - mixed specialist hospitals (may have maternity units). Consultant type surgery undertaken, usually 250 and under average staffed beds.",General Hospitals (mainly acute),TRUE
+S,SSA20,S102H,SSA20S102H,"Belhaven, Dunbar",J26,Community Hospitals,Clinics,FALSE
+S,SSA20,S108H,SSA20S108H,"Edington Cottage, N. Berwick",J26,Community Hospitals,Clinics,FALSE
+S,SSA20,S109H,SSA20S109H,Herdmanflat,C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+S,SSA20,S113H,SSA20S113H,"Roodlands, Haddington",B8,Long stay/acute hospitals - long stay geriatric units with some medical and surgical services.,Long Stay Hospitals,FALSE
+S,SSA20,S116H,SSA20S116H,"Western General, Edinburgh",A1,Teaching hospitals - major teaching hospitals covering a full range of services and with special units.,General Hospitals (mainly acute),TRUE
+S,SSA20,S201H,SSA20S201H,"Astley Ainslie, Edinburgh",B6,Long stay hospitals (over 100 average staffed beds) - long stay geriatric units controlled by geriatrician. May be with young chronic sick unit.,Long Stay Hospitals,FALSE
+S,SSA20,S209H,SSA20S209H,Liberton,B8,Long stay/acute hospitals - long stay geriatric units with some medical and surgical services.,Long Stay Hospitals,FALSE
+S,SSA20,S217H,SSA20S217H,Royal Edinburgh Hospital,C12,Teaching mental illness hospitals with major teaching or research units.,Mental Hospitals,FALSE
+S,SSA20,S225H,SSA20S225H,"RHSC, Edinburgh",A4,Sick children's hospitals - large teaching hospitals for children covering a range of medicine and surgery.,General Hospitals (mainly acute),FALSE
+S,SSA20,S305H,SSA20S305H,"St. Michael's, Linlithgow",B7,Small long stay hospitals (100 and under average staffed beds) - long stay geriatric units controlled by geriatrician. May be with young chronic sick unit.,Long Stay Hospitals,FALSE
+S,SSA20,S306H,SSA20S306H,"Tippethill, Whitburn",B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+S,SSA20,S308H,SSA20S308H,St. John's at Howden,A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+S,SSA20,S310H,SSA20S310H,FerryField House,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+S,SSA20,S312H,SSA20S312H,Healthcare Houses (5),D17,Learning disabilities hospitals (150 and under average staffed beds).,Psychiatry of Learning Disabilities Hospitals,FALSE
+S,SSA20,S312R,SSA20S312R,Craigshill Care Facility,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+S,SSA20,S313H,SSA20S313H,Ellen's Glen,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+S,SSA20,S314H,SSA20S314H,Edinburgh Royal Infirmary,A1,Teaching hospitals - major teaching hospitals covering a full range of services and with special units.,General Hospitals (mainly acute),TRUE
+S,SSA20,S315H,SSA20S315H,Findlay House,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+S,SSA20,S318H,SSA20S318H,Midlothian Community Hospital,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+T,STA20,T101H,STA20T101H,Ninewells,A1,Teaching hospitals - major teaching hospitals covering a full range of services and with special units.,General Hospitals (mainly acute),TRUE
+T,STA20,T104H,STA20T104H,Kings Cross Hospital,G21,Other - Miscellaneous hospitals in which function and/or costs are not comparable with other hospitals.,Other,FALSE
+T,STA20,T107H,STA20T107H,"Royal Victoria, Dundee",G21,Other - Miscellaneous hospitals in which function and/or costs are not comparable with other hospitals.,Other,FALSE
+T,STA20,T115H,STA20T115H,Strathmartine Hospital,D17,Learning disabilities hospitals (150 and under average staffed beds).,Psychiatry of Learning Disabilities Hospitals,FALSE
+T,STA20,T202H,STA20T202H,Perth Royal Infirmary,A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+T,STA20,T205H,STA20T205H,"St. Margaret's, Aucht'r",J26,Community Hospitals,Clinics,FALSE
+T,STA20,T209H,STA20T209H,Blairgowrie Cottage,J26,Community Hospitals,Clinics,FALSE
+T,STA20,T215H,STA20T215H,"Murray Royal, Perth",C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+T,STA20,T304H,STA20T304H,Arbroath Infirmary,J26,Community Hospitals,Clinics,FALSE
+T,STA20,T312H,STA20T312H,Stracathro,A3,"General hospitals - mixed specialist hospitals (may have maternity units). Consultant type surgery undertaken, usually 250 and under average staffed beds.",General Hospitals (mainly acute),TRUE
+T,STA20,T316H,STA20T316H,Crieff Community Hospital,J26,Community Hospitals,Clinics,FALSE
+T,STA20,T317H,STA20T317H,"Carseview Centre, Dundee",C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+T,STA20,T319H,STA20T319H,Whitehills HCCC,B7,Small long stay hospitals (100 and under average staffed beds) - long stay geriatric units controlled by geriatrician. May be with young chronic sick unit.,Long Stay Hospitals,FALSE
+T,STA20,T320H,STA20T320H,Pitlochry Community Hospital,J26,Community Hospitals,Clinics,FALSE
+T,STA20,T322H,STA20T322H,Kingsway Care Centre,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+T,STA20,T324H,STA20T324H,Child & Adolescent Centre,G21,Other - Miscellaneous hospitals in which function and/or costs are not comparable with other hospitals.,Other,FALSE
+V,SVA20,V102H,SVA20V102H,Falkirk Community Hospital,J26,Community Hospitals,Clinics,FALSE
+V,SVA20,V105H,SVA20V105H,Bo'Ness Hospital,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+V,SVA20,V106H,SVA20V106H,"Bellsdyke Hospital Site, Larbert",C14,Mental illness hospitals with 250 and under average staffed beds.,Mental Hospitals,FALSE
+V,SVA20,V201H,SVA20V201H,Stirling Community Hospital,J26,Community Hospitals,Clinics,FALSE
+V,SVA20,V214H,SVA20V214H,"Loch View, Larbert",D17,Learning disabilities hospitals (150 and under average staffed beds).,Psychiatry of Learning Disabilities Hospitals,FALSE
+V,SVA20,V216H,SVA20V216H,Clackmannan Community Healthcare Centre,J26,Community Hospitals,Clinics,FALSE
+V,SVA20,V217H,SVA20V217H,Forth Valley Royal Hospital,A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+W,SWA01,W106H,SWA01W106H,"St. Brendan's, Barra",J26,Community Hospitals,Clinics,FALSE
+W,SWA01,W107H,SWA01W107H,"Western Isles, Stornoway",A3,"General hospitals - mixed specialist hospitals (may have maternity units). Consultant type surgery undertaken, usually 250 and under average staffed beds.",General Hospitals (mainly acute),TRUE
+W,SWA01,W108H,SWA01W108H,Uist & Barra Hospital,J26,Community Hospitals,Clinics,FALSE
+Y,SYA20,Y101H,SYA20Y101H,Castle Douglas,J26,Community Hospitals,Clinics,FALSE
+Y,SYA20,Y106H,SYA20Y106H,Kirkcudbright,J26,Community Hospitals,Clinics,FALSE
+Y,SYA20,Y107H,SYA20Y107H,"Thomas Hope, Langholm",J26,Community Hospitals,Clinics,FALSE
+Y,SYA20,Y108H,SYA20Y108H,Lochmaben,B9,Long stay/psychiatric hospitals - long stay geriatric units with geriatric psychiatry.,Long Stay Hospitals,FALSE
+Y,SYA20,Y109H,SYA20Y109H,Moffat Hospital,J26,Community Hospitals,Clinics,FALSE
+Y,SYA20,Y110H,SYA20Y110H,Newton Stewart,J26,Community Hospitals,Clinics,FALSE
+Y,SYA20,Y114H,SYA20Y114H,Thornhill,J26,Community Hospitals,Clinics,FALSE
+Y,SYA20,Y120H,SYA20Y120H,Annan Hospital,B7,Small long stay hospitals (100 and under average staffed beds) - long stay geriatric units controlled by geriatrician. May be with young chronic sick unit.,Long Stay Hospitals,FALSE
+Y,SYA20,Y136H,SYA20Y136H,"Acorn House, Dumfries",D17,Learning disabilities hospitals (150 and under average staffed beds).,Psychiatry of Learning Disabilities Hospitals,FALSE
+Y,SYA20,Y144H,SYA20Y144H,Galloway Community Hospital,A3,"General hospitals - mixed specialist hospitals (may have maternity units). Consultant type surgery undertaken, usually 250 and under average staffed beds.",General Hospitals (mainly acute),TRUE
+Y,SYA20,Y145H,SYA20Y145H,Mid Park,C12,Teaching mental illness hospitals with major teaching or research units.,Mental Hospitals,FALSE
+Y,SYA20,Y146H,SYA20Y146H,New Dumfries and Galloway Royal Infirmary,A2,"Large general hospitals - general hospitals with some teaching units, usually over 250 average staffed beds.",General Hospitals (mainly acute),TRUE
+Z,SZA01,Z102H,SZA01Z102H,"Gilbert Bain, Lerwick",A3,"General hospitals - mixed specialist hospitals (may have maternity units). Consultant type surgery undertaken, usually 250 and under average staffed beds.",General Hospitals (mainly acute),TRUE
