@@ -263,3 +263,10 @@ render(
   envir = new.env()
 )
 
+render(
+  input = "./highlands_data_and_visualisations.Rmd",
+  output_file = paste0("highlands_data_and_visualisations_",today()),
+  output_dir = dir_reports,
+  envir = new.env()
+)
+
