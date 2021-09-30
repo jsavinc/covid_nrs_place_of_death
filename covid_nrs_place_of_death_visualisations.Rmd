@@ -137,7 +137,7 @@ save_output_file <- function(filename, extensions, plot, width, height, units, d
   geom_line(size = 1) +
   geom_text(data = ~filter(.x, year==2021), aes(x=2021.1, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
   scale_x_continuous(breaks = 2015:2021) +
-  scale_y_continuous(label = scales::percent) +
+  scale_y_continuous(label = function(x) scales::percent(x = x, accuracy = 1)) +
   scale_colour_viridis_d(option="C") +
   # theme_minimal() +
   theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
