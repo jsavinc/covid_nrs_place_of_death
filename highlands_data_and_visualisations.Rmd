@@ -268,7 +268,9 @@ table_current_deaths_compared_to_past_highland <-
     ratio_deaths_all_causes_to_historical = deaths_all_causes / mean_annual_deaths_2015_2019,
     ratio_non_covid_deaths_to_historical = deaths_non_covid / mean_annual_deaths_2015_2019,
     proportion_covid_deaths = deaths_covid_related / deaths_all_causes
-  ) %>% relocate(geography, place_of_death)
+  ) %>% 
+  mutate(ref_area = "Highland") %>%
+  relocate(ref_area, geography, place_of_death)
 
 write_csv(x = table_current_deaths_compared_to_past_highland, file = file.path(dir_outputs_highlands, "annual_death_rates_comparison_with_historical_deaths_highland.csv"))
 ```
