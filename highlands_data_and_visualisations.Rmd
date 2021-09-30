@@ -1,5 +1,5 @@
 ---
-title: "Deaths at home in NHS Highlands / North Highland LA"
+title: "Deaths at home in NHS Highland / Highland LA"
 author: "Jan Savinc"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
 output: 
@@ -108,18 +108,12 @@ save_output_file <- function(filename, extensions, plot, width, height, units, d
     ggsave(filename = paste0(filename, ext), plot = plot, width = width, height = height, units = units, dpi = dpi, device = if (tolower(ext)==".pdf") cairo_pdf else NULL)
     }
   )
-
-# TODO: remove below bit, not needed when using device=device_cairo
-# if (any(str_detect(string = tolower(extensions), pattern = "pdf"))) {
-#   pdf_filename <- paste0(filename, extensions[which(any(str_detect(string = tolower(extensions), pattern = "pdf")))])
-#   embed_fonts(file = pdf_filename)  # overwrites file with one with font embedded
-# }
-# invisible(filename)  # return invisibly
 }
-
 ```
 
-# NHS Highlands / North Highland LA data
+# NHS Highlands / Highland LA data
+
+On 28 September, Michael Loynd of NHS Highland asked for a data excerpt for NHS Highland and North Highland (sic) local authority.
 
 ## Create directory
 
@@ -130,66 +124,158 @@ if (!dir.exists(dir_outputs_highlands)) dir.create(dir_outputs_highlands, recurs
 
 ## Table of deaths
 
-
-## Deaths by place
-
 ```{r}
-## to put the arrows explaining historic range etc. only in one panel, need to construct a tibble to pass as data
-annotations_figure_place_of_death_explaining_historic_range_nhs_highland <- tribble(
-   ~geom, ~place_of_death, ~label, ~x, ~y, ~xend, ~yend,
-  "text", "Hospital", "Historic range (min & max)", 29, 850, NA, NA,
-  "curve", "Hospital", NA, 29, 830, 32, 550,
-  "text", "Hospital", "Historic mean", 22, 800, NA, NA,
-  "curve", "Hospital", NA, 22, 780, 26, 510
-) %>% 
-  mutate(across(.cols = c("x","xend"), .fns = ~compute_start_date_from_week_number(week_number = .x, year_number = 2020))) %>%
-  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home")))  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+table_current_deaths_compared_to_past_highland <-
+  bind_rows(
+    ## all available data
+    merged_deaths_hb %>%
+      mutate(geography = "HB") %>%
+      filter(ref_area == "Highland") %>%
+      group_by(year, place_of_death, week_number, geography) %>%
+      summarise(
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        .groups = "drop"
+      ) %>% 
+      mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+      left_join(
+        past_deaths_hb %>% filter(year != "average" & ref_area == "Highland") %>% group_by(week_number, place_of_death) %>% summarise(
+                                           average_weekly_deaths = sum(number_of_deaths) / 5,
+                                           .groups = "drop"
+                                         ),
+        by = c("week_number", "place_of_death")
+      ) %>% 
+      group_by(place_of_death, geography) %>%
+      summarise(
+        period = glue::glue("Data from week 1, 2020 to week {weeks_available_2021}, 2021"),
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        mean_annual_deaths_2015_2019 = sum(average_weekly_deaths),
+        .groups = "drop"
+      )
+    ,
+    ## 2020 only
+    merged_deaths_hb %>%
+      mutate(geography = "HB") %>%
+      filter(ref_area == "Highland" & year == 2020) %>%
+      group_by(place_of_death, geography) %>%
+      summarise(
+        period = "2020",
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        .groups = "drop"
+      ) %>% 
+      mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+    left_join(
+      historical_annual_average_hb %>% 
+        filter(ref_area == "Highland") %>%
+        select(place_of_death, mean_annual_deaths_2015_2019 = annual_deaths_mean),
+      by = "place_of_death"
+    )
+    ,
+    ## 2020 from week 12 onwards (including week 12) - pandemic part of 2020
+    merged_deaths_hb %>%
+      mutate(geography = "HB") %>%
+      filter(ref_area == "Highland" &
+          year == 2020 & week_number >= 12
+      ) %>%
+      group_by(place_of_death, geography) %>%
+      summarise(
+        period = "2020, week 12 - week 53",
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        .groups = "drop"
+      ) %>% 
+    mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+    left_join(
+      past_deaths_hb %>% 
+        filter(ref_area == "Highland", week_number >= 12 & year != "average") %>%
+        group_by(place_of_death) %>%
+        summarise(mean_annual_deaths_2015_2019 = sum(number_of_deaths) / 5),
+      by = "place_of_death"
+    ),
+    ## all available data
+    merged_deaths_la %>%
+      mutate(geography = "LA") %>%
+      filter(ref_area == "Highland") %>%
+      group_by(year, place_of_death, week_number, geography) %>%
+      summarise(
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        .groups = "drop"
+      ) %>% 
+      mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+      left_join(
+        past_deaths_la %>% filter(year != "average" & ref_area == "Highland") %>% group_by(week_number, place_of_death) %>% summarise(
+                                           average_weekly_deaths = sum(number_of_deaths) / 5,
+                                           .groups = "drop"
+                                         ),
+        by = c("week_number", "place_of_death")
+      ) %>% 
+      group_by(place_of_death, geography) %>%
+      summarise(
+        period = glue::glue("Data from week 1, 2020 to week {weeks_available_2021}, 2021"),
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        mean_annual_deaths_2015_2019 = sum(average_weekly_deaths),
+        .groups = "drop"
+      )
+    ,
+    ## 2020 only
+    merged_deaths_la %>%
+      mutate(geography = "LA") %>%
+      filter(ref_area == "Highland" & year == 2020) %>%
+      group_by(place_of_death, geography) %>%
+      summarise(
+        period = "2020",
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        .groups = "drop"
+      ) %>% 
+      mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+    left_join(
+      historical_annual_average_la %>% 
+        filter(ref_area == "Highland") %>%
+        select(place_of_death, mean_annual_deaths_2015_2019 = annual_deaths_mean),
+      by = "place_of_death"
+    )
+    ,
+    ## 2020 from week 12 onwards (including week 12) - pandemic part of 2020
+    merged_deaths_la %>%
+      mutate(geography = "LA") %>%
+      filter(ref_area == "Highland" &
+          year == 2020 & week_number >= 12
+      ) %>%
+      group_by(place_of_death, geography) %>%
+      summarise(
+        period = "2020, week 12 - week 53",
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        .groups = "drop"
+      ) %>% 
+    mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+    left_join(
+      past_deaths_la %>% 
+        filter(ref_area == "Highland", week_number >= 12 & year != "average") %>%
+        group_by(place_of_death) %>%
+        summarise(mean_annual_deaths_2015_2019 = sum(number_of_deaths) / 5),
+      by = "place_of_death"
+    )
+  ) %>%
+  mutate(
+    ratio_deaths_all_causes_to_historical = deaths_all_causes / mean_annual_deaths_2015_2019,
+    ratio_non_covid_deaths_to_historical = deaths_non_covid / mean_annual_deaths_2015_2019,
+    proportion_covid_deaths = deaths_covid_related / deaths_all_causes
+  ) %>% relocate(geography, place_of_death)
 
-
-(figure_place_of_death_nhs_highland <-
-  merged_deaths_overall %>%
-  filter(sex == "all" & age == "all") %>%
-  filter(!place_of_death %in% c("All","Other")) %>%
-  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
-  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
-               names_to = "deaths_type", values_to = "deaths") %>% 
-  ggplot(aes(x = date_w_c)) +
-  annotate(geom = "rect", xmin = compute_start_date_from_week_number(week_number = 1, year_number = 2021), xmax = compute_start_date_from_week_number(week_number = weeks_available_2021, year_number = 2021), ymin = -Inf, ymax = Inf, fill = "grey90", alpha = 0.2) +  # shade area - geom_rect doesn't work here
-  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "8 weeks", limits = c(earliest_date, most_recent_date_available_2021)) +
-  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
-  geom_line(aes(y = deaths, colour = deaths_type)) +
-  geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
-  facet_grid(~place_of_death) +
-  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
-                      labels = c("All deaths", 
-                                 "Non Covid-19 deaths"),
-                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
-                      ) +
-  theme(
-    legend.position = "top",
-    plot.caption = element_text(size = 10, colour = "gray60"),
-    plot.margin = margin(5, 15, 5, 5),
-    axis.text.x = element_text(angle = 60, colour = "gray40", vjust=1, hjust=1)
-  ) +
-  labs(x = "Date w/c",
-       y = "Deaths (N)",
-       subtitle = date_range_text,
-       caption = paste0(c(death_registrations_text,removed_other_category_text,source_nrs_text), collapse="\n"),
-       colour = "Cause of death"
-       ) +
-  ## annotate historic range
-  geom_text(data = annotations_figure_place_of_death_explaining_historic_range %>% filter(geom=="text"), aes(x=x, y=y, label=label),  colour = "grey20", size = 8 / (14/5)) +  # the size is tricky
-  geom_curve(data = annotations_figure_place_of_death_explaining_historic_range %>% filter(geom=="curve"), aes(x=x, y=y, xend=xend, yend=yend), colour = c("#4477aa", "grey20"), alpha = c(0.5, 1), curvature = 0.20, arrow = arrow(length = unit(0.2, "cm"))) +
-  annotate(geom = "text", x=ymd("2021-01-07"), y=30, label = "2021", hjust = 0, colour = "grey40") +
-  NULL
-)
-
-# save_output_file(filename = paste0(dir_outputs,"/figure_place_of_death"), extensions = c(".pdf",".svg",".png"), plot = figure_place_of_death, width = 28, height = 14, dpi = 300, units = "cm")
+write_csv(x = table_current_deaths_compared_to_past_highland, file = file.path(dir_outputs_highlands, "annual_death_rates_comparison_with_historical_deaths_highland.csv"))
 ```
 
 
 ## Home deaths
-
+  
 ```{r}
 annotations_deaths_at_home_highland <- tribble(
   ~geography, ~place_of_death, ~x, ~y, ~label,
@@ -300,6 +386,9 @@ save_output_file(filename = paste0(dir_outputs_highlands,"/figure_proportion_hom
 ```
 
 
+## Cause of death & deprivation
+
+Unfortunately, as of 30 September 2021 these aren't available in combination with HB/LA, so they can't be reported for Highland individually.
 
 
 # Print session info
