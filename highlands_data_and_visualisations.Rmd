@@ -39,6 +39,7 @@ library(extrafont)  # for working with fonts
 library(openxlsx)  # for creating xlsx files
 library(knitr)  # for displaying tables in rmd
 library(lemon)  # for showing axis & axis labels in every facet in ggplot
+library(patchwork)  # for assembling multiple plots
 ```
 
 
@@ -189,13 +190,36 @@ annotations_figure_place_of_death_explaining_historic_range_nhs_highland <- trib
 
 ## Home deaths
 
-### NHS Highland
-
 ```{r}
-(figure_deaths_at_home_2020_and_2021_nhs_highland <-
-  merged_deaths_hb %>%
-  filter(ref_area == "Highland") %>%
-  filter(place_of_death %in% c("Home & other non-institution")) %>%
+annotations_deaths_at_home_highland <- tribble(
+  ~geography, ~place_of_death, ~x, ~y, ~label,
+  "NHS Highland", "Home & other non-institution", 15, 36, 2020,
+  "NHS Highland", "Home & other non-institution", 8, 43, 2021,
+  "Highland (Local authority)", "Home & other non-institution", 21, 31, 2020,
+  "Highland (Local authority)", "Home & other non-institution", 10, 28, 2021,
+) %>% mutate(alpha = if_else(label==2021, 1, 0.4)) %>%   # change alpha for 2020
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home")))  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+
+arrows_deaths_at_home_highland <- tribble(
+  ~geography, ~geom, ~place_of_death, ~label, ~x, ~y, ~xend, ~yend,
+  "NHS Highland", "text", "Home & other non-institution", "Historic range (min & max)", 11, 5, NA, NA,
+  "NHS Highland", "curve", "Home & other non-institution", NA, 11, 7, 15, 11,
+  "NHS Highland", "text", "Home & other non-institution", "Historic mean", 20, 1, NA, NA,
+  "NHS Highland", "curve", "Home & other non-institution", NA, 23, 3, 29, 18
+) %>% 
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home")))  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+
+(figure_deaths_at_home_2020_and_2021_highland <-
+  bind_rows(  # combine the two geographical types
+    merged_deaths_hb %>%
+      filter(ref_area == "Highland") %>%
+      filter(place_of_death %in% c("Home & other non-institution")) %>%
+      mutate(geography = "NHS Highland"),
+    merged_deaths_la %>%
+      filter(ref_area == "Highland") %>%
+      filter(place_of_death %in% c("Home & other non-institution")) %>%
+      mutate(geography = "Highland (Local authority)")
+  ) %>%
   mutate(year = factor(year)) %>%
   pivot_longer(cols = c(deaths_all_causes, deaths_non_covid),
                names_to = "deaths_type", values_to = "deaths") %>%
@@ -207,104 +231,7 @@ annotations_figure_place_of_death_explaining_historic_range_nhs_highland <- trib
   geom_line(data = . %>% filter(year==2021), aes(y = deaths, colour = deaths_type)) +
   scale_x_continuous(breaks = seq(0,60,by=12)) +
   ylim(0, 50) +  # start scale at 0 for better understanding the scale of deaths
-  facet_grid(~place_of_death) +
-  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
-                      labels = c("All deaths",
-                                 "Non Covid-19 deaths"),
-                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
-                      ) +
-  scale_alpha_continuous(range = c(0.2, 0.6), guide = NULL) +
-  annotate(geom = "text", x = 15, y = 36, label = "2020", alpha = 0.4) +
-  annotate(geom = "text", x = 8, y = 43, label = "2021") +
-  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
-  labs(x = "Week number",
-       y = "Weekly deaths (N)",
-       title = "NHS Highland",
-       subtitle = date_range_text,
-       caption = paste0(c(death_registrations_text, source_nrs_text), collapse="\n"),
-       colour = "Cause of death"
-       ) +
-  ## annotate historic range
-  annotate(geom = "text", x = 11, y = 5, label = "Historic range (min & max)", colour = "grey20") +
-  annotate(geom = "curve", x = 11, xend = 15, y = 7, yend = 11, curvature = 0.20, colour = "#4477aa", alpha = 0.5, arrow = arrow(length = unit(0.2, "cm"))) +
-  annotate(geom = "text", x = 20, y = 1, label = "Historic mean", colour = "grey20") +
-  annotate(geom = "curve", x = 20, xend = 25, y = 3, yend = 20, curvature = 0.20, colour = "grey20", linetype="dashed", arrow = arrow(length = unit(0.2, "cm"))) +
-  NULL
-)
-
-save_output_file(filename = paste0(dir_outputs_highlands,"/deaths_at_home_2020_and_2021_nhs_highlands"), extensions = c(".pdf",".png"), plot = figure_deaths_at_home_2020_and_2021_nhs_highland, width = 18, height = 14, dpi = 300, units = "cm")
-```
-
-### Highland LA
-
-```{r}
-(figure_deaths_at_home_2020_and_2021_highland_la <-
-  merged_deaths_la %>%
-  filter(ref_area == "Highland") %>%
-  filter(place_of_death %in% c("Home & other non-institution")) %>%
-  mutate(year = factor(year)) %>%
-  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid),
-               names_to = "deaths_type", values_to = "deaths") %>%
-  ggplot(aes(x = week_number)) +
-  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
-  geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
-  # geom_line(data = . %>% filter(year==2020), aes(y = deaths, colour = deaths_type, alpha = week_number, group = deaths_type), show.legend = FALSE) +
-  geom_line(data = . %>% filter(year==2020), aes(y = deaths, colour = deaths_type, group = deaths_type), show.legend = FALSE, alpha = 0.3) +  # use a fixed alpha value, otherwise the lines are chopped up into rectangular segments and don't look good zoomed in
-  geom_line(data = . %>% filter(year==2021), aes(y = deaths, colour = deaths_type)) +
-  scale_x_continuous(breaks = seq(0,60,by=12)) +
-  ylim(0, 50) +  # start scale at 0 for better understanding the scale of deaths
-  facet_grid(~place_of_death) +
-  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
-                      labels = c("All deaths",
-                                 "Non Covid-19 deaths"),
-                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
-                      ) +
-  scale_alpha_continuous(range = c(0.2, 0.6), guide = NULL) +
-  annotate(geom = "text", x = 21, y = 31, label = "2020", alpha = 0.4) +
-  annotate(geom = "text", x = 10, y = 28, label = "2021") +
-  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
-  labs(x = "Week number",
-       y = "Weekly deaths (N)",
-       title = "Highland (Local authority)",
-       subtitle = date_range_text,
-       caption = paste0(c(death_registrations_text, source_nrs_text), collapse="\n"),
-       colour = "Cause of death"
-       ) +
-  ## annotate historic range
-  annotate(geom = "text", x = 11, y = 5, label = "Historic range (min & max)", colour = "grey20") +
-  annotate(geom = "curve", x = 9, xend = 10.5, y = 6, yend = 8, curvature = 0.20, colour = "#4477aa", alpha = 0.5, arrow = arrow(length = unit(0.2, "cm"))) +
-  annotate(geom = "text", x = 20, y = 1, label = "Historic mean", colour = "grey20") +
-  annotate(geom = "curve", x = 20, xend = 25, y = 3, yend = 15, curvature = 0.20, colour = "grey20", linetype="dashed", arrow = arrow(length = unit(0.2, "cm"))) +
-  NULL
-)
-
-save_output_file(filename = paste0(dir_outputs_highlands,"/deaths_at_home_2020_and_2021_highland_la"), extensions = c(".pdf",".png"), plot = figure_deaths_at_home_2020_and_2021_highland_la, width = 18, height = 14, dpi = 300, units = "cm")
-```
-
-### Combined
-
-```{r}
-# TODO: complete combined graph
-(bind_rows(  # combine the two geographical types
-  merged_deaths_hb %>%
-    filter(ref_area == "Highland") %>%
-    filter(place_of_death %in% c("Home & other non-institution")) %>%
-    mutate(geography = "Health board"),
-  merged_deaths_la %>%
-    filter(ref_area == "Highland") %>%
-    filter(place_of_death %in% c("Home & other non-institution")) %>%
-    mutate(geography = "Local authority")
-) %>%
-  mutate(year = factor(year)) %>%
-  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid),
-               names_to = "deaths_type", values_to = "deaths") %>%
-  ggplot(aes(x = week_number)) +
-  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
-  geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
-  geom_line(aes(y = deaths, colour = deaths_type)) +
-  scale_x_continuous(breaks = seq(0,60,by=12)) +
-  ylim(0, 50) +  # start scale at 0 for better understanding the scale of deaths
-  facet_grid(year~geography) +
+  facet_grid(~geography) +
   scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
                       labels = c("All deaths",
                                  "Non Covid-19 deaths"),
@@ -314,24 +241,26 @@ save_output_file(filename = paste0(dir_outputs_highlands,"/deaths_at_home_2020_a
   theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
   labs(x = "Week number",
        y = "Weekly deaths (N)",
-       title = "Highland (Local authority)",
+       title = "Highland: Health Board & Local Authority",
        subtitle = date_range_text,
        caption = paste0(c(death_registrations_text, source_nrs_text), collapse="\n"),
        colour = "Cause of death"
        ) +
   ## annotate historic range
-  annotate(geom = "text", x = 11, y = 5, label = "Historic range (min & max)", colour = "grey20") +
-  annotate(geom = "curve", x = 9, xend = 10.5, y = 6, yend = 8, curvature = 0.20, colour = "#4477aa", alpha = 0.5, arrow = arrow(length = unit(0.2, "cm"))) +
-  annotate(geom = "text", x = 20, y = 1, label = "Historic mean", colour = "grey20") +
-  annotate(geom = "curve", x = 20, xend = 25, y = 3, yend = 15, curvature = 0.20, colour = "grey20", linetype="dashed", arrow = arrow(length = unit(0.2, "cm"))) +
+  geom_text(data = annotations_deaths_at_home_highland %>% filter(label==2021), aes(x=x, y=y, label=label), fontface = "bold") +
+  geom_text(data = annotations_deaths_at_home_highland %>% filter(label==2020), aes(x=x, y=y, label=label), alpha = 0.6) +
+  geom_text(data = arrows_deaths_at_home_highland %>% filter(geom=="text"), aes(x=x,y=y,label=label)) +
+  geom_curve(data = arrows_deaths_at_home_highland %>% filter(geom=="curve") %>% slice(1), aes(x=x,y=y,xend=xend,yend=yend), curvature = 0.20, arrow = arrow(length = unit(0.2, "cm")), alpha = 0.5) +
+  geom_curve(data = arrows_deaths_at_home_highland %>% filter(geom=="curve") %>% slice(2), aes(x=x,y=y,xend=xend,yend=yend), curvature = 0.20, arrow = arrow(length = unit(0.2, "cm")), linetype = "dashed") +
   NULL
 )
+
+save_output_file(filename = paste0(dir_outputs_highlands,"/deaths_at_home_2020_and_2021_highland"), extensions = c(".pdf",".png"), plot = figure_deaths_at_home_2020_and_2021_highland, width = 24, height = 14, dpi = 300, units = "cm")
 ```
 
 ## Proportion of deaths by place by year
 
 ```{r}
-# TODO: add NHS highland & LA!
 (figure_proportion_deaths_by_place_by_year_highland <-
   bind_rows(
     merged_proportions_of_deaths_by_place %>% mutate(geography = "scotland"),
@@ -350,7 +279,7 @@ save_output_file(filename = paste0(dir_outputs_highlands,"/deaths_at_home_2020_a
   ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
   geom_point() +
   geom_line(size = 1) +
-  geom_text(data = ~filter(.x, year==2021), aes(x=2021.1, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+  geom_text(data = ~filter(.x, year==2021), aes(x=2021.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
   scale_x_continuous(breaks = 2015:2021) +
   scale_y_continuous(label = function(x) scales::percent(x = x, accuracy = 1)) +
   scale_colour_viridis_d(option="C") +
@@ -359,6 +288,7 @@ save_output_file(filename = paste0(dir_outputs_highlands,"/deaths_at_home_2020_a
   labs(
     x = "Year", y= "Proportion of yearly deaths (%)",
     colour = "",
+    title = "Highland Health Board & Local Authority",
     subtitle = paste0("* ",only_2021_text),
     caption = paste0(c(source_nrs_text),collapse="\n")
     ) +
@@ -366,7 +296,7 @@ save_output_file(filename = paste0(dir_outputs_highlands,"/deaths_at_home_2020_a
   NULL
 )
 
-save_output_file(filename = paste0(dir_outputs,"/figure_proportion_home_deaths_over_time"), extensions = c(".pdf",".svg",".png"), plot = figure_proportion_home_deaths_over_time, width = 13, height = 10, units = "cm", dpi = 300)
+save_output_file(filename = paste0(dir_outputs_highlands,"/figure_proportion_home_deaths_over_time_highland"), extensions = c(".pdf",".png"), plot = figure_proportion_deaths_by_place_by_year_highland, width = 22, height = 10, units = "cm", dpi = 300)
 ```
 
 
