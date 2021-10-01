@@ -95,7 +95,7 @@ Because data are updated on a weekly basis, we'll have a separate directory for 
 latest_data_modified_date <- strftime(max(table_of_data_sources$last_modified), format="%F")
 
 dir_outputs <- paste0("./outputs/",latest_data_modified_date)
-if (!dir.exists(dir_outputs)) dir.create(dir_outputs)
+if (!dir.exists(dir_outputs)) dir.create(dir_outputs, recursive = TRUE)
 ```
 
 
@@ -934,7 +934,7 @@ map2_dfr(
 
 I previously downloaded shapefiles for:
 
-* Local Authority Districts (LAD) for 2020 (BUC-level resolution): https://geoportal.statistics.gov.uk/datasets/local-authority-districts-may-2020-boundaries-uk-buc
+* Local Authority Districts (LAD) for 2020 (BUC-level resolution): https://geoportal.statistics.gov.uk/datasets/local-authority-districts-december-2020-uk-buc/
 * Health Boards https://data.gov.uk/dataset/27d0fe5f-79bb-4116-aec9-a8e565ff756a/nhs-health-boards
   - Note: this is a fairly high resolution, don't need this much detail!
   - I found a discussion of this on [a github covid-related project](https://github.com/tomwhite/covid-19-uk-data/issues/18#issuecomment-622353841), and user **robchallen** produced a zip file containing [UK-wide health board boundaries](https://github.com/tomwhite/covid-19-uk-data/files/4563933/UK_covid_reporting_regions.zip)
