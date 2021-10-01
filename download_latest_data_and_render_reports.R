@@ -205,7 +205,7 @@ la_shapefile_url <- "https://opendata.arcgis.com/datasets/910f48f3c4b3400aa9eb0a
 
 # TODO: these have been downloaded so don't need to be downloaded again... change to check if they exist already first?
 # download_shapefile(url = health_boards_shapefile_url, directory = dir_map_data, subdirectory = "hb")
-# download_shapefile(url = la_shapefile_url, directory = dir_map_data, subdirectory = "la")
+# # download_shapefile(url = la_shapefile_url, directory = dir_map_data, subdirectory = "la")  # returning 404
 # download_shapefile(url = health_boards_uk_wide_url, directory = dir_map_data, subdirectory = "hb_uk_wide")
 
 # Download population estimates data --------------------------------------
