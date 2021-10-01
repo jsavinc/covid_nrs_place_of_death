@@ -192,6 +192,11 @@ dir_map_data <- "./map_data"
 if (!dir.exists(dir_map_data)) dir.create(dir_map_data)
 
 download_shapefile <- function(url, directory, subdirectory) {
+  if (dir.exists(file.path(directory, subdirectory))) {
+    message(glue::glue("Map data for:{subdirectory} has already been downloaded, skipping."))
+    return(FALSE)
+  }
+  message(glue::glue("Downloading map data for:{subdirectory}...."))
   zip_file <- tempfile()
   downloaded_zip <- curl_download(url = url, destfile = zip_file, quiet = FALSE) 
   unzip(zipfile = zip_file, exdir = file.path(directory, subdirectory), overwrite = TRUE)
@@ -201,12 +206,13 @@ download_shapefile <- function(url, directory, subdirectory) {
 health_boards_shapefile_url <- "https://maps.gov.scot/ATOM/shapefiles/SG_NHS_HealthBoards_2019.zip"  # massive resolution
 health_boards_uk_wide_url <- "https://github.com/tomwhite/covid-19-uk-data/files/4563933/UK_covid_reporting_regions.zip"
 # https://geoportal.statistics.gov.uk/datasets/local-authority-districts-may-2020-boundaries-uk-buc
-la_shapefile_url <- "https://opendata.arcgis.com/datasets/910f48f3c4b3400aa9eb0af9f8989bbe_0.zip?outSR=%7B%22latestWkid%22%3A27700%2C%22wkid%22%3A27700%7D"
+# la_shapefile_url <- "https://opendata.arcgis.com/datasets/910f48f3c4b3400aa9eb0af9f8989bbe_0.zip?outSR=%7B%22latestWkid%22%3A27700%2C%22wkid%22%3A27700%7D"  # this is the May 2020 link that no longer works
+la_shapefile_url <- "https://opendata.arcgis.com/api/v3/datasets/69dc11c7386943b4ad8893c45648b1e1_0/downloads/data?format=shp&spatialRefId=27700"
 
 # TODO: these have been downloaded so don't need to be downloaded again... change to check if they exist already first?
-# download_shapefile(url = health_boards_shapefile_url, directory = dir_map_data, subdirectory = "hb")
-# # download_shapefile(url = la_shapefile_url, directory = dir_map_data, subdirectory = "la")  # returning 404
-# download_shapefile(url = health_boards_uk_wide_url, directory = dir_map_data, subdirectory = "hb_uk_wide")
+download_shapefile(url = health_boards_shapefile_url, directory = dir_map_data, subdirectory = "hb")
+download_shapefile(url = la_shapefile_url, directory = dir_map_data, subdirectory = "la")
+download_shapefile(url = health_boards_uk_wide_url, directory = dir_map_data, subdirectory = "hb_uk_wide")
 
 # Download population estimates data --------------------------------------
 
