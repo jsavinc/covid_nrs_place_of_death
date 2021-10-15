@@ -1,0 +1,117 @@
+---
+title: "Exploring location codes to work out what the Other location for deaths in NHS Borders represent"
+author: "Jan Savinc"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Load packages
+
+```{r}
+library(tidyverse)
+library(phsmethods)
+```
+
+
+# Question: what actual places does the `Other` category for place of death represent?
+
+The `Other` category for place of death represents a very small fraction of annual deaths in Scotland. On looking into geographical variations in home deaths, I discovered that it's only the health board NHS Borders where `Other` place of deaths represent a sizable proportion of deaths. The question is what institutions these deaths represent - the first approximation is that these are likely to be prison & school deaths, since most other institutions are already accounted for in the Hospital/Home & other non-institutional setting/Care Home distinction (hospices are included partly in Hospital and partly in Care Home, the reason being explained below).
+
+NHS Borders also has a relatively small population being 4th smallest of the 14 HBs, so perhaps the `Other` category appears sizable when it is in fact very small and would appear insignificant in the context of a larger HB.
+
+
+# Location/institutiion codes in reporting NRS deaths
+
+The following excerpt is from the [following NRS emthodology in reporting Covid-19 deaths document](https://www.nrscotland.gov.uk/files//statistics/covid19/covid-deaths-21-methodology.pdf):
+
+> Public Health Scotland maintains a list of institutions across Scotland. These are mainly health-related institutions but the list also includes prisons and schools etc. NRS use this list to assign an institution code to the place of death on each death record. The institution codes are set up in such a way that the last letter of the code designates the type of institution. For the purposes of NRS death statistics, hospitals are counted as codes ending in H, care homes as codes ending in J, K, R, S, T, U or V, home / non-institution codes ending in N and other institution is everything else. The codes used for care homes are not an exact match. V contains some non-NHS hospitals, J and K contain some hospitals but mainly care homes. This grouping of codes is the closest we can get with the institution code structure which PHS has and, importantly, it’s consistent with previous practice. It should also be noted that there is no separate category for hospices. In some cases hospices have a code which means they are counted in the care home category, but in other cases hospices have a code which is counted in the hospital category. It is not possible to separate hospices out into a category of their own under the current coding structure used by PHS.
+
+As will become clear, there are lots of codes in the `Other` category; from manual review they mainly comprise health centres, clinics, GP surgeries (A,B,C), residential living institutions,  primary schools (L), nurseries &  colleges (W), high schools (Q).
+
+
+## Data availability
+
+NRS publish aggregated weekly deaths by HB & place of death, which is the most granular data we can investigate. This means we can get figures for people who died in `Other` settings, but we still can't tell what these settings are.
+NRS also provide a list of all locations with their associated code, and from their postcodes we can also infer which Health Board they belong to,
+
+The list of location codes can be found on the [National Reference Files website](https://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/), with the relevant data dictionary at the [SMR file reference](https://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/SMR-reference-file-layouts.asp#Location%20Codes)
+
+More information about the Scottish Postcode Directory (SPD) can be found on the [ISD website](https://www.isdscotland.org/Products-and-Services/GPD-Support/Geography/), and the actual directory is available to [download from a NRS website](https://www.nrscotland.gov.uk/statistics-and-data/geography/nrs-postcode-extract). I'm using the `Small users` file, which has more granular-level data than the `Large users` file.
+
+
+# Downloading data
+
+```{r}
+## download location codes
+if (!file.exists("./downloaded_data/location_codes")) download.file(url = "http://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/Nat-Ref-Files/location?52573360", destfile = "./downloaded_data/location_codes", method = "curl")
+```
+
+# Loading locations, institutions, postcodes
+
+```{r}
+locations <- read_fwf(
+  file = "./downloaded_data/location_codes", 
+  col_positions = 
+    fwf_cols(location_code = c(1,5), location_name = c(6,75), postcode = c(251,258))  # from the data dictionary in the SMR reference above
+  ) %>%
+  mutate(institution_code_nrs = str_sub(location_code, 5, 5))
+
+## I'd downloaded the postcode data previously
+postcodes <- 
+  read_csv(
+    file = "./distance_to_hospital/SPD_PostcodeIndex_Cut_21_1_CSV/SmallUser.csv", 
+    col_names = c("postcode","hb_code"), 
+    col_types = paste0(c("c",rep("_", times = 14), "c", rep("_", times = 57 - 16)), collapse=""),  # there are 57 columns, and we only need number 1 and number 16, both as character vector
+    skip = 1
+    ) %>%
+  mutate(hb = phsmethods::match_area(hb_code))
+```
+
+# Coding place of death
+
+```{r}
+codes_hospital <- c("H")
+codes_home <- c("N")
+codes_care_home <- c("J", "K", "R", "S", "T", "U","V")
+```
+
+## what locations were counted as Home?
+
+```{r}
+locations %>% filter(institution_code_nrs %in% codes_home) %>% print(n=nrow(.))
+```
+
+## what are the `Other` locations? 
+
+Note: not all of these will actually appear as places of death in the death registrations, these are *potential* places of death coded as `Other`
+
+```{r}
+locations %>% filter(!institution_code_nrs %in% c(codes_hospital, codes_home, codes_care_home))
+```
+
+Note that there are too many to parse... and a lot of them are units within a hospital, which probably gets coded as a Hospital death regardless of which unit the death happeed in.
+
+## maybe narrow it down to TD postcode - Borders LA
+locations %>% filter(!institution_code_nrs %in% c(codes_hospital, codes_home, codes_care_home) & str_starts(string = postcode, pattern = "TD")) %>% print(n=nrow(.))
+
+locations %>% filter(str_detect(string = location_name, pattern = regex("prison", ignore_case = TRUE)))
+
+## narrow it down to Borders HB & Other locations
+locations %>% 
+  filter(!institution_code_nrs %in% c(codes_hospital, codes_home, codes_care_home)) %>%
+  left_join(postcodes, by = "postcode") %>%
+  filter(hb == "Borders") %>%
+  arrange(word(location_name ,-1)) %>%
+  print(n=nrow(.))
