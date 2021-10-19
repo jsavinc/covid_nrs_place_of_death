@@ -81,6 +81,69 @@ postcodes <-
 
 # Coding place of death
 
+## From data dictionary
+
+These were provided by Evan Williams by email on 19 March 2021:
+
+>A - Admin Office
+B - Health Centre, GP Surgery
+C - Clinic Premises
+E - Extra-mural clinic
+H - NHS Hospital
+J - Joint User Hospital
+K - Contractual Hospital
+L - School
+M - Non NHS Maternity
+N - Non-Institutional, e.g. Domiciliary
+P - Prison
+Q - School
+R - Home for the Elderly
+S - Other Home
+T - Miscellaneous Premises
+V - Private Nursing Home, Private Hospital etc
+W - School
+
+
+```{r}
+# datapasta::vector_paste_vertical()  # use with above list
+institution_codes <-
+  c("A - Admin Office",
+     "B - Health Centre, GP Surgery",
+     "C - Clinic Premises",
+     "E - Extra-mural clinic",
+     "H - NHS Hospital",
+     "J - Joint User Hospital",
+     "K - Contractual Hospital",
+     "L - School",
+     "M - Non NHS Maternity",
+     "N - Non-Institutional, e.g. Domiciliary",
+     "P - Prison",
+     "Q - School",
+     "R - Home for the Elderly",
+     "S - Other Home",
+     "T - Miscellaneous Premises",
+     "V - Private Nursing Home, Private Hospital etc",
+     "W - School") %>%
+  tibble(institution_code_nrs = .) %>%
+  separate(col = institution_code_nrs, into = c("institution_code_nrs","institution_type"), sep = " - ", remove = TRUE)
+
+locations <-
+  locations %>%
+  left_join(institution_codes, by = "institution_code_nrs")
+
+## any institutions without a type?
+locations %>% filter(is.na(institution_type)) %>% count(institution_code_nrs)
+## YES: G & Z codes don't have a type associated
+```
+
+Using the above data dictionary, we are still left with G & Z-type institutions that don't appear in the dictionary...
+
+* `G` seems to cover clinics & medical units
+* `Z` seems to cover community centres, games halls, town halls
+
+
+## From NRS Covid-19 methodology paper:
+
 ```{r}
 codes_hospital <- c("H")
 codes_home <- c("N")
@@ -101,17 +164,37 @@ Note: not all of these will actually appear as places of death in the death regi
 locations %>% filter(!institution_code_nrs %in% c(codes_hospital, codes_home, codes_care_home))
 ```
 
-Note that there are too many to parse... and a lot of them are units within a hospital, which probably gets coded as a Hospital death regardless of which unit the death happeed in.
+Note that there are too many to parse... and a lot of them are units within a hospital, which probably gets coded as a Hospital death regardless of which unit the death happened in.
 
-## maybe narrow it down to TD postcode - Borders LA
-locations %>% filter(!institution_code_nrs %in% c(codes_hospital, codes_home, codes_care_home) & str_starts(string = postcode, pattern = "TD")) %>% print(n=nrow(.))
 
-locations %>% filter(str_detect(string = location_name, pattern = regex("prison", ignore_case = TRUE)))
-
-## narrow it down to Borders HB & Other locations
-locations %>% 
+```{r}
+locations_hb_borders_other <-
+  locations %>% 
   filter(!institution_code_nrs %in% c(codes_hospital, codes_home, codes_care_home)) %>%
   left_join(postcodes, by = "postcode") %>%
-  filter(hb == "Borders") %>%
-  arrange(word(location_name ,-1)) %>%
-  print(n=nrow(.))
+  filter(hb == "Borders")
+
+locations_hb_borders_other %>% count(institution_code_nrs)
+locations_hb_borders_other %>% filter(institution_code_nrs=="Q")
+
+## any prisons?
+locations_hb_borders_other %>% filter(str_detect(string = location_name, pattern = regex("prison|hmp", ignore_case = TRUE))) %>% print(n=nrow(.))
+
+locations_hb_borders_other %>% filter(!str_detect(string = location_name, pattern = regex("school", ignore_case = TRUE))) %>% print(n=nrow(.))
+```
+
+## What does the first letter in the `location code` mean?
+
+I suspect `B` is for Borders HB...
+
+```{r}
+locations_hb_borders_other %>% count(str_sub(location_code,1,1))
+
+
+locations %>% anti_join(locations_hb_borders_other) %>% count(str_sub(location_code, 1, 1))
+
+locations %>% anti_join(locations_hb_borders_other) %>% filter(str_sub(location_code, 1, 1) == "B") %>% count(is.na(postcode))
+
+locations %>% anti_join(locations_hb_borders_other) %>% filter(str_sub(location_code, 1, 1) == "B")
+```
+
