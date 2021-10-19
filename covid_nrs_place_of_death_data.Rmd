@@ -1695,6 +1695,10 @@ proportions_of_deaths_by_place_by_geography <-
     ungroup %>%
     mutate(proportion_of_total = number_of_deaths / total_deaths, year=as.integer(year))  # compute proportion of deaths in any palce relative to total annual deaths in geographical area
   )
+
+## write to csv
+proportions_of_deaths_by_place_by_geography %>%
+  write_csv(file = paste0(dir_outputs,"/proportions_of_deaths_by_place_by_geography.csv"))
 ```
 
 
