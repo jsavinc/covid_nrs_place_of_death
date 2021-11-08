@@ -22,6 +22,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(tidyverse)
 library(phsmethods)
+library(readxl)  # for reading excel files
+library(lubridate)  # for working with dates & times
+library(janitor)
 ```
 
 
@@ -38,7 +41,10 @@ The following excerpt is from the [following NRS emthodology in reporting Covid-
 
 > Public Health Scotland maintains a list of institutions across Scotland. These are mainly health-related institutions but the list also includes prisons and schools etc. NRS use this list to assign an institution code to the place of death on each death record. The institution codes are set up in such a way that the last letter of the code designates the type of institution. For the purposes of NRS death statistics, hospitals are counted as codes ending in H, care homes as codes ending in J, K, R, S, T, U or V, home / non-institution codes ending in N and other institution is everything else. The codes used for care homes are not an exact match. V contains some non-NHS hospitals, J and K contain some hospitals but mainly care homes. This grouping of codes is the closest we can get with the institution code structure which PHS has and, importantly, it’s consistent with previous practice. It should also be noted that there is no separate category for hospices. In some cases hospices have a code which means they are counted in the care home category, but in other cases hospices have a code which is counted in the hospital category. It is not possible to separate hospices out into a category of their own under the current coding structure used by PHS.
 
-As will become clear, there are lots of codes in the `Other` category; from manual review they mainly comprise health centres, clinics, GP surgeries (A,B,C), residential living institutions,  primary schools (L), nurseries &  colleges (W), high schools (Q).
+As will become clear, there are lots of codes in the `Other` category.
+
+
+A list of all locations and their associated codes are available on the [NRS website](https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/vital-events/general-background-information/code-lists-used-in-vital-events-statistics), specifically at [the following link: Institutions](https://www.nrscotland.gov.uk/files//statistics/vital-events/institution-codes-october-2021.xlsx).
 
 
 ## Data availability
@@ -46,7 +52,8 @@ As will become clear, there are lots of codes in the `Other` category; from manu
 NRS publish aggregated weekly deaths by HB & place of death, which is the most granular data we can investigate. This means we can get figures for people who died in `Other` settings, but we still can't tell what these settings are.
 NRS also provide a list of all locations with their associated code, and from their postcodes we can also infer which Health Board they belong to,
 
-The list of location codes can be found on the [National Reference Files website](https://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/), with the relevant data dictionary at the [SMR file reference](https://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/SMR-reference-file-layouts.asp#Location%20Codes)
+~~The list of location codes can be found on the [National Reference Files website](https://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/), with the relevant data dictionary at the [SMR file reference](https://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/SMR-reference-file-layouts.asp#Location%20Codes)~~
+Note: see above for the NRS-provided list of institutions which also explains the type of institution and health board coding.
 
 More information about the Scottish Postcode Directory (SPD) can be found on the [ISD website](https://www.isdscotland.org/Products-and-Services/GPD-Support/Geography/), and the actual directory is available to [download from a NRS website](https://www.nrscotland.gov.uk/statistics-and-data/geography/nrs-postcode-extract). I'm using the `Small users` file, which has more granular-level data than the `Large users` file.
 
@@ -55,7 +62,13 @@ More information about the Scottish Postcode Directory (SPD) can be found on the
 
 ```{r}
 ## download location codes
-if (!file.exists("./downloaded_data/location_codes")) download.file(url = "http://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/Nat-Ref-Files/location?52573360", destfile = "./downloaded_data/location_codes", method = "curl")
+## this is for the National Reference File, but it's better to use the NRS-provided file instead
+# if (!file.exists("./downloaded_data/location_codes")) download.file(url = "http://www.isdscotland.org/Products-and-Services/Data-Definitions-and-References/National-Reference-Files/Nat-Ref-Files/location?52573360", destfile = "./downloaded_data/location_codes", method = "curl")
+
+institutions_file_url <- "https://www.nrscotland.gov.uk/files//statistics/vital-events/institution-codes-october-2021.xlsx"
+institutions_file_path <- "./downloaded_data/institution-codes-october-2021.xlsx"
+
+if (!file.exists(institutions_file_path)) download.file(url = institutions_file_url, destfile = institutions_file_path, method = "curl")
 ```
 
 # Loading locations, institutions, postcodes
@@ -67,6 +80,47 @@ locations <- read_fwf(
     fwf_cols(location_code = c(1,5), location_name = c(6,75), postcode = c(251,258))  # from the data dictionary in the SMR reference above
   ) %>%
   mutate(institution_code_nrs = str_sub(location_code, 5, 5))
+
+institution_codes <-
+  c("A - Admin Office",
+     "B - Health Centre, GP Surgery",
+     "C - Clinic Premises",
+     "E - Extra-mural clinic",
+     "H - NHS Hospital",
+     "J - Joint User Hospital",
+     "K - Contractual Hospital",
+     "L - School",
+     "M - Non NHS Maternity",
+     "N - Non-Institutional, e.g. Domiciliary",
+     "P - Prison",
+     "Q - School",
+     "R - Home for the Elderly",
+     "S - Other Home",
+     "T - Miscellaneous Premises",
+     "V - Private Nursing Home, Private Hospital etc",
+     "W - School") %>%
+  tibble(institution_code_nrs = .) %>%
+  separate(col = institution_code_nrs, into = c("institution_code_nrs","institution_type"), sep = " - ", remove = TRUE)
+
+institution_hb_codes <- read_excel(path = institutions_file_path, sheet = 1, range = "A7:B21", col_names = c("hb_code","hb"))
+institution_types <- read_excel(path = institutions_file_path, sheet = 1, range = "E7:G21", col_names = c("institution_type_code","institution_type","institution_type_detail"))
+
+institution_types <-
+  bind_rows(
+    institution_types,
+    institution_codes %>% rename(institution_type_code = institution_code_nrs) %>% anti_join(institution_types, by = "institution_type_code")
+  )
+
+institutions <- 
+  read_excel(path = institutions_file_path, sheet = 1, skip = 28, col_types	= rep(c("text","date"), each = 3)) %>%
+  clean_names %>%
+  filter(nchar(location_code)==5) %>%  # extract only actual entries, ignoring all the headers & formatting rows
+  mutate(
+    institution_type_code = str_sub(location_code, 5, 5),
+    hb_code = str_sub(location_code, 1, 1)
+  ) %>% 
+  left_join(institution_hb_codes, by = "hb_code") %>%
+  left_join(institution_types %>% select(institution_type, institution_type_code), by = "institution_type_code")
 
 ## I'd downloaded the postcode data previously
 postcodes <- 
@@ -148,6 +202,15 @@ Using the above data dictionary, we are still left with G & Z-type institutions 
 codes_hospital <- c("H")
 codes_home <- c("N")
 codes_care_home <- c("J", "K", "R", "S", "T", "U","V")
+
+institutions <-
+  institutions %>%
+  mutate(place_of_death = case_when(
+    institution_type_code %in% codes_hospital ~ "Hospital",
+    institution_type_code %in% codes_home ~ "Home & other non-institutional setting",
+    institution_type_code %in% codes_care_home ~ "Care Home",
+    TRUE ~ "Other"
+  ))
 ```
 
 ## what locations were counted as Home?
@@ -183,18 +246,23 @@ locations_hb_borders_other %>% filter(str_detect(string = location_name, pattern
 locations_hb_borders_other %>% filter(!str_detect(string = location_name, pattern = regex("school", ignore_case = TRUE))) %>% print(n=nrow(.))
 ```
 
-## What does the first letter in the `location code` mean?
-
-I suspect `B` is for Borders HB...
-
 ```{r}
-locations_hb_borders_other %>% count(str_sub(location_code,1,1))
+## relatively new (2016 or later institutions)
+institutions %>%
+  filter(hb=="Borders" & place_of_death == "Other") %>%
+  filter(year(location_closure_date) > 2016 | is.na(location_closure_date)) %>%
+  filter(year(location_start_date) >= 2016) %>%
+  View()
+
+institutions %>%
+  filter(hb=="Borders" & place_of_death == "Other") %>%
+  filter(str_detect(location_name, pattern = regex("base|royal|raf|army|milit", ignore_case = TRUE))) %>%
+  .$location_name
 
 
-locations %>% anti_join(locations_hb_borders_other) %>% count(str_sub(location_code, 1, 1))
-
-locations %>% anti_join(locations_hb_borders_other) %>% filter(str_sub(location_code, 1, 1) == "B") %>% count(is.na(postcode))
-
-locations %>% anti_join(locations_hb_borders_other) %>% filter(str_sub(location_code, 1, 1) == "B")
+institutions %>%
+  filter(hb=="Borders" & place_of_death == "Other") %>%
+  filter(year(location_closure_date) > 2016 | is.na(location_closure_date)) %>%
+  View()
 ```
 
