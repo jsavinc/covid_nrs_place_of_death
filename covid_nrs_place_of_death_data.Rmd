@@ -1701,6 +1701,19 @@ proportions_of_deaths_by_place_by_geography %>%
   write_csv(file = paste0(dir_outputs,"/proportions_of_deaths_by_place_by_geography.csv"))
 ```
 
+## Number & proportion of deaths in `Other` location
+
+```{r}
+annual_deaths_coded_as_other_place_hb <-
+  proportions_of_deaths_by_place_by_geography %>% 
+  filter(geography=="hb" & place_of_death == "Other") %>% 
+  mutate(num_prop = paste0(format(number_of_deaths, big.mark = ","), " (", scales::percent(proportion_of_total, accuracy = 0.01),")")) %>%
+  select(year, place_of_death, ref_area, num_prop) %>% 
+  pivot_wider(names_from = year, values_from = num_prop)
+
+annual_deaths_coded_as_other_place_hb %>% write_csv(file = paste0(dir_outputs,"/annual_deaths_coded_as_other_place_hb.csv"))
+```
+
 
 # Excess deaths
 
