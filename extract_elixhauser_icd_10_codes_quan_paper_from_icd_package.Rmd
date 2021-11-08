@@ -1,0 +1,143 @@
+---
+title: "Extract Elixhauser ICD-10 comorbidity codes from `icd` package"
+author: "Jan Savinc"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+    code_folding: show
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+bibliography: references_extract_elixhauser.bib
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Introduction
+
+To use Elixhauser comorbidity codes [@elixhauser] in our study, we needed to provide the criteria for each comorbidity to eDRIS - these will be used to derive binary variables for each person based on their historical hospitalisation records. The original codes were provided for ICD-9-CM, but have since been translated to ICD-10 [@quan]. Unfortunately, the paper is from 2005 and only available as a `.pdf` file, and the codes are listed in a table broken over two pages, so they are not very easy to extract from the paper. The OCR done on the paper isn't great, either, misreading codes, for example, `I12` was read as `112` instead.
+
+Fortunately, the `icd` package [@icd] contains a list of Elixhauser code from the Quan paper, so they can be extracted from the package instead of having to be input by hand.
+
+
+# Install & load `icd` package
+
+As of November 2021, the `icd` package isn't available on CRAN, so I've used the github version instead!
+
+```{r, warning=FALSE, message=FALSE}
+## uncomment if installation needed - note it will take a while because it needs compilation
+# remotes::install_github("jackwasey/icd")
+
+library(tidyverse)  # for tidy workflow
+library(openxlsx)  # for writing excel files
+```
+
+
+# Get the codes out of `icd`
+
+The object `icd::icd10_map_quan_elix` contains the Quan et al. (2005) provided codes, but its default printing method only shows the first 7 comorbidities and the first 7 codes associated with each. We need to `unclass()` it to get the underlying `list` object!
+
+Note that the convention here is that ICD-10 stands for ICD-10-CM (Clinical Modification, the version of ICD-10 used in the USA) - some of these codes don't exist in the UK (WHO) version of ICD-10. It is also clear that rather than having been specified generally, e.g. F18 for drug abuse, all valid ICD-10-CM codes within F18 were enumerated... for our purposes, this is too detailed and some of the very detailed codes don't exist in the UK code list.
+
+For this reason, I actually saved the codes from the `icd` package as a `.csv` and went through them to remove most codes specified at 5th character detail or more, to produce a more compact code that relates to ICD-10 codes rather than ICD-10-CM.
+
+```{r}
+list_of_elixhauser_codes_icd10cm <- unclass(icd::icd10_map_quan_elix)
+
+tbl_of_elixhauser_codes_icd10cm <- 
+  enframe(list_of_elixhauser_codes_icd10cm, name = "comorbidity", value = "code") %>%
+  unnest(code) %>%
+  mutate(
+    code = as.character(code),
+    code_decimal = paste0(str_sub(code, start = 1, end = 3), ".", str_sub(code, start = 4))
+    )
+
+write.csv(x = tbl_of_elixhauser_codes_icd10cm, file = "./elixhauser_comorbidities_quan_2005_icd10cm.csv")
+```
+
+After manual review, these codes can be loaded and cleaned up...
+
+```{r, warning=FALSE, message=FALSE}
+tbl_of_elixhauser_codes_icd10 <- 
+  read_csv(file = "./elixhauser_comorbidities_quan_2005_icd10_manual.csv") %>%
+  rename(icd10_prefix = code) %>%
+  mutate(icd10_prefix_decimal = if_else(
+    condition = nchar(icd10_prefix) > 3,
+    true = paste0(str_sub(icd10_prefix, start = 1, end = 3), ".", str_sub(icd10_prefix, start = 4)),
+    false = icd10_prefix
+  ))
+
+# datapasta::tribble_paste(tbl_of_elixhauser_codes_icd10 %>% select(comorbidity) %>% distinct %>% mutate(comorbidity_long = " "))
+long_comorbidity_names <- tibble::tribble(
+                              ~comorbidity, ~comorbidity_long,
+                                     "CHF",               "Congestive heart failure",
+                              "Arrhythmia",               "cardiac arrhythmias",
+                                "Valvular",               "Valvular disease",
+                                    "PHTN",               "Pulmonary circulation disorders",
+                                     "PVD",               "Peripheral vascular disorders",
+                                     "HTN",               "Hypertension, uncomplicated",
+                                   "HTNcx",               "Hypertension, complicated",
+                               "Paralysis",               "Paralysis",
+                              "NeuroOther",               "Other neurological disorders",
+                               "Pulmonary",               "Chronic pulmonary disease",
+                                      "DM",               "Diabetes, uncomplicated",
+                                    "DMcx",               "Diabetes, complicated",
+                             "Hypothyroid",               "Hypothyroidism",
+                                   "Renal",               "Renal failure",
+                                   "Liver",               "Liver disease",
+                                     "PUD",               "Peptic ulcer disease",
+                                     "HIV",               "AIDS/HIV",
+                                "Lymphoma",               "Lymphoma",
+                                    "Mets",               "Metastatic cancer",
+                                   "Tumor",               "Solid tumour without metastasis",
+                               "Rheumatic",               "Rheumatoid arthritis/collagen vascular diseases",
+                            "Coagulopathy",               "Coagulopathy",
+                                 "Obesity",               "Obesity",
+                              "WeightLoss",               "Weight loss",
+                             "FluidsLytes",               "Fluid and electrolyte disorders",
+                               "BloodLoss",               "Blood loss anaemia",
+                                  "Anemia",               "Deficiency anaemia",
+                                 "Alcohol",               "Alcohol abuse",
+                                   "Drugs",               "Drug abuse",
+                               "Psychoses",               "Psychoses",
+                              "Depression",               "Depression"
+                            )
+
+tbl_of_elixhauser_codes_icd10 <-
+  tbl_of_elixhauser_codes_icd10 %>%
+  left_join(long_comorbidity_names) %>%
+  relocate(comorbidity, comorbidity_long)
+
+## condensed version of the table
+tbl_of_elixhauser_codes_icd10_condensed <-
+  tbl_of_elixhauser_codes_icd10 %>%
+  group_by(comorbidity, comorbidity_long) %>%
+  summarise(across(.cols = matches("icd10"), .fns = ~paste0(.x, collapse = ", ")), .groups = "drop")
+```
+
+# Save tables for use/publishing
+
+```{r}
+if (!dir.exists("./comorbidity/")) dir.create("./comorbidity/")
+
+## write the table & condensed table separately as .csv files
+tbl_of_elixhauser_codes_icd10 %>% write_csv(file = "./comorbidity/elixhauser_comorbidities_quan_2005_icd10.csv")
+tbl_of_elixhauser_codes_icd10_condensed %>% write_csv(file = "./comorbidity/elixhauser_comorbidities_quan_2005_icd10_condensed.csv")
+
+descriptive_note_for_excel <- tibble(
+  Notes = c("ICD-10 codes are taken from the Quan et al. 2005 paper 'Coding Algorithms for Defining Comorbidities in ICD-9-CM and ICD-10 Administrative Data', https://www.jstor.org/stable/3768193, and are based on the Elixhauser et al. 1998 paper 'Comorbidity measures for use with administrative data'.", "The codes should be treated as prefixes - any ICD-10 code matching the first 3 or 4 characters provided in this list should be included as a comorbidity of the appropriate type even if the actual diagnosis code is longer; depending on the data format, this can be implemented using the regex caret operator (^) to match the start of a string, e.g. ^E52 to capture codes starting with E52. Codes are provided both with and without a decimal comma.", "The 'icd' package for R (https://github.com/jackwasey/icd) was also used in preparing the files; the package provides a list of ICD-10-CM codes which were truncated to ICD-10 codes.")
+  )
+
+write.xlsx(x = list(
+  "Description" = descriptive_note_for_excel,
+  "Prefixes (long)" = tbl_of_elixhauser_codes_icd10,
+  "Prefixes (condensed)" = tbl_of_elixhauser_codes_icd10_condensed
+), file = "./comorbidity/elixhauser_comorbidities_quan_2005_icd10.xlsx")
+```
+
+# REFERENCES

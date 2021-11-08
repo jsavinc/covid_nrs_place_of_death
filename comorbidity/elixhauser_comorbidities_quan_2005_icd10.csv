@@ -1,0 +1,398 @@
+comorbidity,comorbidity_long,icd10_prefix,icd10_prefix_decimal
+CHF,Congestive heart failure,I099,I09.9
+CHF,Congestive heart failure,I110,I11.0
+CHF,Congestive heart failure,I130,I13.0
+CHF,Congestive heart failure,I132,I13.2
+CHF,Congestive heart failure,I255,I25.5
+CHF,Congestive heart failure,I420,I42.0
+CHF,Congestive heart failure,I425,I42.5
+CHF,Congestive heart failure,I426,I42.6
+CHF,Congestive heart failure,I427,I42.7
+CHF,Congestive heart failure,I428,I42.8
+CHF,Congestive heart failure,I429,I42.9
+CHF,Congestive heart failure,I43,I43
+CHF,Congestive heart failure,I50,I50
+CHF,Congestive heart failure,P290,P29.0
+Arrhythmia,cardiac arrhythmias,I441,I44.1
+Arrhythmia,cardiac arrhythmias,I442,I44.2
+Arrhythmia,cardiac arrhythmias,I443,I44.3
+Arrhythmia,cardiac arrhythmias,I456,I45.6
+Arrhythmia,cardiac arrhythmias,I459,I45.9
+Arrhythmia,cardiac arrhythmias,I47,I47
+Arrhythmia,cardiac arrhythmias,I48,I48
+Arrhythmia,cardiac arrhythmias,I49,I49
+Arrhythmia,cardiac arrhythmias,R000,R00.0
+Arrhythmia,cardiac arrhythmias,R001,R00.1
+Arrhythmia,cardiac arrhythmias,R008,R00.8
+Arrhythmia,cardiac arrhythmias,T821,T82.1
+Arrhythmia,cardiac arrhythmias,Z450,Z45.0
+Arrhythmia,cardiac arrhythmias,Z950,Z95.0
+Valvular,Valvular disease,A520,A52.0
+Valvular,Valvular disease,I05,I05
+Valvular,Valvular disease,I06,I06
+Valvular,Valvular disease,I07,I07
+Valvular,Valvular disease,I08,I08
+Valvular,Valvular disease,I091,I09.1
+Valvular,Valvular disease,I098,I09.8
+Valvular,Valvular disease,I34,I34
+Valvular,Valvular disease,I35,I35
+Valvular,Valvular disease,I36,I36
+Valvular,Valvular disease,I37,I37
+Valvular,Valvular disease,I38,I38
+Valvular,Valvular disease,I39,I39
+Valvular,Valvular disease,Q230,Q23.0
+Valvular,Valvular disease,Q231,Q23.1
+Valvular,Valvular disease,Q232,Q23.2
+Valvular,Valvular disease,Q233,Q23.3
+Valvular,Valvular disease,Z952,Z95.2
+Valvular,Valvular disease,Z953,Z95.3
+Valvular,Valvular disease,Z954,Z95.4
+PHTN,Pulmonary circulation disorders,I26,I26
+PHTN,Pulmonary circulation disorders,I27,I27
+PHTN,Pulmonary circulation disorders,I28,I28
+PVD,Peripheral vascular disorders,I70,I70
+PVD,Peripheral vascular disorders,I71,I71
+PVD,Peripheral vascular disorders,I731,I73.1
+PVD,Peripheral vascular disorders,I738,I73.8
+PVD,Peripheral vascular disorders,I739,I73.9
+PVD,Peripheral vascular disorders,I771,I77.1
+PVD,Peripheral vascular disorders,I790,I79.0
+PVD,Peripheral vascular disorders,I792,I79.2
+PVD,Peripheral vascular disorders,K551,K55.1
+PVD,Peripheral vascular disorders,K558,K55.8
+PVD,Peripheral vascular disorders,K559,K55.9
+PVD,Peripheral vascular disorders,Z958,Z95.8
+PVD,Peripheral vascular disorders,Z959,Z95.9
+HTN,"Hypertension, uncomplicated",I10,I10
+HTNcx,"Hypertension, complicated",I11,I11
+HTNcx,"Hypertension, complicated",I12,I12
+HTNcx,"Hypertension, complicated",I13,I13
+HTNcx,"Hypertension, complicated",I15,I15
+Paralysis,Paralysis,G041,G04.1
+Paralysis,Paralysis,G114,G11.4
+Paralysis,Paralysis,G801,G80.1
+Paralysis,Paralysis,G802,G80.2
+Paralysis,Paralysis,G81,G81
+Paralysis,Paralysis,G82,G82
+Paralysis,Paralysis,G830,G83.0
+Paralysis,Paralysis,G831,G83.1
+Paralysis,Paralysis,G832,G83.2
+Paralysis,Paralysis,G833,G83.3
+Paralysis,Paralysis,G834,G83.4
+Paralysis,Paralysis,G839,G83.9
+NeuroOther,Other neurological disorders,G10,G10
+NeuroOther,Other neurological disorders,G11,G11
+NeuroOther,Other neurological disorders,G12,G12
+NeuroOther,Other neurological disorders,G13,G13
+NeuroOther,Other neurological disorders,G20,G20
+NeuroOther,Other neurological disorders,G21,G21
+NeuroOther,Other neurological disorders,G22,G22
+NeuroOther,Other neurological disorders,G254,G25.4
+NeuroOther,Other neurological disorders,G255,G25.5
+NeuroOther,Other neurological disorders,G312,G31.2
+NeuroOther,Other neurological disorders,G318,G31.8
+NeuroOther,Other neurological disorders,G319,G31.9
+NeuroOther,Other neurological disorders,G32,G32
+NeuroOther,Other neurological disorders,G35,G35
+NeuroOther,Other neurological disorders,G36,G36
+NeuroOther,Other neurological disorders,G37,G37
+NeuroOther,Other neurological disorders,G40,G40
+NeuroOther,Other neurological disorders,G41,G41
+NeuroOther,Other neurological disorders,G931,G93.1
+NeuroOther,Other neurological disorders,G934,G93.4
+NeuroOther,Other neurological disorders,R470,R47.0
+NeuroOther,Other neurological disorders,R56,R56
+Pulmonary,Chronic pulmonary disease,I278,I27.8
+Pulmonary,Chronic pulmonary disease,I279,I27.9
+Pulmonary,Chronic pulmonary disease,J40,J40
+Pulmonary,Chronic pulmonary disease,J41,J41
+Pulmonary,Chronic pulmonary disease,J42,J42
+Pulmonary,Chronic pulmonary disease,J43,J43
+Pulmonary,Chronic pulmonary disease,J44,J44
+Pulmonary,Chronic pulmonary disease,J45,J45
+Pulmonary,Chronic pulmonary disease,J46,J46
+Pulmonary,Chronic pulmonary disease,J47,J47
+Pulmonary,Chronic pulmonary disease,J60,J60
+Pulmonary,Chronic pulmonary disease,J61,J61
+Pulmonary,Chronic pulmonary disease,J62,J62
+Pulmonary,Chronic pulmonary disease,J63,J63
+Pulmonary,Chronic pulmonary disease,J64,J64
+Pulmonary,Chronic pulmonary disease,J65,J65
+Pulmonary,Chronic pulmonary disease,J66,J66
+Pulmonary,Chronic pulmonary disease,J67,J67
+Pulmonary,Chronic pulmonary disease,J684,J68.4
+Pulmonary,Chronic pulmonary disease,J701,J70.1
+Pulmonary,Chronic pulmonary disease,J703,J70.3
+DM,"Diabetes, uncomplicated",E100,E10.0
+DM,"Diabetes, uncomplicated",E101,E10.1
+DM,"Diabetes, uncomplicated",E109,E10.9
+DM,"Diabetes, uncomplicated",E110,E11.0
+DM,"Diabetes, uncomplicated",E111,E11.1
+DM,"Diabetes, uncomplicated",E119,E11.9
+DM,"Diabetes, uncomplicated",E120,E12.0
+DM,"Diabetes, uncomplicated",E121,E12.1
+DM,"Diabetes, uncomplicated",E129,E12.9
+DM,"Diabetes, uncomplicated",E130,E13.0
+DM,"Diabetes, uncomplicated",E131,E13.1
+DM,"Diabetes, uncomplicated",E139,E13.9
+DM,"Diabetes, uncomplicated",E140,E14.0
+DM,"Diabetes, uncomplicated",E141,E14.1
+DM,"Diabetes, uncomplicated",E149,E14.9
+DMcx,"Diabetes, complicated",E102,E10.2
+DMcx,"Diabetes, complicated",E103,E10.3
+DMcx,"Diabetes, complicated",E104,E10.4
+DMcx,"Diabetes, complicated",E105,E10.5
+DMcx,"Diabetes, complicated",E106,E10.6
+DMcx,"Diabetes, complicated",E107,E10.7
+DMcx,"Diabetes, complicated",E108,E10.8
+DMcx,"Diabetes, complicated",E112,E11.2
+DMcx,"Diabetes, complicated",E113,E11.3
+DMcx,"Diabetes, complicated",E114,E11.4
+DMcx,"Diabetes, complicated",E115,E11.5
+DMcx,"Diabetes, complicated",E116,E11.6
+DMcx,"Diabetes, complicated",E117,E11.7
+DMcx,"Diabetes, complicated",E118,E11.8
+DMcx,"Diabetes, complicated",E122,E12.2
+DMcx,"Diabetes, complicated",E123,E12.3
+DMcx,"Diabetes, complicated",E124,E12.4
+DMcx,"Diabetes, complicated",E125,E12.5
+DMcx,"Diabetes, complicated",E126,E12.6
+DMcx,"Diabetes, complicated",E127,E12.7
+DMcx,"Diabetes, complicated",E128,E12.8
+DMcx,"Diabetes, complicated",E132,E13.2
+DMcx,"Diabetes, complicated",E133,E13.3
+DMcx,"Diabetes, complicated",E134,E13.4
+DMcx,"Diabetes, complicated",E135,E13.5
+DMcx,"Diabetes, complicated",E136,E13.6
+DMcx,"Diabetes, complicated",E137,E13.7
+DMcx,"Diabetes, complicated",E138,E13.8
+DMcx,"Diabetes, complicated",E142,E14.2
+DMcx,"Diabetes, complicated",E143,E14.3
+DMcx,"Diabetes, complicated",E144,E14.4
+DMcx,"Diabetes, complicated",E145,E14.5
+DMcx,"Diabetes, complicated",E146,E14.6
+DMcx,"Diabetes, complicated",E147,E14.7
+DMcx,"Diabetes, complicated",E148,E14.8
+Hypothyroid,Hypothyroidism,E00,E00
+Hypothyroid,Hypothyroidism,E01,E01
+Hypothyroid,Hypothyroidism,E02,E02
+Hypothyroid,Hypothyroidism,E03,E03
+Hypothyroid,Hypothyroidism,E890,E89.0
+Renal,Renal failure,I120,I12.0
+Renal,Renal failure,I131,I13.1
+Renal,Renal failure,N18,N18
+Renal,Renal failure,N19,N19
+Renal,Renal failure,N250,N25.0
+Renal,Renal failure,Z490,Z49.0
+Renal,Renal failure,Z491,Z49.1
+Renal,Renal failure,Z492,Z49.2
+Renal,Renal failure,Z940,Z94.0
+Renal,Renal failure,Z992,Z99.2
+Liver,Liver disease,B18,B18
+Liver,Liver disease,I85,I85
+Liver,Liver disease,I864,I86.4
+Liver,Liver disease,I982,I98.2
+Liver,Liver disease,K70,K70
+Liver,Liver disease,K711,K71.1
+Liver,Liver disease,K713,K71.3
+Liver,Liver disease,K714,K71.4
+Liver,Liver disease,K715,K71.5
+Liver,Liver disease,K717,K71.7
+Liver,Liver disease,K72,K72
+Liver,Liver disease,K73,K73
+Liver,Liver disease,K74,K74
+Liver,Liver disease,K760,K76.0
+Liver,Liver disease,K762,K76.2
+Liver,Liver disease,K763,K76.3
+Liver,Liver disease,K764,K76.4
+Liver,Liver disease,K765,K76.5
+Liver,Liver disease,K766,K76.6
+Liver,Liver disease,K767,K76.7
+Liver,Liver disease,K768,K76.8
+Liver,Liver disease,K769,K76.9
+Liver,Liver disease,Z944,Z94.4
+PUD,Peptic ulcer disease,K257,K25.7
+PUD,Peptic ulcer disease,K259,K25.9
+PUD,Peptic ulcer disease,K267,K26.7
+PUD,Peptic ulcer disease,K269,K26.9
+PUD,Peptic ulcer disease,K277,K27.7
+PUD,Peptic ulcer disease,K279,K27.9
+PUD,Peptic ulcer disease,K287,K28.7
+PUD,Peptic ulcer disease,K289,K28.9
+HIV,AIDS/HIV,B20,B20
+HIV,AIDS/HIV,B21,B21
+HIV,AIDS/HIV,B22,B22
+HIV,AIDS/HIV,B24,B24
+Lymphoma,Lymphoma,C81,C81
+Lymphoma,Lymphoma,C82,C82
+Lymphoma,Lymphoma,C83,C83
+Lymphoma,Lymphoma,C84,C84
+Lymphoma,Lymphoma,C85,C85
+Lymphoma,Lymphoma,C88,C88
+Lymphoma,Lymphoma,C900,C90.0
+Lymphoma,Lymphoma,C902,C90.2
+Lymphoma,Lymphoma,C96,C96
+Mets,Metastatic cancer,C77,C77
+Mets,Metastatic cancer,C78,C78
+Mets,Metastatic cancer,C79,C79
+Mets,Metastatic cancer,C80,C80
+Tumor,Solid tumour without metastasis,C00,C00
+Tumor,Solid tumour without metastasis,C01,C01
+Tumor,Solid tumour without metastasis,C02,C02
+Tumor,Solid tumour without metastasis,C03,C03
+Tumor,Solid tumour without metastasis,C04,C04
+Tumor,Solid tumour without metastasis,C05,C05
+Tumor,Solid tumour without metastasis,C06,C06
+Tumor,Solid tumour without metastasis,C07,C07
+Tumor,Solid tumour without metastasis,C08,C08
+Tumor,Solid tumour without metastasis,C09,C09
+Tumor,Solid tumour without metastasis,C10,C10
+Tumor,Solid tumour without metastasis,C11,C11
+Tumor,Solid tumour without metastasis,C12,C12
+Tumor,Solid tumour without metastasis,C13,C13
+Tumor,Solid tumour without metastasis,C14,C14
+Tumor,Solid tumour without metastasis,C15,C15
+Tumor,Solid tumour without metastasis,C16,C16
+Tumor,Solid tumour without metastasis,C17,C17
+Tumor,Solid tumour without metastasis,C18,C18
+Tumor,Solid tumour without metastasis,C19,C19
+Tumor,Solid tumour without metastasis,C20,C20
+Tumor,Solid tumour without metastasis,C21,C21
+Tumor,Solid tumour without metastasis,C22,C22
+Tumor,Solid tumour without metastasis,C23,C23
+Tumor,Solid tumour without metastasis,C24,C24
+Tumor,Solid tumour without metastasis,C25,C25
+Tumor,Solid tumour without metastasis,C26,C26
+Tumor,Solid tumour without metastasis,C30,C30
+Tumor,Solid tumour without metastasis,C31,C31
+Tumor,Solid tumour without metastasis,C32,C32
+Tumor,Solid tumour without metastasis,C33,C33
+Tumor,Solid tumour without metastasis,C34,C34
+Tumor,Solid tumour without metastasis,C37,C37
+Tumor,Solid tumour without metastasis,C38,C38
+Tumor,Solid tumour without metastasis,C39,C39
+Tumor,Solid tumour without metastasis,C40,C40
+Tumor,Solid tumour without metastasis,C41,C41
+Tumor,Solid tumour without metastasis,C43,C43
+Tumor,Solid tumour without metastasis,C45,C45
+Tumor,Solid tumour without metastasis,C46,C46
+Tumor,Solid tumour without metastasis,C47,C47
+Tumor,Solid tumour without metastasis,C48,C48
+Tumor,Solid tumour without metastasis,C49,C49
+Tumor,Solid tumour without metastasis,C50,C50
+Tumor,Solid tumour without metastasis,C51,C51
+Tumor,Solid tumour without metastasis,C52,C52
+Tumor,Solid tumour without metastasis,C53,C53
+Tumor,Solid tumour without metastasis,C54,C54
+Tumor,Solid tumour without metastasis,C55,C55
+Tumor,Solid tumour without metastasis,C56,C56
+Tumor,Solid tumour without metastasis,C57,C57
+Tumor,Solid tumour without metastasis,C58,C58
+Tumor,Solid tumour without metastasis,C60,C60
+Tumor,Solid tumour without metastasis,C61,C61
+Tumor,Solid tumour without metastasis,C62,C62
+Tumor,Solid tumour without metastasis,C63,C63
+Tumor,Solid tumour without metastasis,C64,C64
+Tumor,Solid tumour without metastasis,C65,C65
+Tumor,Solid tumour without metastasis,C66,C66
+Tumor,Solid tumour without metastasis,C67,C67
+Tumor,Solid tumour without metastasis,C68,C68
+Tumor,Solid tumour without metastasis,C69,C69
+Tumor,Solid tumour without metastasis,C70,C70
+Tumor,Solid tumour without metastasis,C71,C71
+Tumor,Solid tumour without metastasis,C72,C72
+Tumor,Solid tumour without metastasis,C73,C73
+Tumor,Solid tumour without metastasis,C74,C74
+Tumor,Solid tumour without metastasis,C75,C75
+Tumor,Solid tumour without metastasis,C76,C76
+Tumor,Solid tumour without metastasis,C97,C97
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,L940,L94.0
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,L941,L94.1
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,L943,L94.3
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M05,M05
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M06,M06
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M08,M08
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M120,M12.0
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M123,M12.3
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M30,M30
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M310,M31.0
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M311,M31.1
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M312,M31.2
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M313,M31.3
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M32,M32
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M33,M33
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M34,M34
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M35,M35
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M45,M45
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M461,M46.1
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M468,M46.8
+Rheumatic,Rheumatoid arthritis/collagen vascular diseases,M469,M46.9
+Coagulopathy,Coagulopathy,D65,D65
+Coagulopathy,Coagulopathy,D66,D66
+Coagulopathy,Coagulopathy,D67,D67
+Coagulopathy,Coagulopathy,D68,D68
+Coagulopathy,Coagulopathy,D691,D69.1
+Coagulopathy,Coagulopathy,D693,D69.3
+Coagulopathy,Coagulopathy,D694,D69.4
+Coagulopathy,Coagulopathy,D695,D69.5
+Coagulopathy,Coagulopathy,D696,D69.6
+Obesity,Obesity,E66,E66
+WeightLoss,Weight loss,E40,E40
+WeightLoss,Weight loss,E41,E41
+WeightLoss,Weight loss,E42,E42
+WeightLoss,Weight loss,E43,E43
+WeightLoss,Weight loss,E44,E44
+WeightLoss,Weight loss,E45,E45
+WeightLoss,Weight loss,E46,E46
+WeightLoss,Weight loss,R634,R63.4
+WeightLoss,Weight loss,R64,R64
+FluidsLytes,Fluid and electrolyte disorders,E222,E22.2
+FluidsLytes,Fluid and electrolyte disorders,E86,E86
+FluidsLytes,Fluid and electrolyte disorders,E87,E87
+BloodLoss,Blood loss anaemia,D500,D50.0
+Anemia,Deficiency anaemia,D508,D50.8
+Anemia,Deficiency anaemia,D509,D50.9
+Anemia,Deficiency anaemia,D51,D51
+Anemia,Deficiency anaemia,D52,D52
+Anemia,Deficiency anaemia,D53,D53
+Alcohol,Alcohol abuse,E52,E52
+Alcohol,Alcohol abuse,F10,F10
+Alcohol,Alcohol abuse,G621,G62.1
+Alcohol,Alcohol abuse,I426,I42.6
+Alcohol,Alcohol abuse,K292,K29.2
+Alcohol,Alcohol abuse,K700,K70.0
+Alcohol,Alcohol abuse,K703,K70.3
+Alcohol,Alcohol abuse,K709,K70.9
+Alcohol,Alcohol abuse,T51,T51
+Alcohol,Alcohol abuse,Z502,Z50.2
+Alcohol,Alcohol abuse,Z714,Z71.4
+Alcohol,Alcohol abuse,Z721,Z72.1
+Drugs,Drug abuse,F11,F11
+Drugs,Drug abuse,F12,F12
+Drugs,Drug abuse,F13,F13
+Drugs,Drug abuse,F14,F14
+Drugs,Drug abuse,F15,F15
+Drugs,Drug abuse,F16,F16
+Drugs,Drug abuse,F18,F18
+Drugs,Drug abuse,F19,F19
+Drugs,Drug abuse,Z715,Z71.5
+Drugs,Drug abuse,Z722,Z72.2
+Psychoses,Psychoses,F20,F20
+Psychoses,Psychoses,F22,F22
+Psychoses,Psychoses,F23,F23
+Psychoses,Psychoses,F24,F24
+Psychoses,Psychoses,F25,F25
+Psychoses,Psychoses,F28,F28
+Psychoses,Psychoses,F29,F29
+Psychoses,Psychoses,F302,F30.2
+Psychoses,Psychoses,F312,F31.2
+Psychoses,Psychoses,F315,F31.5
+Depression,Depression,F204,F20.4
+Depression,Depression,F313,F31.3
+Depression,Depression,F314,F31.4
+Depression,Depression,F315,F31.5
+Depression,Depression,F32,F32
+Depression,Depression,F33,F33
+Depression,Depression,F341,F34.1
+Depression,Depression,F412,F41.2
+Depression,Depression,F432,F43.2
