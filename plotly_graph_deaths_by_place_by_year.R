@@ -10,6 +10,12 @@ library(plotly)  # for interactive plots!
 library(htmlwidgets)  # for saving standalone html file
 
 
+
+# Load data ---------------------------------------------------------------
+
+load(file = "./workspace_with_visualisations.RData")
+
+
 # Theme setup to match blog style -----------------------------------------
 
 ## set theme to match the blog style so far
