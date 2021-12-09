@@ -93,7 +93,7 @@ if (!dir.exists(dir_plotly)) dir.create(dir_plotly)
 
 plotly_proportion_of_deaths_by_place_by_hb %>%
   partial_bundle() %>%
-  saveWidget(file = paste0(dir_blog,"/plotly_proportion_of_deaths_by_place_by_hb.html"))
+  saveWidget(file = paste0(dir_plotly,"/plotly_proportion_of_deaths_by_place_by_hb.html"))
 
 
 # Upload to plotly.com ----------------------------------------------------
