@@ -230,17 +230,6 @@ recode_cause_of_death <- function(data_tbl) {
     )
 }
 
-# TODO:  still too complicated to safely use as a function...
-## find which combinations of geographic area, cause of death, and place of death are missing and set the number of deaths to 0 for them
-# complete_weekly_deaths_with_implicit_zeros <- function(data_tbl) {
-#   data_tbl %>%
-#   tidyr::complete(
-#       nesting(year, week_number, week_number_run_over, date_w_c),  # these are 'identifying' variables that shouldn't be combinatorily exploded
-#       ref_area, cause_of_death, place_of_death,  # these are the variables we want to have all combinations of, and missing combinations are set to 0 deaths
-#       fill = list(number_of_deaths = 0)
-#       )
-# }
-
 ## calculate number of deaths after recoding cause of death -
 ## recoding results in two entries for covid-related deaths, so we need to sum over them
 ## this is achieved by grouping over all variables other than number of deaths
@@ -269,53 +258,6 @@ set_covid_and_non_covid_deaths_to_zero_before_reporting_started <- function(data
       )
     )
 }
-
-# TODO: delete below function, it's too complicated and I've broken it down to the individual functions
-# recode_cause_of_death_and_compute_columns <- function(data_tbl) {
-#   potential_grouping_variables <- c("ref_area","sex","age","ref_period")
-#   grouping_variables <- potential_grouping_variables[which(potential_grouping_variables %in% names(data_tbl))]
-#   
-#   interim_data_tbl <- 
-#     data_tbl %>%
-#     recode_cause_of_death() %>%
-#     tidyr::complete(
-#       nesting(year, week_number, week_number_run_over, date_w_c),
-#       !!!rlang::syms(grouping_variables),
-#       cause_of_death, place_of_death,
-#       fill = list(number_of_deaths = 0)
-#       ) %>%
-#     pivot_wider(names_from = "cause_of_death", values_from = "number_of_deaths")
-#   
-#   ## compute non-covid deaths from all deaths minus covid deaths
-#   if (!"deaths_non_covid" %in% names(interim_data_tbl)) {
-#     interim_data_tbl <-
-#       interim_data_tbl %>%
-#       mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related)
-#   }
-#   ## compute all deaths from non-covid deaths + covid deaths
-#   if (!"deaths_all_causes" %in% names(interim_data_tbl)) {
-#     interim_data_tbl <-
-#       interim_data_tbl %>%
-#       mutate(deaths_all_causes = deaths_non_covid + deaths_covid_related)
-#   }
-#   
-#   interim_data_tbl <-
-#     interim_data_tbl %>%  # set as missing covid- & non-covid-related deaths before week 12
-#     mutate(
-#       deaths_non_covid = if_else(
-#         condition = week_number_run_over < 12,
-#         true = NA_real_,
-#         false = deaths_non_covid
-#       ),
-#       deaths_covid_related = if_else(
-#         condition = week_number_run_over < 12,
-#         true = NA_real_,
-#         false = deaths_covid_related
-#       )
-#     )
-#   
-#   return(interim_data_tbl)
-# }
 ```
 
 
