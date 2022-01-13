@@ -1461,6 +1461,31 @@ total_deaths_cause_of_death <-
   mutate(
     ratio_annual_deaths_to_historical_mean = deaths / annual_deaths_mean
   )
+
+
+current_and_historical_deaths_by_cause_and_location <-
+  bind_rows(
+    ## 2020 & 2021 separately
+    total_deaths_cause_of_death %>%
+      select(year, place_of_death, cause_of_death, deaths) %>%
+      mutate(year = as.character(year)),
+    ## 2020 & 2021 averaged
+    total_deaths_cause_of_death %>%
+      select(year, place_of_death, cause_of_death, deaths) %>%
+      group_by(place_of_death,  cause_of_death) %>%
+      summarise(deaths = sum(deaths), year = "2020-2021", .groups = "drop"),
+    ## historical data
+    total_deaths_cause_of_death %>%
+      select(year, place_of_death, cause_of_death, deaths = annual_deaths_mean) %>%
+      mutate(year = "2015-2019") %>%
+      distinct
+  ) %>%
+  filter(place_of_death != "All") %>%
+  group_by(year, cause_of_death) %>%
+  mutate(proportion = deaths / sum(deaths)) %>%
+  ungroup %>%
+  arrange(year, cause_of_death)
+  
 ```
 
 
@@ -1591,6 +1616,26 @@ table_current_deaths_compared_to_past <-
         summarise(mean_annual_deaths_2015_2019 = sum(number_of_deaths) / 5),
       by = "place_of_death"
     )
+    ,
+    ## 2021 only
+    merged_deaths_overall %>%
+      filter(age == "all" &
+               sex == "all" &
+               year == 2021
+             ) %>% 
+      group_by(place_of_death) %>%
+      summarise(
+        period = "2021",
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        .groups = "drop"
+      ) %>% 
+      mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+    left_join(
+      historical_annual_average_overall %>% 
+        select(place_of_death, mean_annual_deaths_2015_2019 = annual_deaths_mean),
+      by = "place_of_death"
+    )
   ) %>%
   mutate(
     ratio_deaths_all_causes_to_historical = deaths_all_causes / mean_annual_deaths_2015_2019,
@@ -1601,6 +1646,66 @@ table_current_deaths_compared_to_past <-
 write_csv(x = table_current_deaths_compared_to_past, file = file.path(dir_outputs, "annual_death_rates_comparison_with_historical_deaths.csv"))
 
 table_current_deaths_compared_to_past %>% knitr::kable(caption = "Comparing annual home death rate during COVID pandemic to historical deaths at home")
+```
+
+# Yearly death rates
+
+```{r}
+table_annual_death_rates <-
+  merged_deaths_overall %>%
+    filter(age == "all" &
+             sex == "all" &
+             year %in% c(2020:2021)
+           ) %>% 
+    group_by(year, place_of_death) %>%
+    summarise(
+      deaths_all_causes = sum(deaths_all_causes),
+      deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+      .groups = "drop"
+    ) %>% 
+    mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+  left_join(
+    historical_annual_average_overall %>% 
+      select(place_of_death, mean_annual_deaths_2015_2019 = annual_deaths_mean),
+    by = "place_of_death"
+  ) %>%
+  mutate(
+    proportion_covid_deaths = scales::percent(deaths_covid_related / deaths_all_causes, accuracy = 0.1),
+    change_deaths_all_causes_from_historical = scales::percent((deaths_all_causes / mean_annual_deaths_2015_2019) - 1, accuracy = 0.1),
+    change_non_covid_deaths_from_historical = scales::percent((deaths_non_covid / mean_annual_deaths_2015_2019) - 1, accuracy = 0.1)
+  )
+
+table_annual_death_rates_by_cause <-
+  total_deaths_cause_of_death %>%
+  select(-matches("min|max")) %>%
+  filter(year %in% c(2020:2021)) %>%
+  mutate(
+    change_from_historical_annual_deaths_2015_2019 = scales::percent(ratio_annual_deaths_to_historical_mean - 1, accuracy = 0.1) %>% if_else(. == "Inf", NA_character_, .)
+    ) %>%
+  mutate(temporary_group_for_all_causes = cause_of_death=="All") %>%
+  group_by(year,place_of_death, temporary_group_for_all_causes) %>%
+  mutate(
+    proportion_annual_deaths_in_place = scales::percent(deaths / sum(deaths), accuracy = 0.1) %>% if_else(. == "100.0%", NA_character_, .),
+    historical_proportion_annual_deaths_in_place = scales::percent(annual_deaths_mean / sum(annual_deaths_mean), accuracy = 0.1) %>% if_else(. == "100.0%", NA_character_, .)
+    ) %>%
+  ungroup %>%
+  rename(mean_annual_deaths_2015_2019 = annual_deaths_mean) %>%
+  select(-c(ratio_annual_deaths_to_historical_mean, temporary_group_for_all_causes))
+
+notes_annual_death_rates <-
+  tibble( notes = c(
+    glue::glue("Note: these data are based on weekly figures reported by NRS; years don't align perfectly with calendar years, for example: week 1 of 2020 started on {ISOweek2date('2020-W01-1')}, and week 53 of 2020 ended on {ISOweek2date('2020-W53-7')}; week 1 of 2021 started on {ISOweek2date('2021-W01-1')}, and week 52 of 2021 ended on {ISOweek2date('2021-W52-7')}.")
+    )
+  )
+
+write.xlsx(
+    x = list(
+      "2020 + 2021" = table_annual_death_rates,
+      "Causes of death (COD)" = table_annual_death_rates_by_cause,
+      "notes" = notes_annual_death_rates
+      ), 
+    file = file.path("./outputs", "annual_death_rates_and_causes_of_death_2020_2021.xlsx")
+      )
 ```
 
 
@@ -1720,9 +1825,6 @@ annual_deaths_coded_as_other_place_hb %>% write_csv(file = paste0(dir_outputs,"/
 ## Excess deaths by place of death
 
 ```{r}
-total_deaths_overall %>%
-  mutate(excess_deaths = deaths_all_causes - annual_deaths_min)
-
 excess_deaths_2020_table <-
   past_deaths_overall %>%
   group_by(year, place_of_death) %>%
