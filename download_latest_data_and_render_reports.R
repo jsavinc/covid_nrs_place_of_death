@@ -27,7 +27,9 @@ all_nrs_links <-
   html_nodes("a") %>%
   html_attr("href")  # find all links on the page
 
-weekly_deaths_url_relative <- all_nrs_links[which(str_detect(all_nrs_links, pattern = "covid-deaths-21-data.*xlsx"))]  # keep only links that are probably weekly deaths
+nrs_filename_pattern <- "covid-deaths-(21|22)-data.*xlsx"  # to accommodate 2022 data also!
+
+weekly_deaths_url_relative <- all_nrs_links[which(str_detect(all_nrs_links, pattern = nrs_filename_pattern))]  # keep only links that are probably weekly deaths
 weekly_deaths_url_absolute <- url_absolute(weekly_deaths_url_relative, base = url_nrs_weekly_deaths)
 
 # Load table keeping track of latest data ---------------------------------
