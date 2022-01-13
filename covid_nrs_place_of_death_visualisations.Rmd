@@ -39,6 +39,7 @@ library(extrafont)  # for working with fonts
 library(openxlsx)  # for creating xlsx files
 library(knitr)  # for displaying tables in rmd
 library(lemon)  # for showing axis & axis labels in every facet in ggplot
+library(ggtext)  # for showing coloured title text
 ```
 
 
@@ -1403,61 +1404,42 @@ save_output_file(filename = paste0(dir_outputs,"/figure_deaths_by_cause_all_plac
 save_output_file(filename = paste0(dir_outputs,"/figure_deaths_at_home_by_cause"), extensions = c(".pdf",".svg",".png"), plot = figure_deaths_at_home_by_cause, width = 28, height = 14, dpi = 300, units = "cm")
 ```
 
-## Proportion of cause of death by location
+# Proportion of cause of death by location
 
 This graph shows each of the causes of death divided by place of death - e.g. what proportion of cancer deaths happened at home vs hospital over time?
 
 ```{r}
-# TODO: proportion of each cause of death that happens in a place
-
-# total_deaths_cause_of_death
 (
+figure_cause_of_death_by_location <-
   current_and_historical_deaths_by_cause_and_location %>%
-  ggplot() +
-  geom_col(aes(x = place_of_death, fill = place_of_death, y = proportion), alpha = 0.8, colour = "grey10") +
-  # geom_segment(aes(x = as.numeric(cause_of_death)-0.45, xend = as.numeric(cause_of_death)+0.45, y = deaths_mean, yend = deaths_mean), size = 0.8, colour = "grey1") +
-  # coord_flip() +
-  scale_fill_viridis_d() +
-  facet_grid(cause_of_death~year) +
-  scale_y_continuous(labels = function(x) format(x, big.mark = ",")) +
-  theme(
-    legend.position = "none", 
-    plot.caption = element_text(size = 10, colour = "gray60"),
-    legend.title = element_blank(), 
-    panel.grid.major.y = element_blank(),
-    panel.grid.minor.y = element_blank()
-    ) +
-  labs(
-    x = NULL,
-    y = "Deaths",
-    subtitle = paste0(c(paste0("Bars are deaths ",str_remove_all(date_range_text,"Data ")),"Line segments are mean deaths for same period 2015-2019"),collapse="\n")
-  ) +
-  NULL
-)
-
-(
-current_and_historical_deaths_by_cause_and_location %>%
-  # filter(year!="2020-2021") %>%
-  filter(!year %in% c("2020","2021")) %>%
-  filter(place_of_death!="Other") %>%
-  filter(!cause_of_death %in% c("COVID-19","All")) %>%
-  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+  filter(year!="2020-2021") %>%
+  filter(!cause_of_death %in% c("All")) %>%
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home", "Other"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
   mutate(
    cause_of_death = factor(cause_of_death %>% str_wrap(., width = 15), levels = order_of_causes_of_death %>% str_wrap(., width = 15)),  # needed to allow converting to a number for plotting the line segments; str_wrap breaks the text up into lines
-   cause_of_death = fct_rev(cause_of_death)
   ) %>%
-  ggplot(aes(x = place_of_death, group = year, y = proportion, fill = year)) +
-  geom_col(position = position_dodge(width = 0.9)) +
-  facet_grid(cause_of_death~.) +
-  scale_fill_viridis_d() +
+  ggplot(aes(x = year, y = proportion, colour = place_of_death, group = place_of_death)) +
+  geom_line() +
+  geom_point() +
+  facet_rep_wrap(~cause_of_death, repeat.tick.labels = TRUE) +
+  scale_colour_viridis_d() +
   scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1)) +
-  coord_flip() +
+  labs(
+    x = "Year",
+    y = "Percentage yearly deaths (%)",
+    # title = "More cancer deaths in 2020 and 2021 happened at <span style='color:#31688E;'>Home</span> than in <span style='color:#440154;'>Hospital</span>",
+    title = "In 2020 and 2021 more cancer deaths happened at Home than in Hospital",
+    caption = paste0(c(source_nrs_text), collapse = "\n")
+  ) +
   theme(
     panel.spacing = unit(1, units = "lines"),
     legend.position = "top", legend.title = element_blank()
     ) +
+  guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
   NULL
 )
+
+save_output_file(filename = paste0(dir_outputs,"/figure_cause_of_death_by_location"), extensions = c(".pdf",".png"), plot = figure_cause_of_death_by_location, width = 26, height = 16, units = "cm", dpi = 300)
 ```
 
 
