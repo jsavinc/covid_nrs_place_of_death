@@ -1428,12 +1428,13 @@ figure_cause_of_death_by_location <-
     x = "Year",
     y = "Percentage yearly deaths (%)",
     # title = "More cancer deaths in 2020 and 2021 happened at <span style='color:#31688E;'>Home</span> than in <span style='color:#440154;'>Hospital</span>",
-    title = "In 2020 and 2021 more cancer deaths happened at Home than in Hospital",
+    title = "In 2020 and 2021 more cancer deaths happened at <span style='color:#31688E;'>Home</span> than in <span style='color:#440154;'>Hospital</span>",
     caption = paste0(c(source_nrs_text), collapse = "\n")
   ) +
   theme(
     panel.spacing = unit(1, units = "lines"),
-    legend.position = "top", legend.title = element_blank()
+    legend.position = "top", legend.title = element_blank(),
+    plot.title = element_textbox_simple()  # to render the html in the title
     ) +
   guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
   NULL
