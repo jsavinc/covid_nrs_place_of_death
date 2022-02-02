@@ -508,8 +508,11 @@ make_human_readable_ref_area <- function(data_tbl, ref_area = refArea) {
 # ) %>%
 #   map(.x = ., .f = ~make_human_readable_ref_area(data_tbl = .x))
 
+ods_raw <- ods_dataset("deaths-involving-coronavirus-covid-19", geography = "sc")
+
 weekly_deaths_overall <-
-  ods_dataset("deaths-involving-coronavirus-covid-19", geography = "sc") %>%
+  # ods_dataset("deaths-involving-coronavirus-covid-19", geography = "sc") %>%
+  ods_raw %>%
   make_human_readable_ref_area %>%
   clean_names() %>%
   ## below series of rename operations are a stupid way of dealing with the possibility of different variable name conventions in the ods_dataset data: sometimes they are in snake_case, and sometimes in camelCase, seemingly unpredictably
@@ -521,13 +524,13 @@ weekly_deaths_overall <-
   rename_at(.vars = vars(matches("sex", ignore.case = TRUE)), ~"sex") %>%
   rename_at(.vars = vars(matches("age", ignore.case = TRUE)), ~"age") %>%
   rename_at(.vars = vars(matches("value", ignore.case = TRUE)), ~"number_of_deaths") %>%  # rename so it's consistent with other data
-  filter(!ref_period %in% as.character(2020:2021)) %>% # remove totals for 2020 & 2021, we only want the weekly figures
+  filter(!ref_period %in% as.character(2020:2022)) %>% # remove totals for 2020, 2021, 2022, we only want the weekly figures
   mutate(
-    year = parse_integer(str_extract(ref_period, pattern="^(2020|2021)")),
-    week_number = parse_integer(str_remove(ref_period, pattern = "^(2020|2021)\\-")),
+    year = parse_integer(str_extract(ref_period, pattern="^(202[0-3])")),
+    week_number = parse_integer(str_remove(ref_period, pattern = "^(202[0-3])\\-")),
     date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
     number_of_deaths = as.numeric(number_of_deaths),  # convert to numeric!
-    week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)  # invent a "run-over" week number - weeks 54+ are in 2021
+    week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
   ) %>%
   select(-c(measure_type)) %>%  #  measure_type is count for all data
   recode_place_of_death() %>%

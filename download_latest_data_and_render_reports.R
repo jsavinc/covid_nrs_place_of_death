@@ -27,10 +27,13 @@ all_nrs_links <-
   html_nodes("a") %>%
   html_attr("href")  # find all links on the page
 
-nrs_filename_pattern <- "covid-deaths-(21|22)-data.*xlsx"  # to accommodate 2022 data also!
+nrs_filename_pattern <- "covid-deaths-(21|22)-data.*xlsx"  # to accommodate 2022 data also once the filename changes!
 
 weekly_deaths_url_relative <- all_nrs_links[which(str_detect(all_nrs_links, pattern = nrs_filename_pattern))]  # keep only links that are probably weekly deaths
 weekly_deaths_url_absolute <- url_absolute(weekly_deaths_url_relative, base = url_nrs_weekly_deaths)
+
+## the format changed between 2021 and 2022 for weekly deaths data, and the 2022 data no longer include 2020 figures, so we need to load the 2020 data separately from the latest available data
+weekly_deaths_2020_and_2021_last_file <- "https://www.nrscotland.gov.uk/files/statistics/covid19/covid-deaths-21-data-week-52.xlsx"
 
 # Load table keeping track of latest data ---------------------------------
 
@@ -66,12 +69,13 @@ if (file.exists(file_historical_data_sources)) {
   table_of_historical_data_sources <- read_csv(file = file_historical_data_sources)
 } else {
   table_of_historical_data_sources <- tibble(
-    short_name = c("overall","sex_age","la","hb"),
+    short_name = c("overall","sex_age","la","hb","2020-2021"),
     url = c(
       "https://www.nrscotland.gov.uk/files/statistics/covid19/weekly-deaths-by-location-2015-2019.csv",
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-age-group-sex-15-19.xlsx",
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-council-areas.xlsx",
-      "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-health-board-location-15-19.xlsx"
+      "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-health-board-location-15-19.xlsx",
+      "https://www.nrscotland.gov.uk/files//statistics/covid19/covid-deaths-21-data-week-52.xlsx"  # last 2021 data which included 2020 also
     )
   ) %>% mutate(
     # filename = basename(url),
@@ -145,6 +149,7 @@ download_file_regardless <- function(url, filename, directory, record_tbl) {
 
 # Run the data updating function ------------------------------------------
 
+## current data sources
 for (x in 1:nrow(table_of_data_sources)) {
   table_of_data_sources <- 
     download_file_if_newer_available(
@@ -157,12 +162,12 @@ for (x in 1:nrow(table_of_data_sources)) {
     )
 }
 
+## historical data sources
 for (x in 1:nrow(table_of_historical_data_sources)) {
   table_of_historical_data_sources <- 
     download_file_if_newer_available(
       url = table_of_historical_data_sources$url[x],
       short_name = table_of_historical_data_sources$short_name[x],
-      # filename = table_of_historical_data_sources$filename[x],
       last_modified = table_of_historical_data_sources$last_modified[x],
       directory = historical_dir, 
       record_tbl = table_of_historical_data_sources
