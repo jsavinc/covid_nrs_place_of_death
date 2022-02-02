@@ -304,9 +304,6 @@ Note about weekly LA/HB data:
 ### Define locations for weekly data fiels
 
 ```{r}
-download_dir <- "./downloaded_data"
-if (!dir.exists(download_dir)) dir.create(download_dir)  # create download dir if it doesn't exist
-
 files_weekly_deaths <- set_names(x = as.list(table_of_data_sources$path_latest), nm = table_of_data_sources$short_name)
 ```
 
@@ -342,6 +339,10 @@ The format is a bit complicated to read automatically; we will extract the numbe
 
 
 ```{r}
+# TODO: change this to also keep track of latest available year
+# TODO: modify above notes to include 2022 data also
+# TODO: 2020 data aren't included in the latest files, so I might need to keep them separate
+
 weeks_available_in_nrs_weekly_data_by_cause_of_death_2021 <-  # extract the maximum weeks available from the weekly-updated 2021 data
   files_weekly_deaths$main_report %>%
   str_extract(string = ., pattern = "week-\\d{2}") %>%  # extract eg "week-12"
