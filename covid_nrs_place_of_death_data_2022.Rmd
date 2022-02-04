@@ -405,7 +405,7 @@ Note: the 5-year average for 2022 (spanning 2016-2019 & 2021) is only published 
 They could be calculated by hand if the 2015-2019 weekly data were available broken down by cause of death - as it stands, only the average 2015-2019 figure is available.
 
 ```{r}
-weekly_cause_of_death_data <-
+weekly_deaths_cause_of_death <-
   bind_rows(
     weekly_cause_of_death_2021_onwards,
     weekly_deaths_cause_of_death_2020 %>% 
@@ -934,3 +934,160 @@ weekly_deaths_overall %>%
   filter(round(deaths_nrs_past_average_all_causes) != round(deaths_mean)) %>%
   knitr::kable(caption = "Subset of weekly deaths where calculated mean deaths 2015-2019 differed between the COVID-19 related deaths file and the weekly deaths file (i.e. all other entries had the same figures!). Week 53 was computed as the average of deaths in week 53 in 2015 and weeks 52 in 2016-2019. For all the other datasets the mean deaths computed agree!")
 ```
+
+# Merge weekly deaths with historic death rates
+
+```{r}
+## compute rolling average
+merged_deaths_overall <-
+  weekly_deaths_overall %>%
+  filter(sex=="all" & age=="all") %>%
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(historical_weekly_average_overall %>% mutate(sex = "all", age = "all"),  # only merge for aggregated data b/c that's all we have!
+  by = c("place_of_death", "week_number", "sex", "age", "historic_period"))
+
+merged_deaths_hb <-
+  weekly_deaths_hb %>%
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(historical_weekly_average_hb, by = c("week_number","ref_area","place_of_death", "historic_period"))
+
+merged_deaths_la <-
+  weekly_deaths_la %>%  # use data with weekly movingincluded
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(historical_weekly_average_la, by = c("week_number","ref_area","place_of_death", "historic_period"))
+
+merged_deaths_sex_age <-
+  weekly_deaths_sex_age %>%  # use data with weekly movingincluded
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(historical_weekly_average_sex_age, by = c("place_of_death", "week_number", "sex", "age", "historic_period"))
+
+merged_deaths_sex <-
+  weekly_deaths_sex %>%
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(historical_weekly_average_sex, by = c("place_of_death", "week_number", "sex", "historic_period"))
+
+merged_deaths_age <-
+  weekly_deaths_age %>%
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(historical_weekly_average_age, by = c("place_of_death", "week_number", "age", "historic_period"))
+
+merged_deaths_cause_of_death <-
+  weekly_deaths_cause_of_death %>%
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(
+    historical_average_cause_of_death, by = c("place_of_death", "week_number", "cause_of_death", "historic_period", "year", "date_w_c")
+  )
+```
+
+
+## Weekly deaths including past weekly deaths
+
+For this dataset, we simply `bind_rows` weekly deaths by year and place of death with past weekly deaths by year and location. Note that past data for years with 52 weeks includes an entry of 0 deaths for week 53, so we'll remove them, otherwise the date computation is thrown off!
+
+```{r}
+weekly_deaths_current_and_past <-
+  bind_rows(
+    weekly_deaths_overall %>%
+    filter(sex=="all" & age=="all" & place_of_death!="All") %>%  # keep only aggregated values over sex & age
+    select(year, week_number, week_number_run_over, place_of_death, matches("deaths"), -deaths_nrs_past_average_all_causes)
+    ,
+    past_deaths_overall %>%
+      rename(deaths_all_causes = number_of_deaths) %>%
+      filter(place_of_death!="All" & year!="average") %>%  # remove aggregated entries
+      mutate(year = as.integer(year)) %>%
+      filter(!(year %in% 2016:2019 & week_number==53))  # remove week 53 entries from years 2016-2019
+  ) %>%
+  mutate(date_w_c = compute_start_date_from_week_number(week_number = week_number, year_number = year))
+```
+
+
+# Annual deaths for 2020 & 2021
+
+For visualising data using maps, we need to compute data for the entire year. Note: the non-covid and covid-related deaths in 2020 don't add up to all cause deaths due to the covid status only starting in week 12!
+
+```{r}
+# TODO: check through these to see if they compute correctly!
+
+compute_total_deaths_in_year <- function(data_tbl, ...) {
+  grouping_vars <- enquos(...)
+  data_tbl %>%
+    group_by(year, place_of_death, !!!grouping_vars) %>%
+    summarise(across(.cols = c(deaths_all_causes, deaths_covid_related, deaths_non_covid), .fns = ~sum(.x,na.rm=TRUE)), .groups = "drop") %>%  # compute sums of all types of death
+    mutate(deaths_all_causes_since_covid = deaths_covid_related + deaths_non_covid)  # compute a smaller number of all-cause deaths since covid started (over 2020, covid- and non-covid-related deaths don't add up to all-cause deaths because pre-covid deaths are included also!)
+}
+
+compute_ratio_of_annual_deaths_to_historical <- function(data_tbl) {
+  data_tbl %>%
+    mutate(
+      ratio_annual_deaths_to_historical_mean = deaths_all_causes / annual_deaths_mean,
+      ratio_annual_deaths_to_historical_min = deaths_all_causes / annual_deaths_min,
+      ratio_annual_deaths_to_historical_max = deaths_all_causes / annual_deaths_max
+    )
+}
+
+total_deaths_la <-
+  merged_deaths_la %>%
+  compute_total_deaths_in_year(ref_area) %>%
+  left_join(historical_annual_average_la, by = c("place_of_death", "ref_area")) %>%
+  compute_ratio_of_annual_deaths_to_historical
+
+total_deaths_hb <-
+  merged_deaths_hb %>%
+  compute_total_deaths_in_year(ref_area) %>%
+  left_join(historical_annual_average_hb, by = c("place_of_death", "ref_area")) %>%
+  compute_ratio_of_annual_deaths_to_historical
+
+total_deaths_sex <-
+  merged_deaths_sex %>%
+  compute_total_deaths_in_year(sex) %>%
+  left_join(historical_annual_average_sex, by = c("place_of_death", "sex")) %>%
+  compute_ratio_of_annual_deaths_to_historical
+
+total_deaths_age <-
+  merged_deaths_age %>%
+  compute_total_deaths_in_year(age) %>%
+  left_join(historical_annual_average_age, by = c("place_of_death", "age")) %>%
+  compute_ratio_of_annual_deaths_to_historical
+
+total_deaths_overall <-
+  merged_deaths_overall %>%
+  compute_total_deaths_in_year() %>%
+  left_join(historical_annual_average_overall, by = c("place_of_death")) %>%
+  compute_ratio_of_annual_deaths_to_historical
+
+## bespoke computation because format is different... deaths split by cause!
+total_deaths_cause_of_death <-
+  merged_deaths_cause_of_death %>%
+  group_by(year, place_of_death, cause_of_death) %>%
+  summarise(deaths = sum(number_of_deaths), .groups="drop") %>%
+  left_join(historical_annual_average_cause_of_death, by = c("place_of_death", "cause_of_death")) %>%
+  mutate(
+    ratio_annual_deaths_to_historical_mean = deaths / annual_deaths_mean
+  )
+
+
+current_and_historical_deaths_by_cause_and_location <-
+  bind_rows(
+    ## 2020 & 2021 separately
+    total_deaths_cause_of_death %>%
+      select(year, place_of_death, cause_of_death, deaths) %>%
+      mutate(year = as.character(year)),
+    ## 2020 & 2021 averaged
+    total_deaths_cause_of_death %>%
+      select(year, place_of_death, cause_of_death, deaths) %>%
+      group_by(place_of_death,  cause_of_death) %>%
+      summarise(deaths = sum(deaths), year = "2020-2021", .groups = "drop"),
+    ## historical data
+    total_deaths_cause_of_death %>%
+      select(year, place_of_death, cause_of_death, deaths = annual_deaths_mean) %>%
+      mutate(year = "2015-2019") %>%
+      distinct
+  ) %>%
+  filter(place_of_death != "All") %>%
+  group_by(year, cause_of_death) %>%
+  mutate(proportion = deaths / sum(deaths)) %>%
+  ungroup %>%
+  arrange(year, cause_of_death)
+  
+```
+
