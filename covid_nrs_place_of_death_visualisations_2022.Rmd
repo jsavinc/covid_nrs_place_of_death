@@ -1,0 +1,281 @@
+---
+title: "Place of death in NRS COVID-19 deaths: visualisation for 2022 data"
+author: "Jan Savinc"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+  code_folding: hide
+toc: true
+toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+  
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Load packages
+
+```{r, warning=FALSE, message=FALSE}
+## install packages from github if not yet available!
+# remotes::install_github("datasciencescotland/opendatascot", force = TRUE)
+# remotes::install_github("Health-SocialCare-Scotland/phsmethods", force = TRUE)
+
+library(tidyverse)  # for tidy workflow
+library(opendatascot)  # importing data from ScotGov open data website
+library(phsmethods)  # methods for working with PHS data
+library(readxl)  # for reading excel files
+# library(SPARQL)  # taken care of by opendatascot
+library(lubridate)  # dealing with dates
+library(janitor)  # for cleaning column names
+library(ISOweek)  # for computing date from ISO week number + year
+library(sf)  # for mapping
+library(ggrepel)  # for 'mapping'repelling' labels/texst in ggplot
+library(patchwork)  # for assembling plots
+library(extrafont)  # for working with fonts
+library(openxlsx)  # for creating xlsx files
+library(knitr)  # for displaying tables in rmd
+library(lemon)  # for showing axis & axis labels in every facet in ggplot
+library(ggtext)  # for showing coloured title text
+```
+
+
+# Copyright attribution
+
+All data used for this study were obtained from the National Records Scotland (NRS) and are © Crown copyright, 2020; the details of the licence can be viewed on the [Open Government Licence website](http://www.nationalarchives.gov.uk/doc/open-government-licence/open-government-licence.htm)
+
+
+# Dates represent event registration, not occurrence!
+
+From NRS website:
+  
+  > All routine vital events information we publish is based on the date of registration, not the date on which the event occurred. Inevitably, of course, there are delays between the occurrence of an event and its registration.
+
+
+# Load most recent data
+
+```{r}
+load(file = "./workspace.RData")
+```
+
+# Visualisations
+
+Note: visualisations have been moved to a separate .Rmd file
+
+## Common elements
+
+```{r}
+loadfonts()  # load imported fonts
+# Sys.setenv(R_GSCMD = "C:/Program Files/gs/gs9.27/bin/gswin64c.exe")  # set the location of the GS file  # this not needed, just use device=device_cairo for pdfs in ggsave
+
+theme_set(theme_minimal(base_size = 12) +
+            theme(panel.grid.minor = element_blank(),
+                  axis.title.y = element_text(margin = margin(0, 20, 0, 0)),  # remove gap to the left of y axis title and below the x axis title
+                  axis.title.x = element_text(margin = margin(20, 0, 0, 0)),
+                  text=element_text(family="Calibri")
+            ))
+
+
+date_range_text <- glue::glue("Data from w/c {format(earliest_date, '%d %B %Y')} to w/c {format(most_recent_date_available_2021, '%d %B %Y')} (inclusive).")
+
+dashed_line_historical_range_text <- "Range of deaths 2015-19 shown as shaded area; mean shown as dashed line."
+
+only_2020_text <- glue::glue("Data from 2020 included, starting with w/c {format(earliest_date)}.")
+only_2022_text <- glue::glue("Data for 2022 only include weeks 1-{format(weeks_available_2022)} (w/c {format(most_recent_date_available_2022)}).")
+
+source_nrs_text <- "Source: National Records of Scotland"
+source_phs_text <- "Source: Public Health Scotland"
+
+death_registrations_text <- "Note: all figures are based on date of registration."
+
+vertical_line_text <- "Vertical dotted line at week number 54 represents start of 2021."
+
+five_year_historical_mean <- "For 2020-2021 data, the 5-year historical period is 2015-2019; for 2022, the period is 2016-2019 + 2021, skipping 2020."
+
+vertical_scale_differs_between_panels_text <- "Note: vertical axis not on the same scale between panels!"
+
+# removed_other_category_text <- glue::glue("Excluding 'Other' institutional place of death, N={merged_deaths_overall %>% filter(sex == 'all' & age == 'all' & place_of_death == 'Other') %>% .$deaths_all_causes %>% sum} for weeks 1-{max(merged_deaths_overall %>% filter(year==2020) %>% .$week_number)} in 2020 and 1-{max(merged_deaths_overall %>% filter(year==2021) %>% .$week_number)} in 2021.")
+removed_other_category_text <- glue::glue("Excluding 'Other' institutional place of death.")
+```
+
+## Function to save files to multiple formats
+
+Saving to multiple formats is easy enough - the trouble is with saving PDF files with custom fonts, since they need to be embedded in the .pdf file. This requires:
+  
+  * telling R where to load the font from, using `extrafont::font_import()` - this was done in a previous step
+* registering fonts with R using `extrafont::loadfonts()` - note: this isn't strictly necessary, since once imported, `extrafont` keeps track of fonts to load when the `extrafont` package is loaded
+* ~~telling R where the `gs` executable is, i.e. the installation of ghostscript on the current machine~~
+* ~~embedding the fonts in the `.pdf` files once they've been written, using `extrafont::embed_fonts()`~~
+  * instead of manually embedding fonts (which resulted in garbled text on my setup!), just use `device=device_cairo` as an argument to `ggsave()` when saving `.pdf` files and it just works
+
+```{r}
+save_output_file <- function(filename, extensions, plot, width, height, units, dpi) {
+  
+  walk(
+    .x = extensions,
+    .f = function(ext) {
+      # if (tolower(ext)==".pdf") device <- cairo_pdf
+      ggsave(filename = paste0(filename, ext), plot = plot, width = width, height = height, units = units, dpi = dpi, device = if (tolower(ext)==".pdf") cairo_pdf else NULL)
+    }
+  )
+}
+```
+
+# Place of death over time
+
+```{r}
+## to put the arrows explaining historic range etc. only in one panel, need to construct a tibble to pass as data
+annotations_figure_place_of_death_explaining_historic_range <- tribble(
+   ~geom, ~place_of_death, ~label, ~x, ~y, ~xend, ~yend,
+  "text", "Hospital", "Historic range (min & max)", 29, 850, NA, NA,
+  "curve", "Hospital", NA, 29, 830, 32, 550,
+  "text", "Hospital", "Historic mean", 22, 800, NA, NA,
+  "curve", "Hospital", NA, 22, 780, 26, 510
+) %>% 
+  mutate(across(.cols = c("x","xend"), .fns = ~compute_start_date_from_week_number(week_number = .x, year_number = 2020))) %>%
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home")))  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+
+
+figure_place_of_death <-
+  merged_deaths_overall %>%
+  filter(sex == "all" & age == "all") %>%
+  filter(!place_of_death %in% c("All","Other")) %>%
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
+               names_to = "deaths_type", values_to = "deaths") %>% 
+  ggplot(aes(x = date_w_c)) +
+  geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2021), linetype = "dashed", colour="grey50") +  # start of 2021
+  geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2022), linetype = "dashed", colour="grey50") +  # start of 2022
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
+  geom_line(aes(y = deaths, colour = deaths_type)) +
+  geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
+  facet_grid(~place_of_death) +
+  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+                      labels = c("All deaths", 
+                                 "Non Covid-19 deaths"),
+                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+                      ) +
+  theme(
+    legend.position = "top",
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    plot.margin = margin(5, 15, 5, 5),
+    axis.text.x = element_text(angle = 60, colour = "gray40", vjust=1, hjust=1)
+  ) +
+  labs(x = NULL,
+       y = "Deaths (N)",
+       subtitle = date_range_text,
+       caption = paste0(c(death_registrations_text,removed_other_category_text,source_nrs_text), collapse="\n"),
+       colour = "Cause of death"
+       ) +
+  ## annotate historic range
+  geom_text(data = annotations_figure_place_of_death_explaining_historic_range %>% filter(geom=="text"), aes(x=x, y=y, label=label),  colour = "grey20", size = 8 / (14/5)) +  # the size is tricky
+  geom_curve(data = annotations_figure_place_of_death_explaining_historic_range %>% filter(geom=="curve"), aes(x=x, y=y, xend=xend, yend=yend), colour = c("#4477aa", "grey20"), alpha = c(0.5, 1), curvature = 0.20, arrow = arrow(length = unit(0.2, "cm"))) +
+  annotate(geom = "text", x=ymd("2021-01-07"), y=30, label = "2021", hjust = 0, colour = "grey40") +
+  annotate(geom = "text", x=ymd("2022-01-07"), y=30, label = "'22", hjust = 0, colour = "grey40") +
+  NULL
+
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = figure_place_of_death, width = 28, height = 14, dpi = 300, units = "cm")
+```
+
+
+# Home deaths by HB over time: 2020-2022, 4-week average
+
+```{r}
+figure_home_deaths_over_time_by_hb_4_week_average <-
+  merged_deaths_hb %>%
+  filter(place_of_death == "Home & other non-institution") %>%
+  mutate(ref_area = factor(x = ref_area, levels = order_hb_by_population)) %>%  # arrange hb/la by population size
+  pivot_longer(cols = c(ma4w_deaths_all_causes, ma4w_deaths_non_covid), 
+               names_to = "deaths_type", values_to = "deaths") %>% 
+  ggplot(aes(x = date_w_c)) +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  geom_ribbon(aes(ymin = ma4w_deaths_min, ymax = ma4w_deaths_max), fill = "#4477aa", alpha = 0.5) +
+  # geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
+  geom_line(aes(y = deaths, colour = deaths_type)) +
+  geom_line(aes(y = ma4w_deaths_mean), linetype = "dashed", size = 0.2) +
+  geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2021), linetype = "dashed", colour="grey50") +  # start of 2021
+  geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2022), linetype = "dashed", colour="grey50") +  # start of 2022
+  # scale_x_continuous(breaks = seq(0,60,by=10)) +
+  facet_wrap(~ref_area, scales = "free_y") +
+  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+                      labels = c("All deaths", 
+                                 "Non Covid-19 deaths"),
+                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+                      ) +
+  theme(
+    legend.position = "top", 
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    axis.text.x = element_text(angle = 60, colour = "gray40", vjust=1, hjust=1)
+    ) +
+  labs(x = NULL,
+       y = "Deaths (average of past 4 weeks)",
+       title = "Deaths at Home*: 4-week average by NHS Health Board",
+       subtitle = date_range_text,
+       caption = paste0(c(
+         "*Home or other non-institutional setting", vertical_line_text, vertical_scale_differs_between_panels_text, source_nrs_text
+         ), collapse="\n"),
+       colour = "Cause of death"
+       ) +
+  ## annotate historic range
+  annotate(geom = "text", x=ymd("2021-01-07"), y=0, label = "2021", hjust = 0, vjust = -1, colour = "grey40") +
+  annotate(geom = "text", x=ymd("2022-01-07"), y=0, label = "'22", hjust = 0, vjust = -1, colour = "grey40") +
+  NULL
+
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_home_deaths_4week_average_over_time_by_hb", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = figure_home_deaths_over_time_by_hb_4_week_average, width = 30, height = 20, dpi = 300, units = "cm")
+```
+
+
+# Geographical variation over time: cumulative deaths at home over time
+
+For this visualisation, we'll compare home deaths over time (e.g. years 2020, 2021, and 2022) with their historic period annual average, at HB-level. For this, we need to calculate the 2022 rate to be comparable to the complete data for years 2020 & 2021 - this is achieved by taking the sum of deaths in 2022 and dividing by the sum of the weekly average deaths in its historic period
+
+```{r}
+merged_deaths_hb %>%
+  # filter(week_number %in% 1:4) %>%
+  group_by(year, ref_area, place_of_death, historic_period) %>%
+  summarise(
+    deaths_all_causes = sum(deaths_all_causes, na.rm = TRUE),
+    deaths_mean = sum(deaths_mean, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    ratio_annual_deaths_to_historical_mean = deaths_all_causes/deaths_mean,
+    percent_increase_home_death = ratio_annual_deaths_to_historical_mean - 1
+    ) %>%
+  filter(
+    place_of_death == "Home & other non-institution"
+  ) %>%
+  left_join(shapefile_hb_uk_wide, by=c("ref_area"="name")) %>%
+  # ggplot(aes(geometry=geometry, fill=ratio_annual_deaths_to_historical_mean), colour="grey10") +
+  ggplot(aes(geometry=geometry, fill=percent_increase_home_death), colour="grey10") +
+  geom_sf(colour="grey10") +
+  # scale_fill_viridis_b(limits = c(minimum_ratio_between_hb_and_la_home_deaths-1, maximum_ratio_between_hb_and_la_home_deaths-1), labels = function(x) scales::percent(x, accuracy = 1)) +
+  # scale_fill_viridis_b(labels = function(x) scales::percent(x, accuracy = 1)) +
+  scale_fill_binned(
+    labels = function(x) scales::percent(x, accuracy = 1), 
+    type = "viridis",
+    n.breaks = 7
+    ) +
+  theme(
+    axis.text = element_blank(), 
+    panel.grid = element_blank(), 
+    aspect.ratio = 1.4,  # needed for Scotland HB plot
+    plot.margin = margin(5,5,5,5),
+    # legend.position = c(1.2,0.4)  # this was manually tweaked until just right  # problem - edge gets cut
+    ) +
+  facet_grid(~year) +
+  labs(x="", y="",
+       title = str_wrap("Increased home deaths in 2020 relative to 5-year historical mean, by Health Board", width=50),
+       # subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
+       # caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
+       caption = paste0(c(source_nrs_text,five_year_historical_mean), collapse="\n"),
+       # fill = "Ratio"
+       fill = "Home death\nincrease"
+       ) +
+  NULL
+```
+
