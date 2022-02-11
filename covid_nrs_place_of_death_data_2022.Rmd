@@ -1062,7 +1062,6 @@ total_deaths_age <-
   left_join(historical_annual_average_age, by = c("place_of_death", "age")) %>%
   compute_ratio_of_annual_deaths_to_historical
 
-
 ## bespoke computation because format is different... deaths split by cause!
 total_deaths_cause_of_death <-
   merged_deaths_cause_of_death %>%
