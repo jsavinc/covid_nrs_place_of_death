@@ -1,0 +1,1101 @@
+---
+title: "Place of death in NRS COVID-19 deaths: data processing for analysis, 2022 data"
+author: "Jan Savinc"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+  code_folding: hide
+toc: true
+toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Load packages
+
+```{r, warning=FALSE, message=FALSE}
+## install packages from github if not yet available!
+# remotes::install_github("datasciencescotland/opendatascot", force = TRUE)
+# remotes::install_github("Health-SocialCare-Scotland/phsmethods", force = TRUE)
+
+library(tidyverse)  # for tidy workflow
+library(opendatascot)  # importing data from ScotGov open data website
+library(phsmethods)  # methods for working with PHS data
+library(readxl)  # for reading excel files
+# library(SPARQL)  # taken care of by opendatascot
+library(lubridate)  # dealing with dates
+library(janitor)  # for cleaning column names
+library(ISOweek)  # for computing date from ISO week number + year
+library(sf)  # for mapping
+library(ggrepel)  # for 'mapping'repelling' labels/texst in ggplot
+library(patchwork)  # for assembling plots
+library(extrafont)  # for working with fonts
+library(openxlsx)  # for creating xlsx files
+library(knitr)  # for displaying tables in rmd
+
+## load functions
+source("./functions.R")
+```
+
+
+# Copyright attribution
+
+All data used for this study were obtained from the National Records Scotland (NRS) and are © Crown copyright, 2020; the details of the licence can be viewed on the [Open Government Licence website](http://www.nationalarchives.gov.uk/doc/open-government-licence/open-government-licence.htm)
+
+
+# Dates represent event registration, not occurrence!
+
+From NRS website:
+
+> All routine vital events information we publish is based on the date of registration, not the date on which the event occurred. Inevitably, of course, there are delays between the occurrence of an event and its registration.
+
+
+# Load info about latest data
+
+A separate script checks for updated data and downloads it, also updating these files with the locations of the downloaded data:
+
+```{r}
+file_data_sources <- "./table_of_data_sources.csv"
+file_historical_data_sources <- "./table_of_historical_data_sources.csv"
+file_case_trends_data_sources <- "./table_of_case_trends_data_sources.csv"
+
+table_of_data_sources <- read_csv(file = file_data_sources)
+table_of_historical_data_sources <- read_csv(file = file_historical_data_sources)
+table_of_case_trends_data_sources <- read_csv(file = file_case_trends_data_sources)
+
+table_of_data_sources %>%
+  knitr::kable(caption = "Latest data used in this report.")
+
+
+files_weekly_deaths <- set_names(x = as.list(table_of_data_sources$path_latest), nm = table_of_data_sources$short_name)
+files_historical_deaths <- set_names(x = as.list(table_of_historical_data_sources$path_latest), nm = table_of_historical_data_sources$short_name)
+files_case_counts <- set_names(x = as.list(table_of_case_trends_data_sources$path_latest), nm = table_of_case_trends_data_sources$short_name)
+```
+
+
+## Set up output directory
+
+Because data are updated on a weekly basis, we'll have a separate directory for every week the data are updated:
+
+```{r}
+latest_data_modified_date <- strftime(max(table_of_data_sources$last_modified), format="%F")
+
+dir_outputs <- paste0("./outputs/",latest_data_modified_date)
+if (!dir.exists(dir_outputs)) dir.create(dir_outputs, recursive = TRUE)
+```
+
+
+# Import & wrangle data
+
+There are several files that the data are imported from.
+
+## Overall data
+
+```{r}
+## a separate raw file makes it easier to debug, and also reduces the number of requests I make while debugging!
+ods_raw <- ods_dataset("deaths-involving-coronavirus-covid-19", geography = "sc")
+
+weekly_deaths_overall <-
+  ods_raw %>%
+  make_human_readable_ref_area %>%
+  clean_names() %>%
+  ## below series of rename operations are a stupid way of dealing with the possibility of different variable name conventions in the ods_dataset data: sometimes they are in snake_case, and sometimes in camelCase, seemingly unpredictably
+  rename_at(.vars = vars(matches("location", ignore.case = TRUE)), ~"place_of_death") %>%
+  rename_at(.vars = vars(matches("period", ignore.case = TRUE)), ~"ref_period") %>%
+  rename_at(.vars = vars(matches("area", ignore.case = TRUE)), ~"ref_area") %>%
+  rename_at(.vars = vars(matches("measure", ignore.case = TRUE)), ~"measure_type") %>%
+  rename_at(.vars = vars(matches("cause", ignore.case = TRUE)), ~"cause_of_death") %>%
+  rename_at(.vars = vars(matches("sex", ignore.case = TRUE)), ~"sex") %>%
+  rename_at(.vars = vars(matches("age", ignore.case = TRUE)), ~"age") %>%
+  rename_at(.vars = vars(matches("value", ignore.case = TRUE)), ~"number_of_deaths") %>%  # rename so it's consistent with other data
+  filter(!ref_period %in% as.character(2020:2022)) %>% # remove totals for 2020, 2021, 2022, we only want the weekly figures
+  mutate(
+    year = parse_integer(str_extract(ref_period, pattern="^(202[0-3])")),
+    week_number = parse_integer(str_remove(ref_period, pattern = "^(202[0-3])\\-")),
+    date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
+    number_of_deaths = as.numeric(number_of_deaths),  # convert to numeric!
+    week_number_run_over = compute_week_run_over(week_number, year, start_year = 2020)  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
+  ) %>%
+  select(-c(measure_type)) %>%  #  measure_type is count for all data
+  recode_place_of_death() %>%
+  recode_cause_of_death() %>%
+  recalculate_number_of_deaths_after_recoding_cause_of_death %>%  # not needed here probably, but no harm in including it
+  pivot_wider(names_from = cause_of_death, values_from = number_of_deaths) %>%  # this dataset is well-formatted and has no implicit missing values!
+  mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related)  # compute non-covid deaths from the other two figures - will be NA where either is missing
+```
+
+## Sex & age
+
+```{r}
+weekly_deaths_sex_age <-  # structure here is a bit more complicated - headers in row 3, but sex & age headers in row 4
+  readxl::read_excel(files_weekly_deaths$sex_age, sheet = 2, skip = 4, col_names = c("week_number","place_of_death","sex","age","cause_of_death","number_of_deaths"), guess_max = 1e5) %>%
+  drop_na(number_of_deaths) %>%    # remove empty rows & one row where it's just the copyright notice
+  parse_year_and_week_number_from_ad_hoc_data %>%
+  recode_cause_of_death() %>%
+  recalculate_number_of_deaths_after_recoding_cause_of_death %>%  # recompute the sum of deaths
+  tidyr::complete(  # complete implicit missing entries and make them 0
+    nesting(week_number,week_number_run_over,date_w_c,year),
+    age,sex,place_of_death,cause_of_death,
+    fill = list(number_of_deaths = 0)
+  ) %>%
+  recode_place_of_death() %>%  # this needs to be done after recoding cause of death, otherwise we also include the "all" figure which isn't included in this dataset
+  pivot_wider(names_from = cause_of_death, values_from = number_of_deaths) %>%   # make separate columns for causes of death figures
+  mutate(deaths_all_causes = deaths_non_covid + deaths_covid_related) %>%  # compute all cause deaths from the other two figures reported
+  set_covid_and_non_covid_deaths_to_zero_before_reporting_started()
+```
+
+### Sex & age separate splits
+
+```{r}
+## compute weekly data for sex and age separately
+## sum over sex or age, respectively
+weekly_deaths_sex <-
+  weekly_deaths_sex_age %>%
+  filter(age!="all") %>%
+  group_by(week_number, week_number_run_over, year, date_w_c, sex, place_of_death) %>%
+  summarise(across(starts_with("deaths_"), ~sum(.x)), .groups = "drop")
+
+weekly_deaths_age <-
+  weekly_deaths_sex_age %>%
+  filter(sex!="all") %>%
+  group_by(week_number, week_number_run_over, year, date_w_c, age, place_of_death) %>%
+  summarise(across(starts_with("deaths_"), ~sum(.x)), .groups = "drop")
+```
+
+## LA & HB
+
+```{r}
+weekly_deaths_la <- 
+  read_excel(files_weekly_deaths$la, sheet = 2, skip = 2) %>% 
+  clean_names %>%
+  rename(week_number = week_of_occurrence, ref_area = council, place_of_death = location_of_death, number_of_deaths = deaths) %>%
+  filter(!is.na(number_of_deaths)) %>%  # remove blank rows & copyright entry
+  parse_year_and_week_number_from_ad_hoc_data %>%
+  recode_cause_of_death() %>%
+  recalculate_number_of_deaths_after_recoding_cause_of_death %>%  # recompute the sum of deaths
+  tidyr::complete(
+      nesting(year, week_number, week_number_run_over, date_w_c),  # these are 'identifying' variables that shouldn't be combinatorily exploded
+      ref_area, cause_of_death, place_of_death,  # these are the variables we want to have all combinations of, and missing combinations are set to 0 deaths
+      fill = list(number_of_deaths = 0)
+      ) %>%
+  recode_place_of_death() %>%  # this needs to be done before recoding cause of death, otherwise we also include the "all" figure which isn't included in this dataset
+  pivot_wider(names_from = cause_of_death, values_from = number_of_deaths) %>%   # make separate columns for causes of death figures
+  mutate(deaths_all_causes = deaths_non_covid + deaths_covid_related) %>%  # compute all cause deaths from the other two figures reported
+  set_covid_and_non_covid_deaths_to_zero_before_reporting_started()
+              quiet = FALSE)
+
+weekly_deaths_hb <- 
+  read_excel(files_weekly_deaths$hb, sheet = 2, skip = 2) %>% 
+  clean_names %>%
+  rename(week_number = week_of_occurrence, ref_area = health_board, place_of_death = location_of_death, number_of_deaths = deaths) %>%
+  filter(!is.na(number_of_deaths)) %>%  # remove blank rows & copyright entry
+  parse_year_and_week_number_from_ad_hoc_data %>%
+  recode_cause_of_death() %>%
+  recalculate_number_of_deaths_after_recoding_cause_of_death %>%  # recompute the sum of deaths
+  tidyr::complete(
+      nesting(year, week_number, week_number_run_over, date_w_c),  # these are 'identifying' variables that shouldn't be combinatorily exploded
+      ref_area, cause_of_death, place_of_death,  # these are the variables we want to have all combinations of, and missing combinations are set to 0 deaths
+      fill = list(number_of_deaths = 0)
+      ) %>%
+  recode_place_of_death() %>%  # this needs to be done before recoding cause of death, otherwise we also include the "all" figure which isn't included in this dataset
+  pivot_wider(names_from = cause_of_death, values_from = number_of_deaths) %>%  # make separate columns for causes of death figures
+  mutate(deaths_all_causes = deaths_non_covid + deaths_covid_related) %>%  # compute all cause deaths from the other two figures reported
+  set_covid_and_non_covid_deaths_to_zero_before_reporting_started()
+```
+
+## Weekly Covid as contributory vs underlying cause of death
+
+```{r}
+weekly_covid_contributory_vs_underlying_cause <-
+  readxl::read_excel(files_weekly_deaths$sex_age, sheet = 2, skip = 4, col_names = c("week_number","place_of_death","sex","age","cause_of_death","number_of_deaths"), guess_max = 1e5) %>%
+  drop_na(number_of_deaths) %>%    # remove empty rows & one row where it's just the copyright notice
+  parse_year_and_week_number_from_ad_hoc_data %>%
+  filter(
+    cause_of_death %in% c("COVID-19 contributory factor", "COVID-19 underlying cause")
+  ) %>%
+  tidyr::complete(  # complete implicit missing entries and make them 0
+    nesting(week_number,week_number_run_over,date_w_c,year),
+    age,sex,place_of_death,cause_of_death,
+    fill = list(number_of_deaths = 0)
+  ) %>%
+  recode_place_of_death() %>%  # this needs to be done after recoding cause of death, otherwise we also include the "all" figure which isn't included in this dataset
+  pivot_wider(names_from = cause_of_death, values_from = number_of_deaths) %>%   # make separate columns for causes of death figures
+  clean_names() %>%
+  filter(age!="all") %>%
+  filter(sex!="all") %>%
+  filter(place_of_death != "All") %>%
+  group_by(week_number, week_number_run_over, year, date_w_c, place_of_death) %>%  # sum over age & sex
+  summarise(across(starts_with("covid_"), ~sum(.x)), .groups = "drop") %>%
+  ({function(x)
+    bind_rows(
+      x,
+      x %>% 
+        group_by(week_number, week_number_run_over, year, date_w_c) %>%  # sum across place of death
+        summarise(across(starts_with("covid_"), ~sum(.x)), .groups = "drop") %>%
+        mutate(place_of_death = "All")
+    )
+  })
+
+## check that the figures actually make sense! i.e. the two figures add up to the total covid-related figure
+stopifnot(
+  (weekly_deaths_overall %>%
+  filter(sex=="all" & age=="all") %>%
+  inner_join(weekly_covid_contributory_vs_underlying_cause) %>%
+  filter(deaths_covid_related != covid_19_contributory_factor + covid_19_underlying_cause) %>%
+  nrow) == 0
+)
+
+annual_covid_contributory_vs_underlying_cause <-
+  weekly_covid_contributory_vs_underlying_cause %>%
+  group_by(year, place_of_death) %>%
+  summarise(across(starts_with("covid_"), ~sum(.x)), .groups = "drop") %>%
+  ({function(x)
+    bind_rows(
+      x %>% mutate(year = as.character(year)),
+      x %>% 
+        group_by(place_of_death) %>%  # sum across eyars
+        summarise(across(starts_with("covid_"), ~sum(.x)), .groups = "drop") %>%
+        mutate(year = "2020-2021")
+    )
+  }) %>%
+  mutate(deaths_covid_related = covid_19_contributory_factor + covid_19_underlying_cause) %>%
+  mutate(
+    proportion_contributory = covid_19_contributory_factor / deaths_covid_related,
+    proportion_underlying = covid_19_underlying_cause / deaths_covid_related
+    )
+```
+
+
+## 'Main report' file
+
+The format of the main report file has changed from what was used in 2021.
+
+However, the main report file is still only being used for cause of death data, which simplifies parsing the file!
+
+Causes of death are reported in `sheet 8` of the report, and include figure from 2021 and 2022. The worksheet contains data split by location of death, which are contained within different tables arranged vertically, so their boundaries need to be written out; the tables have been pre-filled for all of 2021 and 2022, so some proportion of entries will be blank for 2022.
+
+Note that excess deaths and 5-year average deaths are computed differently between 2020-2021 and 2022:
+
+> For data registered in 2021, any comparison to a five year average is being made with the 2015-2019 average. For 2022, the comparison is being made to the average of 2016, 2017, 2018, 2019, 2021.
+
+> Excess deaths are calculated by comparing the current year to the five year average from previous years. NRS, along with ONS and NISRA, agreed to leave 2020 out of five year average calculations so the five-year average which is used to compare 2022 figures against covers the years 2016, 2017, 2018, 2019 and 2021. More information about this can be found in a paper published on our website (see link on the right). Moveable public holidays, when registration offices are closed, affect the number of registrations made in the published weeks and in the corresponding weeks in previous years.
+
+### Weekly causes of death
+
+```{r}
+sheet_cause_of_death_data <- "8"
+
+cell_ranges_for_causes_of_death_data <- list(
+  "All" = "A6:V110",
+  "Care home" = "A113:V217",
+  "Home & other non-institution" = "A220:V324",
+  "Hospital" = "A327:V431",
+  "Other" = "A434:V538"
+)
+
+weekly_cause_of_death_2021_onwards <-
+  map_dfr(
+    .x = cell_ranges_for_causes_of_death_data,
+    .f = ~readxl::read_excel(files_weekly_deaths$main_report, sheet = sheet_cause_of_death_data, range = .x), 
+    .id = "place_of_death"
+  ) %>%
+  janitor::clean_names() %>%
+  rename(year = registration_year, date_w_c = week_beginning) %>%
+  select(-matches("_excess$|_average$")) %>%  # we can compute excess & averages later
+  pivot_longer(cols = 5:ncol(.), names_to = "name", values_to = "number_of_deaths") %>%
+  filter(!str_detect(name, "all_causes")) %>%  # we can calculate that from the others
+  mutate(
+    year = as.integer(year),
+    cause_of_death = str_remove_all(name, "_five_year_average|_deaths"),
+    cause_of_death = return_pretty_cause_of_death(cause_of_death),
+    date_w_c = as.Date(date_w_c),
+    week_number_run_over = compute_week_run_over(week_number, year, start_year = 2020)  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
+  ) %>%
+  select(-name) %>%
+  filter(!is.na(number_of_deaths))  # remove blank entries - these are for the current year but for dates in the future
+```
+
+
+### Historical causes of death
+
+Historical here refers to the 2015-2019 period for 2020 & 2021, and 2016-2021 (skipping 2020) for 2022. There is another 'historical' dataset, which includes cause of death figures for 2020.
+
+```{r}
+historical_average_cause_of_death_2021_onwards <-
+  map_dfr(
+    .x = cell_ranges_for_causes_of_death_data,
+    .f = ~readxl::read_excel(files_weekly_deaths$main_report, sheet = sheet_cause_of_death_data, range = .x), 
+    .id = "place_of_death"
+  ) %>%
+  janitor::clean_names() %>%
+  rename(year = registration_year, date_w_c = week_beginning) %>%
+  select(place_of_death, year, week_number, date_w_c, matches("five_year_average")) %>%
+  pivot_longer(cols = 5:ncol(.), names_to = "name", values_to = "deaths_mean") %>%
+  mutate(
+    year = as.integer(year),
+    cause_of_death = str_remove_all(name, "_five_year_average|_deaths"),
+    cause_of_death = return_pretty_cause_of_death(cause_of_death),
+    cause_of_death = if_else(cause_of_death == "All causes", "All", cause_of_death),
+    date_w_c = as.Date(date_w_c),
+    week_number_run_over = compute_week_run_over(week_number, year, start_year = 2020),  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
+    historic_period = historic_period_depending_on_year(year)
+  ) %>%
+  select(-name) %>%
+  drop_na(deaths_mean)  # remove blank entries - these are for the current year but for dates in the future
+```
+
+### Data from 2020 & 2021
+
+The reports available from NRS in 2022 include data from 2021-2022, but we can also include data from 2020 for context. For this I'll load the last 'main report' file from 2021.
+
+The weekly causes of death data for 2020 is included in the sheet `Table 3 (2020)`.
+
+#### 'Main report' file
+
+```{r}
+nrs_weekly_data_sheet_2020 <- 
+  excel_sheets(files_historical_deaths$`2020-2021`)[which(str_detect(tolower(excel_sheets(files_historical_deaths$`2020-2021`)), pattern = "table 3.*2020"))]
+
+## construct column names for the data
+headers_in_nrs_data_2020 <-
+  c(
+    "place_of_death",
+    "cause_of_death",
+    paste0("week_", 1:53),
+    "blank_remove",  # this and the rest are irrelevant entries that we'll remove
+    "remove_1",
+    "remove_2"
+  )
+
+## extract data... this is dense but I've tried to annotate it clearly!
+weekly_deaths_cause_of_death_2020 <-
+  readxl::read_excel(files_historical_deaths$`2020-2021`, sheet = nrs_weekly_data_sheet_2020, col_names = headers_in_nrs_data_2020, range = cell_rows(6:125)) %>%  # the data are inrows 6:125
+  select(-matches("remove")) %>%  # remove irrelevant summary columns at the end
+  mutate(across(.cols = matches("week"), .fns = as.numeric)) %>%  # remove erroneous "count1, count2, ..." entries due to superscript in previous column
+  mutate(dataset = if_else(condition = str_detect(string = cause_of_death, pattern = regex(pattern = "^registered|^difference", ignore_case = TRUE)), true = cause_of_death, false = NA_character_)) %>%  # extract the Registered deaths: historical, 2020/2021, and Difference sections
+  tidyr::fill(place_of_death, .direction = "down") %>%  # complete the entries for place of death from the "last observed"
+  tidyr::fill(dataset, .direction = "down") %>%  # same as above but for "dataset" column
+  drop_na(week_1) %>%  # remove blank "header" rows with no data recorded
+  pivot_longer(cols = matches("week"), names_to = "week_number", values_to = "number_of_deaths", values_drop_na = TRUE) %>%  # convert to long data format
+  mutate(
+    week_number = as.integer(parse_number(week_number)),  # extract week number
+    place_of_death =  # find best match in the reference names used in other datasets
+      order_of_place_of_death_levels[stringdist::amatch(x = str_sub(place_of_death,1,4), table = str_sub(order_of_place_of_death_levels,1,4), method = "lv", maxDist = 5)],  # the reference is in the variable order_of_place_of_death_levels
+    year = 2020,
+    dataset = str_remove_all(dataset , "Registered deaths\\: "),
+    date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
+    week_number_run_over = compute_week_run_over(week_number, year, start_year = 2020)  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
+    ) %>%
+  filter(dataset!="Difference") %>%
+  pivot_wider(names_from = dataset, values_from = number_of_deaths) %>%
+  rename(deaths_mean = `five year average`, number_of_deaths = `2020`)
+```
+
+#### Merge 2020 data with current data
+
+Note: the 5-year average for 2022 (spanning 2016-2019 & 2021) is only published along with the running weekly counts of deaths by cause of death; it's just that NRS has decided to only publish them at the same time as new data comes out! This is a bit of a bummer - it means we can't populate the whole year of 'historical context' data for 2022.
+
+They could be calculated by hand if the 2015-2019 weekly data were available broken down by cause of death - as it stands, only the average 2015-2019 figure is available.
+
+```{r}
+weekly_deaths_cause_of_death <-
+  bind_rows(
+    weekly_cause_of_death_2021_onwards,
+    weekly_deaths_cause_of_death_2020 %>% 
+      select(-deaths_mean) %>%
+      filter(cause_of_death != "All")  # don't need all cause data in causes breadkown!
+  )
+
+historical_average_cause_of_death <-
+  bind_rows(
+    historical_average_cause_of_death_2021_onwards,
+    weekly_deaths_cause_of_death_2020 %>% 
+      select(-number_of_deaths) %>% 
+      mutate(historic_period = historic_period_depending_on_year(year))
+  )
+```
+
+
+## Historical weekly deaths
+
+The format of the .xlsx files is that sheet 1 is a table of contents, sheet 2 contains the data, and sheet 3 is a pivot table for subsetting data. These are downloaded from the ad-hoc section also.
+
+```{r, warning=FALSE}
+weekly_deaths_2015_2019_overall <- 
+  read_csv(files_historical_deaths$overall, skip = 2) %>%
+  rename(year = 1) %>%  # rename first column
+  mutate(
+    place_of_death = if_else(is.na(`1`), true = year, NA_character_)
+  ) %>%
+  fill(place_of_death, .direction="down") %>%  # LOCF on place_of_death
+  drop_na(`1`) %>%
+  pivot_longer(cols = all_of(as.character(1:53)), values_to = "number_of_deaths", names_to = "week_number") %>%
+  mutate(week_number=as.integer(week_number)) %>%
+  recode_place_of_death()
+
+weekly_deaths_2015_2019_hb <- 
+  readxl::read_excel(files_historical_deaths$hb, sheet = 2, skip = 2, col_names = TRUE) %>%  # first two rows are empty, row 3 has headers
+  clean_names() %>%
+  drop_na(number_of_deaths) %>%  # remove empty rows & one row where it's just the copyright notice
+  rename(  # same format as current data
+    week_number = matches("week"),
+    place_of_death = matches("location"),
+    ref_area = health_board
+  ) %>%
+  mutate(
+    week_number = as.integer(week_number)
+  ) %>%
+  tidyr::complete(
+    nesting(week_number,year),  # unique combinations that we don't want to combinatorily explode
+    ref_area, place_of_death,  # fill in missing combinations of hb & pod with 0 deaths
+    fill = list(number_of_deaths = 0)
+  ) %>% 
+  recode_place_of_death()  # recode place of death after completing missing combinations, otherwise the factor level "All" gets exploded also
+
+weekly_deaths_2015_2019_la <-
+  readxl::read_excel(files_historical_deaths$la, sheet = 2, skip = 2, col_names = TRUE) %>%  # first two rows are empty, row 3 has headers
+  clean_names() %>%
+  drop_na(number_of_deaths) %>%  # remove empty rows & one row where it's just the copyright notice
+  rename(  # same format as current data
+    week_number = matches("week"),
+    place_of_death = matches("location"),
+    ref_area = council_area
+  ) %>%
+  mutate(
+    week_number = as.integer(week_number)
+  ) %>%
+  tidyr::complete(
+    nesting(week_number,year),  # unique combinations that we don't want to combinatorily explode
+    ref_area, place_of_death,  # fill in missing combinations of la & pod with 0 deaths
+    fill = list(number_of_deaths = 0)
+  ) %>% 
+  recode_place_of_death()  # recode place of death after completing missing combinations, otherwise the factor level "All" gets exploded also
+
+weekly_deaths_2015_2019_sex_age <-  # structure here is a bit more complicated - headers in row 3, but sex & age headers in row 4
+  readxl::read_excel(files_historical_deaths$sex_age, sheet = 2, skip = 4, col_names = c("year","week_number","place_of_death","sex","age","number_of_deaths"), guess_max = 1e5) %>%
+  drop_na(number_of_deaths) %>%    # remove empty rows & one row where it's just the copyright notice
+  mutate(
+    year = 2000L + as.integer(year),
+    week_number = as.integer(week_number)
+  ) %>%
+  tidyr::complete(
+    nesting(week_number,year),  # unique combinations that we don't want to combinatorily explode
+    sex, age, place_of_death,  # fill in missing combinations of age, sex, pod, with 0 deaths
+    fill = list(number_of_deaths = 0)
+  ) %>% 
+  recode_place_of_death()
+
+## compute weekly data for sex and age separately
+## sum over sex or age, respectively
+weekly_deaths_2015_2019_sex <-
+  weekly_deaths_2015_2019_sex_age %>%
+  group_by_all %>%
+  ungroup(age, number_of_deaths) %>%  # this is done by grouping over everything except the number of deaths & sex
+  summarise(number_of_deaths = sum(number_of_deaths), .groups = "drop")
+
+weekly_deaths_2015_2019_age <-
+  weekly_deaths_2015_2019_sex_age %>%
+  group_by_all %>%
+  ungroup(sex, number_of_deaths) %>%  # this is done by grouping over everything except the number of deaths & sex
+  summarise(number_of_deaths = sum(number_of_deaths), .groups = "drop")
+```
+
+## Map data
+
+I'm using `sf` to read these and to include them invisualisations.
+
+* Local Authority Districts (LAD) for 2020 (BUC-level resolution): https://geoportal.statistics.gov.uk/datasets/local-authority-districts-december-2020-uk-buc/
+* Health Boards https://data.gov.uk/dataset/27d0fe5f-79bb-4116-aec9-a8e565ff756a/nhs-health-boards
+  - Note: this is a fairly high resolution, don't need this much detail!
+  - I found a discussion of this on [a github covid-related project](https://github.com/tomwhite/covid-19-uk-data/issues/18#issuecomment-622353841), and user **robchallen** produced a zip file containing [UK-wide health board boundaries](https://github.com/tomwhite/covid-19-uk-data/files/4563933/UK_covid_reporting_regions.zip)
+
+
+```{r}
+shapefile_hb_uk_wide <- st_read(dsn = "./map_data/hb_uk_wide/UK_covid_reporting_regions")
+shapefile_la <- st_read(dsn = "./map_data/la")
+```
+
+## COVID case counts by LA/HB
+
+```{r}
+cases_hb <- read_csv(
+  files_case_counts$hb, 
+  col_types = 
+    cols(
+    .default = col_double(),
+    `_id` = col_skip(),
+    DailyDeaths = col_skip(),  # not needed, we get this elsewhere!
+    Date = col_date(format = "%Y%m%d"),
+    HB = col_character(),
+    HBName = col_character(),
+    HospitalAdmissionsQF = col_character(),
+    ICUAdmissionsQF = col_character()
+    ),
+  ) %>% clean_names() %>%
+  rename(ref_area = hb_name) %>%
+  mutate(
+    year = parse_integer(str_sub(ISOweek(date), start = 1, end = 4)),  # parse ISO year, otherwise the first few days of 2021 will belong to 2021 erroneously!
+    week_number = parse_integer(str_sub(ISOweek(date), start = 7, end = 8)),
+    ref_area = phsmethods::match_area(hb)  # convert to standard HB names
+    )
+
+cases_la <- read_csv(
+  file = files_case_counts$la, 
+  col_types = 
+    cols(
+    .default = col_double(),
+    `_id` = col_skip(),
+    DailyDeaths = col_skip(),  # not needed, we get this elsewhere!
+    Date = col_date(format = "%Y%m%d"),
+    CA = col_character(),
+    CAName = col_character()
+  )
+) %>% clean_names() %>%
+  rename(ref_area = ca_name) %>%
+  mutate(
+    year = parse_integer(str_sub(ISOweek(date), start = 1, end = 4)),  # parse ISO year, otherwise the first few days of 2021 will belong to 2021 erroneously!
+    week_number = parse_integer(str_sub(ISOweek(date), start = 7, end = 8)),
+    ref_area = phsmethods::match_area(ca)  # convert to standard LA names, jsut in case they weren't already!
+    )
+```
+
+
+# Calculate case counts: weekly counts to match weekly death reporting
+
+Note: the cumulative case counts have already been calculated, we just need to subset them to match the weeks. This is not trivial - the death counts cover an entire week starting from the "w/c date"; the cumulative cases for that week could be taken either at the start, the end of the week, or the start of the following week even!
+
+However, when calculating weekly positive cases we can simply take the maximum of that week's cumulative count - that will be the cumulative count at the end of the week!
+
+Note also that the `crude_rate_positive_per100k` represents the cumulative rate!
+
+```{r}
+weekly_covid_cases_hb <-
+  cases_hb %>%
+  group_by(year, week_number, ref_area) %>%
+  summarise(
+    weekly_positive = sum(daily_positive),
+    cumulative_positive = max(cumulative_positive),
+    crude_rate_positive_per100k = max(crude_rate_positive),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
+    week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)
+    )
+
+## extract Scotland-wide data and remove from HB split
+weekly_covid_cases_overall <- weekly_covid_cases_hb %>% filter(ref_area=="Scotland")
+weekly_covid_cases_hb <- weekly_covid_cases_hb %>% filter(ref_area!="Scotland")
+
+weekly_covid_cases_la <-
+  cases_la %>%
+  group_by(year, week_number, ref_area) %>%
+  summarise(
+    weekly_positive = sum(daily_positive),
+    cumulative_positive = max(cumulative_positive),
+    crude_rate_positive_per100k = max(crude_rate_positive),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
+    week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)
+    )
+```
+
+
+# Historical averages, minima & maxima
+
+Due to the counting of weeks, most years have 52 weeks with some years (2015 & 2020) having 53. Therefore we need to decide how to deal with week 53 in 2020 since only 2015 has a corresponding weekly count. The solution used here is to calculate a weekly rate for week 53 from week 53 in 2015, and week 52 in 2016-2019 - this represents the "last week of the year", which includes December 31st.
+
+Note also that since 2022, the 5-year historical period has been defined as 2016-2021, with 2020 excluded, so we need to calculate two weekly averages!
+
+```{r, warning=FALSE}
+historical_weekly_average_overall <-
+  bind_rows(
+    ## 2015-2019 period
+    weekly_deaths_2015_2019_overall %>%
+    filter(year!="average") %>%  # remove averages
+    group_by(year, week_number) %>%  # remove week 53 if it was 0 for all places  - this means there was no week 53!
+    filter(!all(number_of_deaths==0 & week_number==53)) %>%
+    ungroup %>%
+    create_week_53_data_for_years_with_52_weeks %>%
+    group_by(week_number,place_of_death) %>% 
+    summarise(
+      across(number_of_deaths, .fns = list(mean=mean,min=min,max=max)),
+      .groups = "drop"
+    ) %>% 
+    rename_all(~str_replace_all(.x, pattern = "number_of_deaths", replacement = "deaths")) %>%
+    mutate(historic_period = historic_period_depending_on_year(2020))
+    ,
+    ## 2016-2021, excluding 2020
+    bind_rows(
+      ## 2016-2019
+      weekly_deaths_2015_2019_overall %>%
+        mutate(year = as.integer(year)) %>%
+        filter(year %in% 2016:2019),
+      ## 2021
+      weekly_deaths_overall %>% 
+        rename(number_of_deaths = deaths_all_causes) %>%
+        filter(year == 2021 & age == "all" & sex == "all")
+      ) %>%
+    group_by(year, week_number) %>%  # remove week 53 if it was 0 for all places  - this means there was no week 53!
+    filter(!all(number_of_deaths==0 & week_number==53)) %>%
+    ungroup %>%
+    create_week_53_data_for_years_with_52_weeks %>%
+    group_by(week_number,place_of_death) %>% 
+    summarise(
+      across(number_of_deaths, .fns = list(mean=mean,min=min,max=max)),
+      .groups = "drop"
+    ) %>% 
+    rename_all(~str_replace_all(.x, pattern = "number_of_deaths", replacement = "deaths")) %>%
+    mutate(historic_period = historic_period_depending_on_year(2022))
+  )
+
+week_53_text <- "Due to the way ISO 8601 counts weeks, only 2015 in the 2015-2019 period had 53 weeks; averages for week 53 were computed from figures for week 53 in 2015 and week 52 for 2016-2019."
+
+# TODO: weekly averages may be too detailed for this level od subcategorising!
+
+deaths_mean_min_max <- function(data_tbl) {
+  data_tbl %>%
+    summarise(
+      deaths_mean = mean(number_of_deaths),
+      deaths_min = min(number_of_deaths),
+      deaths_max = max(number_of_deaths),
+      .groups = "drop"
+    )
+}
+
+make_2016_to_2019_and_2021_data <- function(historical_data, current_data) {
+  bind_rows(
+      historical_data %>% filter(year %in% 2016:2019),
+      current_data %>% filter(year == 2021) %>% rename(number_of_deaths = deaths_all_causes)
+    )
+}
+
+historical_weekly_average_hb <-
+  bind_rows(
+    ## 2015-2019
+    weekly_deaths_2015_2019_hb %>%
+    create_week_53_data_for_years_with_52_weeks() %>%
+    group_by(
+      week_number, place_of_death, ref_area
+    ) %>%
+    deaths_mean_min_max %>%
+    mutate(historic_period = historic_period_depending_on_year(2020))
+    ,
+    ## 2016-2019, 2021
+    make_2016_to_2019_and_2021_data(
+      historical_data = weekly_deaths_2015_2019_hb, 
+      current_data = weekly_deaths_hb
+      ) %>%
+    create_week_53_data_for_years_with_52_weeks() %>%
+    group_by(
+      week_number, place_of_death, ref_area
+    ) %>%
+    deaths_mean_min_max %>%
+    mutate(historic_period = historic_period_depending_on_year(2022))
+  )
+
+historical_weekly_average_la <-
+  bind_rows(
+    ## 2015-2019
+    weekly_deaths_2015_2019_la %>%
+    create_week_53_data_for_years_with_52_weeks() %>%
+    group_by(
+      week_number, place_of_death, ref_area
+    ) %>%
+    deaths_mean_min_max %>%
+    mutate(historic_period = historic_period_depending_on_year(2020))
+    ,
+    ## 2016-2019, 2021
+    make_2016_to_2019_and_2021_data(
+      historical_data = weekly_deaths_2015_2019_la, 
+      current_data = weekly_deaths_la
+      ) %>%
+    create_week_53_data_for_years_with_52_weeks() %>%
+    group_by(
+      week_number, place_of_death, ref_area
+    ) %>%
+    deaths_mean_min_max %>%
+    mutate(historic_period = historic_period_depending_on_year(2022))
+  )
+
+historical_weekly_average_sex_age <-
+  bind_rows(
+    ## 2015-2019
+    weekly_deaths_2015_2019_sex_age %>%
+    create_week_53_data_for_years_with_52_weeks() %>%
+    group_by(
+      week_number, place_of_death, age, sex
+    ) %>%
+    deaths_mean_min_max %>%
+    mutate(historic_period = historic_period_depending_on_year(2020))
+    ,
+    ## 2016-2019, 2021
+    make_2016_to_2019_and_2021_data(
+      historical_data = weekly_deaths_2015_2019_sex_age, 
+      current_data = weekly_deaths_sex_age
+      ) %>%
+    create_week_53_data_for_years_with_52_weeks() %>%
+    group_by(
+      week_number, place_of_death, age, sex
+    ) %>%
+    deaths_mean_min_max %>%
+    mutate(historic_period = historic_period_depending_on_year(2022))
+  )
+
+historical_weekly_average_age <-
+  bind_rows(
+    ## 2015-2019
+    weekly_deaths_2015_2019_age %>%
+    create_week_53_data_for_years_with_52_weeks() %>%
+    group_by(
+      week_number, place_of_death, age
+    ) %>%
+    deaths_mean_min_max %>%
+    mutate(historic_period = historic_period_depending_on_year(2020))
+    ,
+    ## 2016-2019, 2021
+    make_2016_to_2019_and_2021_data(
+      historical_data = weekly_deaths_2015_2019_age, 
+      current_data = weekly_deaths_age
+      ) %>%
+    create_week_53_data_for_years_with_52_weeks() %>%
+    group_by(
+      week_number, place_of_death, age
+    ) %>%
+    deaths_mean_min_max %>%
+    mutate(historic_period = historic_period_depending_on_year(2022))
+  )
+
+historical_weekly_average_sex <-
+  bind_rows(
+    ## 2015-2019
+    weekly_deaths_2015_2019_sex %>%
+    create_week_53_data_for_years_with_52_weeks() %>%
+    group_by(
+      week_number, place_of_death, sex
+    ) %>%
+    deaths_mean_min_max %>%
+    mutate(historic_period = historic_period_depending_on_year(2020))
+    ,
+    ## 2016-2019, 2021
+    make_2016_to_2019_and_2021_data(
+      historical_data = weekly_deaths_2015_2019_sex, 
+      current_data = weekly_deaths_sex
+      ) %>%
+    create_week_53_data_for_years_with_52_weeks() %>%
+    group_by(
+      week_number, place_of_death, sex
+    ) %>%
+    deaths_mean_min_max %>%
+    mutate(historic_period = historic_period_depending_on_year(2022))
+  )
+
+# TODO: include the split between historical periods here also
+compute_historical_annual_average_deaths <- function(data_tbl, ...) {
+  grouping_vars <- enquos(...)
+  data_tbl %>%
+    group_by(year, place_of_death, historic_period, !!!grouping_vars) %>%
+    summarise(  # calculate annual totals first...
+    number_of_deaths = sum(number_of_deaths), 
+    .groups = "keep"
+  ) %>%
+  ungroup(year) %>%  # remove year as grouping to average over year now
+  summarise(
+    annual_deaths_mean = mean(number_of_deaths),
+    annual_deaths_min = min(number_of_deaths),
+    annual_deaths_max = max(number_of_deaths),
+    .groups = "drop"
+  )
+}
+
+historical_annual_average_overall <-
+  bind_rows(
+      ## 2016-2019
+      weekly_deaths_2015_2019_overall %>%
+        mutate(year = as.integer(year)) %>%
+        filter(year %in% 2016:2019) %>%
+        mutate(historic_period = historic_period_depending_on_year(2020)),
+      ## 2021
+      weekly_deaths_overall %>% 
+        rename(number_of_deaths = deaths_all_causes) %>%
+        filter(year == 2021 & age == "all" & sex == "all") %>%
+        mutate(historic_period = historic_period_depending_on_year(2022))
+      ) %>%
+  compute_historical_annual_average_deaths()
+
+make_2016_to_2019_and_2021_data_with_historic_periods <- function (historical_data, current_data) {
+  bind_rows(
+    historical_data %>% 
+      filter(year %in% 2016:2019) %>%
+      mutate(historic_period = historic_period_depending_on_year(2020)),
+    current_data %>% 
+      filter(year == 2021) %>% 
+      rename(number_of_deaths = deaths_all_causes) %>%
+      mutate(historic_period = historic_period_depending_on_year(2022))
+  )
+}
+
+historical_annual_average_hb <-
+  make_2016_to_2019_and_2021_data_with_historic_periods(
+    historical_data = weekly_deaths_2015_2019_hb, 
+    current_data = weekly_deaths_hb
+      ) %>%
+  compute_historical_annual_average_deaths(ref_area)
+
+historical_annual_average_la <-
+  make_2016_to_2019_and_2021_data_with_historic_periods(
+    historical_data = weekly_deaths_2015_2019_la, 
+    current_data = weekly_deaths_la
+      ) %>%
+  compute_historical_annual_average_deaths(ref_area)
+
+
+historical_annual_average_sex_age <-
+  make_2016_to_2019_and_2021_data_with_historic_periods(
+    historical_data = weekly_deaths_2015_2019_sex_age, 
+    current_data = weekly_deaths_sex_age
+      ) %>%
+  compute_historical_annual_average_deaths(sex, age)
+
+historical_annual_average_sex <-
+  make_2016_to_2019_and_2021_data_with_historic_periods(
+    historical_data = weekly_deaths_2015_2019_sex, 
+    current_data = weekly_deaths_sex
+      ) %>%
+  compute_historical_annual_average_deaths(sex)
+
+historical_annual_average_age <-
+  make_2016_to_2019_and_2021_data_with_historic_periods(
+    historical_data = weekly_deaths_2015_2019_age, 
+    current_data = weekly_deaths_age
+      ) %>%
+  compute_historical_annual_average_deaths(age)
+```
+
+## Historical annual average by cause
+
+I can approximate this by taking the sum of the average weekly deaths for `2015-2019`; for the `2016-2019 + 2021` period this isn't readily available because NRS only publish the weekly averages alongside the weekly updated data, but not for the entire year. Therefore I'll just calculate the `2015-2019` period average for now, and a compromise `2015-2019 + 2021` average:
+
+$$\frac{5}{6}average\_deaths_{2015-2019} + \frac{1}{6}deaths_{2021}$$
+
+```{r}
+# TODO: incorporate the 2016-2019 + 2021 period
+historical_annual_average_cause_of_death_2015_2019 <-
+  historical_average_cause_of_death %>%
+  filter(historic_period == "2015-2019" & year == 2021) %>%  # this is slightly strange but some of the averages disagree, probably because the 2015-2019 data were updated in 2020, and the 2021 data were published with modified figures. NRS deaths data are truly a living document!
+  group_by(place_of_death, cause_of_death, historic_period) %>%
+  summarise(
+    annual_deaths_mean = sum(deaths_mean),
+    .groups = "drop"
+  )
+
+deaths_by_cause_2021 <-
+  weekly_cause_of_death_2021_onwards %>% 
+  filter(year == 2021) %>% 
+  group_by(place_of_death, cause_of_death) %>% 
+  summarise(deaths_2021 = sum(number_of_deaths), .groups = "drop")
+
+historical_annual_average_cause_of_death <-
+  bind_rows(
+    historical_annual_average_cause_of_death_2015_2019
+    ,
+    ## compromise figures for 2015-2019 + 2021
+    historical_annual_average_cause_of_death_2015_2019 %>%
+    filter(cause_of_death != "All") %>%
+    left_join(
+      deaths_by_cause_2021, by = c("place_of_death", "cause_of_death")
+    ) %>%
+    mutate(
+      annual_deaths_mean = (5/6 * annual_deaths_mean) + (1/6 * deaths_2021),
+      deaths_2021 = NULL,
+      historic_period = "2015-2019, 2021"
+    )
+  )
+```
+
+
+## Check weekly historic averages against NRS computed data
+
+```{r}
+weekly_deaths_overall %>%
+  filter(sex=="all" & age=="all") %>%
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%
+  left_join(historical_weekly_average_overall) %>%
+  select(year, week_number, place_of_death, deaths_nrs_past_average_all_causes, deaths_mean, historic_period) %>%
+  filter(round(deaths_nrs_past_average_all_causes) != round(deaths_mean)) %>%
+  knitr::kable(caption = "Subset of weekly deaths where calculated mean deaths 2015-2019 differed between the COVID-19 related deaths file and the weekly deaths file (i.e. all other entries had the same figures!). Week 53 was computed as the average of deaths in week 53 in 2015 and weeks 52 in 2016-2019. For all the other datasets the mean deaths computed agree!")
+```
+
+# Merge weekly deaths with historic death rates
+
+```{r}
+## compute rolling average
+merged_deaths_overall <-
+  weekly_deaths_overall %>%
+  filter(sex=="all" & age=="all") %>%
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(historical_weekly_average_overall %>% mutate(sex = "all", age = "all"),  # only merge for aggregated data b/c that's all we have!
+  by = c("place_of_death", "week_number", "sex", "age", "historic_period"))
+
+merged_deaths_hb <-
+  weekly_deaths_hb %>%
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(historical_weekly_average_hb, by = c("week_number","ref_area","place_of_death", "historic_period"))
+
+merged_deaths_la <-
+  weekly_deaths_la %>%  # use data with weekly movingincluded
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(historical_weekly_average_la, by = c("week_number","ref_area","place_of_death", "historic_period"))
+
+merged_deaths_sex_age <-
+  weekly_deaths_sex_age %>%  # use data with weekly movingincluded
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(historical_weekly_average_sex_age, by = c("place_of_death", "week_number", "sex", "age", "historic_period"))
+
+merged_deaths_sex <-
+  weekly_deaths_sex %>%
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(historical_weekly_average_sex, by = c("place_of_death", "week_number", "sex", "historic_period"))
+
+merged_deaths_age <-
+  weekly_deaths_age %>%
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(historical_weekly_average_age, by = c("place_of_death", "week_number", "age", "historic_period"))
+
+merged_deaths_cause_of_death <-
+  weekly_deaths_cause_of_death %>%
+  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+  inner_join(
+    historical_average_cause_of_death, by = c("place_of_death", "week_number", "cause_of_death", "historic_period", "year", "date_w_c")
+  )
+```
+
+
+## Weekly deaths including past weekly deaths
+
+For this dataset, we simply `bind_rows` weekly deaths by year and place of death with past weekly deaths by year and location. Note that past data for years with 52 weeks includes an entry of 0 deaths for week 53, so we'll remove them, otherwise the date computation is thrown off!
+
+```{r}
+weekly_deaths_current_and_past <-
+  bind_rows(
+    weekly_deaths_overall %>%
+    filter(sex=="all" & age=="all" & place_of_death!="All") %>%  # keep only aggregated values over sex & age
+    select(year, week_number, week_number_run_over, place_of_death, matches("deaths"), -deaths_nrs_past_average_all_causes)
+    ,
+    past_deaths_overall %>%
+      rename(deaths_all_causes = number_of_deaths) %>%
+      filter(place_of_death!="All" & year!="average") %>%  # remove aggregated entries
+      mutate(year = as.integer(year)) %>%
+      filter(!(year %in% 2016:2019 & week_number==53))  # remove week 53 entries from years 2016-2019
+  ) %>%
+  mutate(date_w_c = compute_start_date_from_week_number(week_number = week_number, year_number = year))
+```
+
+
+# Annual deaths for 2020 & 2021
+
+For visualising data using maps, we need to compute data for the entire year. Note: the non-covid and covid-related deaths in 2020 don't add up to all cause deaths due to the covid status only starting in week 12!
+
+```{r}
+# TODO: check through these to see if they compute correctly!
+
+compute_total_deaths_in_year <- function(data_tbl, ...) {
+  grouping_vars <- enquos(...)
+  data_tbl %>%
+    group_by(year, place_of_death, !!!grouping_vars) %>%
+    summarise(across(.cols = c(deaths_all_causes, deaths_covid_related, deaths_non_covid), .fns = ~sum(.x,na.rm=TRUE)), .groups = "drop") %>%  # compute sums of all types of death
+    mutate(deaths_all_causes_since_covid = deaths_covid_related + deaths_non_covid)  # compute a smaller number of all-cause deaths since covid started (over 2020, covid- and non-covid-related deaths don't add up to all-cause deaths because pre-covid deaths are included also!)
+}
+
+compute_ratio_of_annual_deaths_to_historical <- function(data_tbl) {
+  data_tbl %>%
+    mutate(
+      ratio_annual_deaths_to_historical_mean = deaths_all_causes / annual_deaths_mean,
+      ratio_annual_deaths_to_historical_min = deaths_all_causes / annual_deaths_min,
+      ratio_annual_deaths_to_historical_max = deaths_all_causes / annual_deaths_max
+    )
+}
+
+## helper function to remove rows of data where the historic period is inappropriate
+remove_invalid_historic_period_for_year <- function(data_tbl) {
+  data_tbl %>%
+    filter(!(historic_period == "2016-2019, 2021" & year < 2022))
+}
+
+total_deaths_overall <-
+  merged_deaths_overall %>%
+  compute_total_deaths_in_year() %>%
+  left_join(historical_annual_average_overall, by = c("place_of_death")) %>%
+  compute_ratio_of_annual_deaths_to_historical %>%
+  remove_invalid_historic_period_for_year()
+
+total_deaths_la <-
+  merged_deaths_la %>%
+  compute_total_deaths_in_year(ref_area) %>%
+  left_join(historical_annual_average_la, by = c("place_of_death", "ref_area")) %>%
+  compute_ratio_of_annual_deaths_to_historical
+
+total_deaths_hb <-
+  merged_deaths_hb %>%
+  compute_total_deaths_in_year(ref_area) %>%
+  left_join(historical_annual_average_hb, by = c("place_of_death", "ref_area")) %>%
+  compute_ratio_of_annual_deaths_to_historical
+
+total_deaths_sex <-
+  merged_deaths_sex %>%
+  compute_total_deaths_in_year(sex) %>%
+  left_join(historical_annual_average_sex, by = c("place_of_death", "sex")) %>%
+  compute_ratio_of_annual_deaths_to_historical
+
+total_deaths_age <-
+  merged_deaths_age %>%
+  compute_total_deaths_in_year(age) %>%
+  left_join(historical_annual_average_age, by = c("place_of_death", "age")) %>%
+  compute_ratio_of_annual_deaths_to_historical
+
+
+## bespoke computation because format is different... deaths split by cause!
+total_deaths_cause_of_death <-
+  merged_deaths_cause_of_death %>%
+  group_by(year, place_of_death, cause_of_death) %>%
+  summarise(deaths = sum(number_of_deaths), .groups="drop") %>%
+  left_join(historical_annual_average_cause_of_death, by = c("place_of_death", "cause_of_death")) %>%
+  mutate(
+    ratio_annual_deaths_to_historical_mean = deaths / annual_deaths_mean
+  )
+
+
+current_and_historical_deaths_by_cause_and_location <-
+  bind_rows(
+    ## 2020 & 2021 separately
+    total_deaths_cause_of_death %>%
+      select(year, place_of_death, cause_of_death, deaths) %>%
+      mutate(year = as.character(year)),
+    ## 2020 & 2021 averaged
+    total_deaths_cause_of_death %>%
+      select(year, place_of_death, cause_of_death, deaths) %>%
+      group_by(place_of_death,  cause_of_death) %>%
+      summarise(deaths = sum(deaths), year = "2020-2021", .groups = "drop"),
+    ## historical data
+    total_deaths_cause_of_death %>%
+      select(year, place_of_death, cause_of_death, deaths = annual_deaths_mean) %>%
+      mutate(year = "2015-2019") %>%
+      distinct
+  ) %>%
+  filter(place_of_death != "All") %>%
+  group_by(year, cause_of_death) %>%
+  mutate(proportion = deaths / sum(deaths)) %>%
+  ungroup %>%
+  arrange(year, cause_of_death)
+  
+```
+
