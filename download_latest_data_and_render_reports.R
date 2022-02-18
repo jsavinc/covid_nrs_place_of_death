@@ -29,7 +29,12 @@ all_nrs_links <-
 
 nrs_filename_pattern <- "covid-deaths-(21|22)-data.*xlsx"  # to accommodate 2022 data also once the filename changes!
 
-weekly_deaths_url_relative <- all_nrs_links[which(str_detect(all_nrs_links, pattern = nrs_filename_pattern))]  # keep only links that are probably weekly deaths
+# TODO: incorporate both weekly and monthly data?
+weekly_deaths_url_relative <- 
+  all_nrs_links[which(
+    str_detect(all_nrs_links, pattern = nrs_filename_pattern) &
+    !str_detect(all_nrs_links, pattern = "monthly")  # remove "monthly" file
+    )]  # keep only links that are probably weekly deaths
 weekly_deaths_url_absolute <- url_absolute(weekly_deaths_url_relative, base = url_nrs_weekly_deaths)
 
 ## the format changed between 2021 and 2022 for weekly deaths data, and the 2022 data no longer include 2020 figures, so we need to load the 2020 data separately from the latest available data
@@ -249,37 +254,37 @@ dir_reports <- "./reports"
 if (!dir.exists(dir_reports)) dir.create(dir_reports)
 
 render(
-  input = "./covid_nrs_place_of_death_data.Rmd",
+  input = "./covid_nrs_place_of_death_data_2022.Rmd",
   output_file = paste0("covid_nrs_place_of_death_data_",today()),
   output_dir = dir_reports,
   envir = new.env()
 )
 
 render(
-  input = "./covid_nrs_place_of_death_visualisations.Rmd",
+  input = "./covid_nrs_place_of_death_visualisations_2022.Rmd",
   output_file = paste0("covid_nrs_place_of_death_visualisations",today()),
   output_dir = dir_reports,
   envir = new.env()
 )
-
-render(
-  input = "./paper_reporting_death_at_home_increase.Rmd",
-  output_file = paste0("paper_reporting_death_at_home_increase_",today()),
-  output_dir = dir_reports,
-  envir = new.env()
-)
-
-render(
-  input = "./visualisations_for_blog.Rmd",
-  output_file = paste0("visualisations_for_blog_",today()),
-  output_dir = dir_reports,
-  envir = new.env()
-)
-
-render(
-  input = "./highlands_data_and_visualisations.Rmd",
-  output_file = paste0("highlands_data_and_visualisations_",today()),
-  output_dir = dir_reports,
-  envir = new.env()
-)
+# 
+# render(
+#   input = "./paper_reporting_death_at_home_increase.Rmd",
+#   output_file = paste0("paper_reporting_death_at_home_increase_",today()),
+#   output_dir = dir_reports,
+#   envir = new.env()
+# )
+# 
+# render(
+#   input = "./visualisations_for_blog.Rmd",
+#   output_file = paste0("visualisations_for_blog_",today()),
+#   output_dir = dir_reports,
+#   envir = new.env()
+# )
+# 
+# render(
+#   input = "./highlands_data_and_visualisations.Rmd",
+#   output_file = paste0("highlands_data_and_visualisations_",today()),
+#   output_dir = dir_reports,
+#   envir = new.env()
+# )
 
