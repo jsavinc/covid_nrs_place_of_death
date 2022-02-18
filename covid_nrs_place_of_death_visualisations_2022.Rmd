@@ -266,6 +266,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_annu
 This graph shows each of the causes of death divided by place of death - e.g. what proportion of cancer deaths happened at home vs hospital over time?
 
 ```{r}
+# TODO: fix causes of deaths and reorder by number of deaths!
 figure_cause_of_death_annual_proportion_by_place <-
   current_and_historical_deaths_by_cause_and_location %>%
   filter(!cause_of_death %in% c("All")) %>%
