@@ -190,7 +190,6 @@ weekly_deaths_la <-
   pivot_wider(names_from = cause_of_death, values_from = number_of_deaths) %>%   # make separate columns for causes of death figures
   mutate(deaths_all_causes = deaths_non_covid + deaths_covid_related) %>%  # compute all cause deaths from the other two figures reported
   set_covid_and_non_covid_deaths_to_zero_before_reporting_started()
-              quiet = FALSE)
 
 weekly_deaths_hb <- 
   read_excel(files_weekly_deaths$hb, sheet = 2, skip = 2) %>% 
@@ -328,28 +327,58 @@ weekly_cause_of_death_2021_onwards <-
 
 Historical here refers to the 2015-2019 period for 2020 & 2021, and 2016-2021 (skipping 2020) for 2022. There is another 'historical' dataset, which includes cause of death figures for 2020.
 
+In the `2015-2019` period there were no Covid-19 deaths, so the historical average should be `NA`, which can possibly be interpreted as 0 for the purposes of comparing a year to the historical average.
+For the `2016-2019, 2021` period the average number of covid deaths should be equivalent to the deaths in 2021 - we wouldn't want to make an average between 4 years of 0 deaths and one year with any deaths! Similarly if the period were `2017-2019, 2021-2022`, we would compute the average for 2021-2022, and so on.
+
 ```{r}
+## this is an ugly hack - we set average weekly deaths due to C19 to NA for 2021
+## and we set the average covid deaths for 2015-2019, 2021 to the same as in 2021
+## however, for the latter, we set the dates to 2022
+average_weekly_covid_deaths_2021_onwards <-
+  bind_rows(
+    ## set 2021 averages to NA
+    weekly_cause_of_death_2021_onwards %>%
+    filter(cause_of_death == "COVID-19" & year == 2021) %>%
+    mutate(number_of_deaths = NA_real_) %>%
+    rename(deaths_mean = number_of_deaths),
+    ## use 2021 weekly deaths as 2022 historic average
+    weekly_cause_of_death_2021_onwards %>%
+    filter(cause_of_death == "COVID-19" & year == 2021) %>%
+    mutate(year = 2022) %>%
+    select(-c(week_number_run_over, date_w_c)) %>%
+    rename(deaths_mean = number_of_deaths) %>%
+    inner_join(weekly_cause_of_death_2021_onwards %>% 
+                select(year, week_number, week_number_run_over, date_w_c, place_of_death, cause_of_death)
+              )
+  ) %>%
+  mutate(historic_period = historic_period_depending_on_year(year))
+
 historical_average_cause_of_death_2021_onwards <-
-  map_dfr(
-    .x = cell_ranges_for_causes_of_death_data,
-    .f = ~readxl::read_excel(files_weekly_deaths$main_report, sheet = sheet_cause_of_death_data, range = .x), 
-    .id = "place_of_death"
-  ) %>%
-  janitor::clean_names() %>%
-  rename(year = registration_year, date_w_c = week_beginning) %>%
-  select(place_of_death, year, week_number, date_w_c, matches("five_year_average")) %>%
-  pivot_longer(cols = 5:ncol(.), names_to = "name", values_to = "deaths_mean") %>%
-  mutate(
-    year = as.integer(year),
-    cause_of_death = str_remove_all(name, "_five_year_average|_deaths"),
-    cause_of_death = return_pretty_cause_of_death(cause_of_death),
-    cause_of_death = if_else(cause_of_death == "All causes", "All", cause_of_death),
-    date_w_c = as.Date(date_w_c),
-    week_number_run_over = compute_week_run_over(week_number, year, start_year = 2020),  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
-    historic_period = historic_period_depending_on_year(year)
-  ) %>%
-  select(-name) %>%
-  drop_na(deaths_mean)  # remove blank entries - these are for the current year but for dates in the future
+  bind_rows(
+    ## the hacked averages for 2021 and 2022 above
+    average_weekly_covid_deaths_2021_onwards,
+    ## extract averages from most recent file for 2021 onwards
+    map_dfr(
+      .x = cell_ranges_for_causes_of_death_data,
+      .f = ~readxl::read_excel(files_weekly_deaths$main_report, sheet = sheet_cause_of_death_data, range = .x), 
+      .id = "place_of_death"
+    ) %>%
+    janitor::clean_names() %>%
+    rename(year = registration_year, date_w_c = week_beginning) %>%
+    select(place_of_death, year, week_number, date_w_c, matches("five_year_average")) %>%
+    pivot_longer(cols = 5:ncol(.), names_to = "name", values_to = "deaths_mean") %>%
+    mutate(
+      year = as.integer(year),
+      cause_of_death = str_remove_all(name, "_five_year_average|_deaths"),
+      cause_of_death = return_pretty_cause_of_death(cause_of_death),
+      cause_of_death = if_else(cause_of_death == "All causes", "All", cause_of_death),
+      date_w_c = as.Date(date_w_c),
+      week_number_run_over = compute_week_run_over(week_number, year, start_year = 2020),  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
+      historic_period = historic_period_depending_on_year(year)
+    ) %>%
+    select(-name) %>%
+    drop_na(deaths_mean)  # remove blank entries - these are for the current year but for dates in the future
+  )
 ```
 
 ### Data from 2020 & 2021
@@ -975,8 +1004,9 @@ merged_deaths_age <-
 merged_deaths_cause_of_death <-
   weekly_deaths_cause_of_death %>%
   mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
-  inner_join(
-    historical_average_cause_of_death, by = c("place_of_death", "week_number", "cause_of_death", "historic_period", "year", "date_w_c")
+  left_join(  # left_join so that the historical Covid-19 rates are blank!
+    historical_average_cause_of_death %>% select(-week_number_run_over), 
+    by = c("place_of_death", "week_number", "cause_of_death", "historic_period", "year", "date_w_c")
   )
 ```
 
@@ -1070,38 +1100,31 @@ total_deaths_age <-
 ## Annual deaths by cause of death
 
 ```{r}
-# TODO: work out what to do about this - is it even used?
-
-
 ## bespoke computation because format is different... deaths split by cause!
-## Note: this isn't appropriate for 2022 yet because we don't have the annual death figure yet
 total_deaths_cause_of_death <-
   merged_deaths_cause_of_death %>%
   group_by(year, place_of_death, cause_of_death, historic_period) %>%
-  summarise(deaths = sum(number_of_deaths), .groups="drop") %>%
+  summarise(deaths = sum(number_of_deaths, na.rm = TRUE), .groups="drop") %>%
   left_join(historical_annual_average_cause_of_death, by = c("place_of_death", "cause_of_death", "historic_period")) %>%
   mutate(
-    ratio_annual_deaths_to_historical_mean = deaths / annual_deaths_mean
-  ) %>%
-  filter(year != 2022)
-
+    ratio_annual_deaths_to_historical_mean = if_else(  # only compute this for complete years, we can't compare 2022 to annual average!
+      condition = year == 2022,
+      true = NA_real_,
+      false = deaths / annual_deaths_mean
+    )
+  )
 
 current_and_historical_deaths_by_cause_and_location <-
   bind_rows(
-    ## 2020 & 2021 separately
+    ## 2020-2022 separately
     total_deaths_cause_of_death %>%
       select(year, place_of_death, cause_of_death, deaths) %>%
       mutate(year = as.character(year)),
-    ## 2020 & 2021 averaged
-    total_deaths_cause_of_death %>%
-      select(year, place_of_death, cause_of_death, deaths) %>%
-      group_by(place_of_death,  cause_of_death) %>%
-      summarise(deaths = sum(deaths), year = "2020-2021", .groups = "drop"),
     ## historical data
-    total_deaths_cause_of_death %>%
+    total_deaths_cause_of_death %>%  # these are for 2020-2021, but we use the historical mean
+      filter(year == 2020) %>%
       select(year, place_of_death, cause_of_death, deaths = annual_deaths_mean) %>%
-      mutate(year = "2015-2019") %>%
-      distinct
+      mutate(year = "2015-2019")
   ) %>%
   filter(place_of_death != "All") %>%
   group_by(year, cause_of_death) %>%
@@ -1363,6 +1386,37 @@ merged_deaths_sex_age <-
     num_weeks_to_average = 4)
 ```
 
+# Annual deaths by place, 2015-2022
+
+```{r}
+merged_proportions_of_deaths_by_place <-
+  bind_rows(
+    ## 2015-2019
+    weekly_deaths_2015_2019_overall %>% 
+    group_by(year, place_of_death) %>% summarise(number_of_deaths = sum(number_of_deaths), .groups="drop") %>%
+    filter(place_of_death != "All" & !is.na(as.integer(year))) %>%
+    group_by(year) %>%
+    mutate(
+      total_deaths = sum(number_of_deaths)
+    ) %>%
+    ungroup %>%
+    mutate(
+      proportion_of_total = number_of_deaths / total_deaths, 
+      year=as.integer(year)
+      ),
+    ## 2020 onwards
+    total_deaths_overall %>%
+    select(year, place_of_death, number_of_deaths = deaths_all_causes) %>%
+    distinct %>%  # remove duplicate entries for 2022 due to having multiple possible historic periods
+    filter(place_of_death != "All") %>%
+    group_by(year) %>%
+    mutate(
+      total_deaths = sum(number_of_deaths)
+    ) %>%
+    ungroup %>%
+    mutate(proportion_of_total = number_of_deaths / total_deaths)
+  )
+```
 
 # TODO: other thigns like excess death & historical rates by geography
 
