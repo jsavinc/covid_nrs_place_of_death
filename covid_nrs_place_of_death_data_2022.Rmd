@@ -1418,6 +1418,60 @@ merged_proportions_of_deaths_by_place <-
   )
 ```
 
+##
+
+## By HB/LA
+
+```{r}
+proportions_of_deaths_by_place_by_geography <-
+  bind_rows(
+    ## historic deaths
+    bind_rows(  # merge HB & LA past deaths, and tag them appropriately
+      weekly_deaths_2015_2019_hb %>% mutate(geography = "hb"),
+      weekly_deaths_2015_2019_la %>% mutate(geography = "la")
+    ) %>%
+    group_by(year, place_of_death, ref_area, geography) %>% summarise(number_of_deaths = sum(number_of_deaths, na.rm = TRUE), .groups="drop") %>%  # compute the total number of yearly deaths by place of death & geography
+    filter(place_of_death != "All" & !is.na(as.integer(year))) %>%  # remove blank/irrelevant entries
+    group_by(year, ref_area, geography) %>%
+    mutate(
+      total_deaths = sum(number_of_deaths)  # compute total annual deaths across place of death, but within each geographical area & year
+    ) %>%
+    ungroup %>%
+    mutate(proportion_of_total = number_of_deaths / total_deaths, year=as.integer(year))  # compute proportion of deaths in any palce relative to total annual deaths in geographical area
+    ,
+    ## current deaths
+    bind_rows(  # merge HB & LA past deaths, and tag them appropriately
+      total_deaths_hb %>% mutate(geography = "hb"),
+      total_deaths_la %>% mutate(geography = "la")
+    ) %>%
+    select(year, place_of_death, number_of_deaths = deaths_all_causes, geography, ref_area) %>%  # keep only relevant columns & rename deaths due to all causes
+    group_by(year, place_of_death, ref_area, geography) %>% summarise(number_of_deaths = sum(number_of_deaths), .groups="drop") %>%  # compute the total number of yearly deaths by place of death & geography
+    filter(place_of_death != "All" & !is.na(as.integer(year))) %>%  # remove blank/irrelevant entries
+    group_by(year, ref_area, geography) %>%
+    mutate(
+      total_deaths = sum(number_of_deaths)  # compute total annual deaths across place of death, but within each geographical area & year
+    ) %>%
+    ungroup %>%
+    mutate(proportion_of_total = number_of_deaths / total_deaths, year=as.integer(year))  # compute proportion of deaths in any palce relative to total annual deaths in geographical area
+  )
+
+## write to csv
+proportions_of_deaths_by_place_by_geography %>%
+  write_csv(file = paste0(dir_outputs,"/proportions_of_deaths_by_place_by_geography.csv"))
+```
+
+# Deaths by cause, ordered by number of deaths in 2020
+
+```{r}
+## get "canonical" order for causes of death in 2020
+order_of_causes_of_death <- 
+  total_deaths_cause_of_death %>% 
+  filter(year == 2020 & place_of_death == "All") %>% 
+  arrange(desc(deaths)) %>% 
+  pull(cause_of_death)
+```
+
+
 # TODO: other thigns like excess death & historical rates by geography
 
 ```{r}
