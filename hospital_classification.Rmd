@@ -121,7 +121,6 @@ hospital_classification %>%
   kable(caption = "Acute hospitals by sub-classification.")
 ```
 
-
 # Conclusion
 
 It looks like for our purposes, `Acute` hospitals as per above are the best fit - they capture all general hospitals. Just using the `General hospital` classification would omit a few hospitals in `Other` that are also classed as `Acute`, and would also include `Hospitals for sick children` unless  sub-classifications were used.
@@ -131,4 +130,40 @@ It looks like for our purposes, `Acute` hospitals as per above are the best fit 
 
 ```{r}
 write_csv(hospital_classification, file = "./hospital_classification/hospital_classification.csv")
+
+## acute hospitals only
+write_csv(
+  hospital_classification %>% filter(acute), 
+  file = "./hospital_classification/hospital_classification_acute_only.csv")
 ```
+
+# Further considerations
+
+## Hospitals without A&E units
+
+On 24 January 2022, Andrew Gasiorowski contacted me to check if we should include hospitals the following hospitals which no longer have A&E units and only MIU (minor injuries units). We could remove these from the 'acute hospitals' list since they don't :
+
+* Golden Jubilee
+* New Stobhill 
+* New Victoria
+
+All of the above hospitals are classed as `Other - Miscellaneous hospitals in which function and/or costs are not comparable with other hospitals`.
+
+MIU is likely not the place a person might have gone to seek help for COVID-related symptoms, however, it's possible that some hospitalisations staretd with a MIU visit, e.g. for falls
+
+This may not be a big issue if the MIUs are close to A&Es, in which case the A&Es are a good approximation in terms of location.
+
+
+```{r}
+hospital_classification %>% 
+  filter(acute) %>%
+  filter(str_detect(org_loc, regex("stobhill|new victoria|jubilee", ignore_case = TRUE)))
+```
+
+
+# Session info
+
+```{r}
+sessionInfo()
+```
+
