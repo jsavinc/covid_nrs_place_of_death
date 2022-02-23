@@ -40,6 +40,9 @@ library(openxlsx)  # for creating xlsx files
 library(knitr)  # for displaying tables in rmd
 library(lemon)  # for showing axis & axis labels in every facet in ggplot
 library(ggtext)  # for showing coloured title text
+
+## load functions
+source("./functions.R")
 ```
 
 
@@ -244,7 +247,10 @@ figure_proportion_annual_deaths_by_place <-
   scale_y_continuous(label = function(x) scales::percent(x = x, accuracy = 1)) +
   scale_colour_viridis_d(option="C") +
   # theme_minimal() +
-  theme(legend.position = "top", plot.caption = element_text(size = 10, colour = "gray60")) +
+  theme(
+    legend.position = "top", 
+    plot.caption = element_text(size = 10, colour = "gray60")
+    ) +
   labs(
     x = "Year", y = "Proportion of yearly deaths (%)",
     colour = NULL,
@@ -425,7 +431,6 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cumulative_week
 This graph shows each of the causes of death divided by place of death - e.g. what proportion of cancer deaths happened at home vs hospital over time?
 
 ```{r}
-# TODO: fix causes of deaths and reorder by number of deaths!
 figure_cause_of_death_annual_proportion_by_place <-
   current_and_historical_deaths_by_cause_and_location %>%
   filter(!cause_of_death %in% c("All")) %>%
@@ -459,6 +464,114 @@ figure_cause_of_death_annual_proportion_by_place <-
 figure_cause_of_death_annual_proportion_by_place %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cause_of_death_annual_proportion_by_place", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 20, height = 15, dpi = 300, units = "cm")
 ```
+
+
+## Weekly proportion of deaths by place
+
+This is the same idea as above, but looking at weekly proportions of cause of death by place - where did deaths due to different causes happen, and did their proportion vary over the year (e.g. seasonal effects)
+
+```{r}
+figure_cause_of_death_weekly_proportion_by_place <-
+  merged_deaths_cause_of_death %>%
+  filter(!cause_of_death %in% c("All")) %>%
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home", "Other", "All"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+  mutate(
+   cause_of_death = factor(cause_of_death %>% str_wrap(., width = 15), levels = order_of_causes_of_death %>% str_wrap(., width = 15)),  # needed to allow converting to a number for plotting the line segments; str_wrap breaks the text up into lines
+  ) %>%
+  group_by(year, week_number, cause_of_death, place_of_death != "All") %>%
+  mutate(proportion_weekly_total = number_of_deaths / sum(number_of_deaths)) %>%
+  ungroup %>%
+  filter(place_of_death != "All") %>%
+  ggplot(aes(x = date_w_c, y = proportion_weekly_total, colour = place_of_death, group = place_of_death)) +
+  geom_line() +
+  annotate(geom = "text", x=ymd("2021-01-14"), y=0.95, label = "2021", hjust = 0, colour = "grey40") +
+  annotate(geom = "text", x=ymd("2022-01-14"), y=0.95, label = "'22", hjust = 0, colour = "grey40") +
+  geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2021), linetype = "dashed", colour="grey50") +  # start of 2021
+  geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2022), linetype = "dashed", colour="grey50") +  # start of 2022
+  facet_rep_wrap(~cause_of_death, repeat.tick.labels = TRUE, ncol = 2) +
+  scale_colour_viridis_d() +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1)) +
+  labs(
+    x = "Year",
+    y = "Percentage weekly deaths by place (%)",
+    # title = "In 2020 and 2021 the share of deaths at <b style='color:#31688E;'>Home</b> increased for all causes.\nDuring the pandemic, more cancer deaths happened at <b style='color:#31688E;'>Home</b> than in <b style='color:#440154;'>Hospital</b>.",
+    subtitle = paste0("\n* ",only_2022_text),
+    caption = paste0(c("The 2015-2019 figures are average weekly deaths.",death_registrations_text,source_nrs_text), collapse = "\n")
+  ) +
+  theme(
+    panel.spacing = unit(1, units = "lines"),
+    legend.position = "top", legend.title = element_blank(),
+    plot.title = element_textbox_simple(),  # to render the html in the title
+    axis.text.x = element_text(angle = 60, colour = "gray40", vjust=1, hjust=1)
+    ) +
+  guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
+  NULL
+
+figure_cause_of_death_weekly_proportion_by_place %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cause_of_death_weekly_proportion_by_place", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 25, height = 30, dpi = 300, units = "cm")
+```
+
+### With 2015-2019 context also
+
+```{r}
+figure_weekly_proportion_of_death_by_place_with_2015_2019 <-
+  bind_rows(
+    ## 2020 onwards
+    merged_deaths_cause_of_death %>%
+      mutate(
+        year = as.character(year),
+        week_number_run_over = week_number_run_over + 53  # push 2020+ forward by a year, to 'squeeze' in the historic period year
+        )
+    ,
+    ## 2015-2019 data, weekly averages make up one "year"
+    merged_deaths_cause_of_death %>%
+      filter(year==2020) %>%
+      mutate(
+        year = "2015-2019",
+        number_of_deaths = deaths_mean
+        )
+  ) %>%
+  mutate(year = factor(year, levels = c("2015-2019",as.character(2020:2022)))) %>%
+  filter(!cause_of_death %in% c("All")) %>%
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home", "Other", "All"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+  mutate(
+   cause_of_death = factor(cause_of_death %>% str_wrap(., width = 15), levels = order_of_causes_of_death %>% str_wrap(., width = 15)),  # needed to allow converting to a number for plotting the line segments; str_wrap breaks the text up into lines
+  ) %>%
+  group_by(year, week_number, cause_of_death, place_of_death != "All") %>%
+  mutate(proportion_weekly_total = number_of_deaths / sum(number_of_deaths)) %>%
+  ungroup %>%
+  filter(place_of_death != "All") %>%
+  ggplot(aes(x = week_number_run_over, y = proportion_weekly_total, colour = place_of_death, group = place_of_death)) +
+  geom_line() +
+  # annotate(geom = "text", x=1+1, y=0.95, label = "2015-19", hjust = 0, colour = "grey40") +
+  # annotate(geom = "text", x=54+1, y=0.95, label = "2020", hjust = 0, colour = "grey40") +
+  # annotate(geom = "text", x=107+1, y=0.95, label = "2021", hjust = 0, colour = "grey40") +
+  # annotate(geom = "text", x=159+1, y=0.95, label = "'22", hjust = 0, colour = "grey40") +
+  facet_rep_wrap(~cause_of_death, repeat.tick.labels = TRUE, ncol = 2) +
+  scale_colour_viridis_d() +
+  scale_x_continuous(breaks = c(1,54,107,159), labels = c("2015-2019",as.numeric(2020:2022))) +
+  scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1)) +
+  labs(
+    x = "Year",
+    y = "Percentage weekly deaths by place (%)",
+    subtitle = paste0("\n* ",only_2022_text),
+    caption = paste0(c("The 2015-2019 figures are average weekly deaths",death_registrations_text,source_nrs_text), collapse = "\n")
+  ) +
+  theme(
+    panel.spacing = unit(1, units = "lines"),
+    legend.position = "top", legend.title = element_blank(),
+    plot.title = element_textbox_simple(),  # to render the html in the title
+    axis.text.x = element_text(angle = 60, colour = "gray40", vjust=1, hjust=1)
+    ) +
+  guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
+  NULL
+
+figure_weekly_proportion_of_death_by_place_with_2015_2019 %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cause_of_death_weekly_proportion_by_place_2015_2019", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 25, height = 30, dpi = 300, units = "cm")
+```
+
+
 
 ## Weekly deaths by cause, at home
 
