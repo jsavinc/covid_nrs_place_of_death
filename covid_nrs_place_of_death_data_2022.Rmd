@@ -597,49 +597,6 @@ cases_la <- read_csv(
 ```
 
 
-# Calculate case counts: weekly counts to match weekly death reporting
-
-Note: the cumulative case counts have already been calculated, we just need to subset them to match the weeks. This is not trivial - the death counts cover an entire week starting from the "w/c date"; the cumulative cases for that week could be taken either at the start, the end of the week, or the start of the following week even!
-
-However, when calculating weekly positive cases we can simply take the maximum of that week's cumulative count - that will be the cumulative count at the end of the week!
-
-Note also that the `crude_rate_positive_per100k` represents the cumulative rate!
-
-```{r}
-weekly_covid_cases_hb <-
-  cases_hb %>%
-  group_by(year, week_number, ref_area) %>%
-  summarise(
-    weekly_positive = sum(daily_positive),
-    cumulative_positive = max(cumulative_positive),
-    crude_rate_positive_per100k = max(crude_rate_positive),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
-    week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)
-    )
-
-## extract Scotland-wide data and remove from HB split
-weekly_covid_cases_overall <- weekly_covid_cases_hb %>% filter(ref_area=="Scotland")
-weekly_covid_cases_hb <- weekly_covid_cases_hb %>% filter(ref_area!="Scotland")
-
-weekly_covid_cases_la <-
-  cases_la %>%
-  group_by(year, week_number, ref_area) %>%
-  summarise(
-    weekly_positive = sum(daily_positive),
-    cumulative_positive = max(cumulative_positive),
-    crude_rate_positive_per100k = max(crude_rate_positive),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
-    week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)
-    )
-```
-
-
 # Historical averages, minima & maxima
 
 Due to the counting of weeks, most years have 52 weeks with some years (2015 & 2020) having 53. Therefore we need to decide how to deal with week 53 in 2020 since only 2015 has a corresponding weekly count. The solution used here is to calculate a weekly rate for week 53 from week 53 in 2015, and week 52 in 2016-2019 - this represents the "last week of the year", which includes December 31st.
@@ -1230,6 +1187,70 @@ order_hb_by_population <-
   .$hb
 ```
 
+
+# Calculate case counts: weekly counts to match weekly death reporting
+
+Note: the cumulative case counts have already been calculated, we just need to subset them to match the weeks. This is not trivial - the death counts cover an entire week starting from the "w/c date"; the cumulative cases for that week could be taken either at the start, the end of the week, or the start of the following week even!
+
+However, when calculating weekly positive cases we can simply take the maximum of that week's cumulative count - that will be the cumulative count at the end of the week!
+
+Note also that the `crude_rate_positive_per100k` represents the cumulative rate!
+
+## Calculating population size of areas
+
+Update 7 Mr 2022: at some point the file structure changed, and the crude positive rate per 100k was removed... however, the crude mortality rate remains, so we can infer the population from the `crude_rate_deaths` and `cumulative_deaths` figures, and compute the `crude_rate_positive` from those.
+
+The trouble is that early on in the data, when `cumulative_deaths` and `crude_rate_deaths` are both 0, we can't infer the population size. If the population size is constant in the data, we can calculate it for each `ref_area` (HB or LA) and use that as a lookup table.
+
+It looks like the same population estimate was used for data 2020-2022, and it is the **mid-year 2019 estimate**.
+
+## Importing & calculating case trends
+
+```{r}
+weekly_covid_cases_hb <-
+  cases_hb %>%
+  left_join(
+    population_estimate_hb_2019 %>%
+    add_scotland_total_to_population_estimate %>%
+    select(ref_area = hb, population_size = all_ages)
+    ) %>%
+  group_by(year, week_number, ref_area) %>%
+  summarise(
+    weekly_positive = sum(daily_positive, na.rm = TRUE),
+    cumulative_positive = max(cumulative_positive, na.rm = TRUE),
+    # crude_rate_positive_per100k = max(crude_rate_positive),  # this column is no longer in the data, so we compute it below...
+    crude_rate_positive_per100k = max(cumulative_positive / population_size * 1e5, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
+    week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)
+    )
+
+## extract Scotland-wide data and remove from HB split
+weekly_covid_cases_overall <- weekly_covid_cases_hb %>% filter(ref_area=="Scotland")
+weekly_covid_cases_hb <- weekly_covid_cases_hb %>% filter(ref_area!="Scotland")
+
+weekly_covid_cases_la <-
+  cases_la %>%
+  left_join(
+    population_estimate_la_2019 %>%
+    add_scotland_total_to_population_estimate %>%
+    select(ref_area = la, population_size = all_ages)
+    ) %>%
+  group_by(year, week_number, ref_area) %>%
+  summarise(
+    weekly_positive = sum(daily_positive, na.rm = TRUE),
+    cumulative_positive = max(cumulative_positive, na.rm = TRUE),
+    # crude_rate_positive_per100k = max(crude_rate_positive),  # this column is no longer in the data, so we compute it below...
+    crude_rate_positive_per100k = max(cumulative_positive / population_size * 1e5, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
+    week_number_run_over = if_else(year == 2021, 53L + week_number, week_number)
+    )
+```
 
 # Comparisons of annual rates with current rates
 

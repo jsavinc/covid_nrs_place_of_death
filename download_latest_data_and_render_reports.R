@@ -89,6 +89,10 @@ if (file.exists(file_historical_data_sources)) {
   )
 }
 
+## Case trend data from the following pages
+## Daily COVID-19 Cases in Scotland, subsection Daily Case Trends By...:
+## LA: https://www.opendata.nhs.scot/dataset/covid-19-in-scotland/resource/427f9a25-db22-4014-a3bc-893b68243055
+## HB: https://www.opendata.nhs.scot/dataset/covid-19-in-scotland/resource/2dd8534b-0a6f-4744-9253-9565d62f96c2
 
 if (file.exists(file_case_trends_data_sources)) {
   table_of_case_trends_data_sources <- read_csv(file = file_case_trends_data_sources)
