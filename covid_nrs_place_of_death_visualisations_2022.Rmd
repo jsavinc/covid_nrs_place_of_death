@@ -100,6 +100,9 @@ vertical_scale_differs_between_panels_text <- "Note: vertical axis not on the sa
 
 # removed_other_category_text <- glue::glue("Excluding 'Other' institutional place of death, N={merged_deaths_overall %>% filter(sex == 'all' & age == 'all' & place_of_death == 'Other') %>% .$deaths_all_causes %>% sum} for weeks 1-{max(merged_deaths_overall %>% filter(year==2020) %>% .$week_number)} in 2020 and 1-{max(merged_deaths_overall %>% filter(year==2021) %>% .$week_number)} in 2021.")
 removed_other_category_text <- glue::glue("Excluding 'Other' institutional place of death.")
+
+historic_period_2015_2019_text <- "Historic mean & range for 2015-2019 throughout."
+historic_period_2022_text <- "2020-21 use 2015-2019 historic mean & range; 2022 uses 2016-2019 & 2021."
 ```
 
 ## Function to save files to multiple formats
@@ -216,7 +219,7 @@ figure_place_of_death_home_only <-
   labs(x = NULL,
        y = "Deaths (N)",
        subtitle = date_range_text,
-       caption = paste0(c(death_registrations_text,removed_other_category_text,source_nrs_text), collapse="\n")
+       caption = paste0(c(death_registrations_text,historic_period_2022_text,source_nrs_text), collapse="\n")
        ) +
   ## annotate historic range
   annotate(geom="text",x = compute_start_date_from_week_number(week_number = 20, year_number = 2020), y = 50, label = "Historic range (min & max)", colour = "grey20") +
@@ -230,6 +233,73 @@ figure_place_of_death_home_only <-
 figure_place_of_death_home_only %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death_home_only", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 18, height = 14, dpi = 300, units = "cm")
 ```
+
+### Home deaths with 2015-2019 historic period means & range only
+
+```{r}
+merged_deaths_overall_2015_2019_historic_period <-
+  bind_rows(
+    ## pre-2022 data
+    merged_deaths_overall %>% filter(year < 2022),
+    ## 2022 data
+    merged_deaths_overall %>%
+      filter(year >= 2022) %>%  # 2022 or later!?
+      select(-matches("deaths\\_mean|deaths\\_min|deaths\\_max")) %>%  # remove data using NRS historic period
+      mutate(historic_period = "2015-2019") %>%  # join the previous hsitoric period data instead
+      left_join(historical_weekly_average_overall, by = c("historic_period","week_number","place_of_death")) %>%
+      compute_moving_average_for_current_data(  # not strictly required here but will be easier to apply in other places if included
+        current_data = ., 
+        historical_data = 
+          weekly_deaths_2015_2019_overall %>% mutate(year=as.integer(year)) %>% drop_na(year),  # remove the entries with 'average' for year
+        num_weeks_to_average = 4)
+  )
+
+
+figure_place_of_death_home_2015_2019_historic_period <-
+  merged_deaths_overall_2015_2019_historic_period %>%
+  filter(sex == "all" & age == "all") %>%
+  filter(place_of_death %in% c("Home & other non-institution")) %>%  # home death only
+  mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
+  pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
+               names_to = "deaths_type", values_to = "deaths") %>% 
+  ggplot(aes(x = date_w_c)) +
+  geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2021), linetype = "dashed", colour="grey50") +  # start of 2021
+  geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2022), linetype = "dashed", colour="grey50") +  # start of 2022
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
+  geom_line(aes(y = deaths, colour = deaths_type)) +
+  geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
+  facet_grid(~place_of_death) +
+  scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+                      labels = c("All deaths", 
+                                 "Non Covid-19 deaths"),
+                      guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+                      ) +
+  theme(
+    legend.position = "top",
+    legend.title = element_blank(),
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    plot.margin = margin(5, 15, 5, 5),
+    axis.text.x = element_text(angle = 60, colour = "gray40", vjust=1, hjust=1)
+  ) +
+  labs(x = NULL,
+       y = "Deaths (N)",
+       subtitle = date_range_text,
+       caption = paste0(c(death_registrations_text,historic_period_2015_2019_text,source_nrs_text), collapse="\n")
+       ) +
+  ## annotate historic range
+  annotate(geom="text",x = compute_start_date_from_week_number(week_number = 20, year_number = 2020), y = 50, label = "Historic range (min & max)", colour = "grey20") +
+  annotate(geom="curve",x = compute_start_date_from_week_number(week_number = 29, year_number = 2020), xend = compute_start_date_from_week_number(week_number = 33, year_number = 2020), y = 65, yend = 210, curvature = 0.20, colour = "#4477aa", alpha = 0.5, arrow = arrow(length = unit(0.2, "cm"))) +
+  annotate(geom="text", x = compute_start_date_from_week_number(week_number = 20, year_number = 2020), y = 100, label = "Historic mean", colour = "grey20") +
+  annotate(geom="curve",x = compute_start_date_from_week_number(week_number = 22, year_number = 2020), xend = compute_start_date_from_week_number(week_number = 25, year_number = 2020), y = 115, yend = 270, curvature = 0.20, colour = "grey20", linetype="dashed", arrow = arrow(length = unit(0.2, "cm"))) +
+  annotate(geom = "text", x=ymd("2021-01-07"), y=30, label = "2021", hjust = 0, colour = "grey40") +
+  annotate(geom = "text", x=ymd("2022-01-07"), y=30, label = "2022", hjust = 0, colour = "grey40") +
+  NULL
+
+figure_place_of_death_home_2015_2019_historic_period %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death_home_2015-2019_range", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 18, height = 14, dpi = 300, units = "cm")
+```
+
 
 # Proportion annual deaths by place
 
