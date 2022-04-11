@@ -30,11 +30,19 @@ all_nrs_links <-
 nrs_filename_pattern <- "covid-deaths-(21|22)-data.*xlsx"  # to accommodate 2022 data also once the filename changes!
 
 # TODO: incorporate both weekly and monthly data?
-weekly_deaths_url_relative <- 
-  all_nrs_links[which(
-    str_detect(all_nrs_links, pattern = nrs_filename_pattern) &
-    !str_detect(all_nrs_links, pattern = "monthly")  # remove "monthly" file
-    )]  # keep only links that are probably weekly deaths
+weekly_deaths_url_relative <- # keep only links that are probably weekly deaths
+  tail(  # take last entry (n=1)
+    sort(  # sort so that last entry has the highest week number
+      unique(  # on some occasions, duplicate urls are extracted
+        all_nrs_links[which(
+          str_detect(all_nrs_links, pattern = nrs_filename_pattern) &
+          !str_detect(all_nrs_links, pattern = "monthly")  # remove "monthly" file
+          )])
+      ),
+    n = 1
+  )
+
+
 weekly_deaths_url_absolute <- url_absolute(weekly_deaths_url_relative, base = url_nrs_weekly_deaths)
 
 ## the format changed between 2021 and 2022 for weekly deaths data, and the 2022 data no longer include 2020 figures, so we need to load the 2020 data separately from the latest available data
