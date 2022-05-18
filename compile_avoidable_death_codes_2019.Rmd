@@ -134,7 +134,7 @@ avoidable_deaths <-
   mutate(
     treatable = case_when(  # make more explicit the treatable/preventable distinction
       str_detect(treatable, pattern = "50") ~ 0.5,
-      str_detect(treatable, pattern = "\\*") ~ 1,
+      str_detect(treatable, pattern = "\\•") ~ 1,
       TRUE ~ 0
     ),
     preventable = case_when(
