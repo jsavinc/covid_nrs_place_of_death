@@ -42,7 +42,6 @@ weekly_deaths_url_relative <- # keep only links that are probably weekly deaths
     n = 1
   )
 
-
 weekly_deaths_url_absolute <- url_absolute(weekly_deaths_url_relative, base = url_nrs_weekly_deaths)
 
 ## the format changed between 2021 and 2022 for weekly deaths data, and the 2022 data no longer include 2020 figures, so we need to load the 2020 data separately from the latest available data
