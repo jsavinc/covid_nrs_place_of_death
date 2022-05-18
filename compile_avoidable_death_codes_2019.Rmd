@@ -144,6 +144,9 @@ avoidable_deaths <-
     ),
   ) %>%
   relocate(group, condition_group_and_cause, original_codes)
+
+## all codes should be treatable, preventable, or 50-50
+avoidable_deaths %>% count(treatable, preventable)
 ```
 
 ## Checking parsing of ranges
