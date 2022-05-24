@@ -114,6 +114,7 @@ parse_icd_10_range <- function(code_range) {
 }
 ```
 
+## Parsing clean data
 
 ```{r}
 avoidable_deaths <-
@@ -132,7 +133,7 @@ avoidable_deaths <-
     icd_10_codes = map_chr(.x = icd_10_codes, .f = ~parse_icd_10_range(.x))
   ) %>%
   separate_rows(icd_10_codes, sep=",\\s*") %>%  # separate comma-separated values again now that we've converted them from the ranges
-  separate(col = age, into = c("age_min", "age_max") ,sep = "\\-", remove = TRUE) %>%
+  extract(col = age, into = c("age_min", "age_max"), regex = "(\\d+)[^0-9]+(\\d+)", remove = TRUE, convert = TRUE) %>%
   mutate(
     treatable = case_when(  # make more explicit the treatable/preventable distinction
       str_detect(treatable, pattern = "50") ~ 0.5,
@@ -165,6 +166,20 @@ avoidable_deaths_raw %>%
   ) %>%
   select(icd_10_codes, icd_10_codes_parsed) %>% 
   kable(caption = "Parsing of codes defined as ranges.")
+```
+
+## Checking parsing of age
+
+There was previously an error with this, with some ages having a leading space, and a trailing invisible character. This is slightly overkill to check since the minimum and maximum ages are the same for all conditions, but it may change in the future! I fixed this by using `extract()` to parse the digits from the entries rather than just splitting them on the hyphen symbol.
+
+```{r}
+avoidable_deaths_raw %>% 
+  count(age) %>%
+  kable(caption = "The different possible entries for 'age' in the raw spreadsheet. Note how there are two identical-looking entries, probably due to an invisible character.")
+
+avoidable_deaths%>% 
+  count(age_min, age_max) %>%
+  kable(caption = "The different possible entries for 'age' in the clean data after parsing.")
 ```
 
 
