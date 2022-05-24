@@ -114,6 +114,7 @@ parse_icd_10_range <- function(code_range) {
 }
 ```
 
+## Parsing clean data
 
 ```{r}
 avoidable_deaths <-
@@ -132,7 +133,7 @@ avoidable_deaths <-
     icd_10_codes = map_chr(.x = icd_10_codes, .f = ~parse_icd_10_range(.x))
   ) %>%
   separate_rows(icd_10_codes, sep=",\\s*") %>%  # separate comma-separated values again now that we've converted them from the ranges
-  separate(col = age, into = c("age_min", "age_max") ,sep = "\\-", remove = TRUE) %>%
+  extract(col = age, into = c("age_min", "age_max"), regex = "(\\d+)[^0-9]+(\\d+)", remove = TRUE) %>%
   mutate(
     treatable = case_when(  # make more explicit the treatable/preventable distinction
       str_detect(treatable, pattern = "50") ~ 0.5,
