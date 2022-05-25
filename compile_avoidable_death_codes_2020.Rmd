@@ -66,24 +66,26 @@ The column `ICD-10 codes` lists codes in the following formats:
     - Note that it is possible that the same death record may contain both codes that are included under avoidable deaths and excluded. This is something to check in the actual data!
 
 ```{r}
+## note: "\\p{Pd}" captures all types of hyphens/dashes
+
 avoidable_deaths_raw %>% filter(str_detect(string = icd_10_codes, pattern = regex("excl", ignore_case = TRUE))) %>% kable(caption = "Entries with exclusions listed")
 
-avoidable_deaths_raw %>% filter(str_detect(string = icd_10_codes, pattern = regex("\\-", ignore_case = TRUE))) %>% kable(caption = "Entries specifying code ranges")
+avoidable_deaths_raw %>% filter(str_detect(string = icd_10_codes, pattern = regex("\\p{Pd}", ignore_case = TRUE))) %>% kable(caption = "Entries specifying code ranges")
 
 parse_icd_10_range <- function(code_range) {
   ## helper function for generating code ranges - based on the icd package, function .icd10cm_get_majors_possible()
-  if (is.na(code_range) | !str_detect(string = code_range, pattern="\\-")) return(code_range)
+  if (is.na(code_range) | !str_detect(string = code_range, pattern="\\p{Pd}")) return(code_range)
   
   letter_1 <- str_replace(string = code_range, pattern = "^([A-Za-z]).*$", replacement = "\\1")
-  letter_2 <- str_replace(string = code_range, pattern = "^.+\\-([A-Za-z]).*$", replacement = "\\1")
+  letter_2 <- str_replace(string = code_range, pattern = "^.+\\p{Pd}([A-Za-z]).*$", replacement = "\\1")
   letters <- LETTERS[which(LETTERS==letter_1) : which(LETTERS==letter_2)]
   
   decimal <- str_detect(string = code_range, pattern = "\\.")
   number_of_digits <- 2
   if (decimal) number_of_digits <- 3
   
-  number_1 <- str_replace(string = str_remove_all(code_range, pattern="\\."), pattern = "^[A-Za-z](\\d{1,3})\\-.*$", replacement = "\\1")
-  number_2 <- str_replace(string = str_remove_all(code_range, pattern="\\."), pattern = "^.+\\-[A-Za-z](\\d{1,3})$", replacement = "\\1")
+  number_1 <- str_replace(string = str_remove_all(code_range, pattern="\\."), pattern = "^[A-Za-z](\\d{1,3})\\p{Pd}.*$", replacement = "\\1")
+  number_2 <- str_replace(string = str_remove_all(code_range, pattern="\\."), pattern = "^.+\\p{Pd}[A-Za-z](\\d{1,3})$", replacement = "\\1")
 
   code_1 <- paste0(letter_1,number_1)
   code_2 <- paste0(letter_2,number_2)
@@ -120,13 +122,14 @@ parse_icd_10_range <- function(code_range) {
 avoidable_deaths <-
   avoidable_deaths_raw %>%
   drop_na(condition_group_and_cause) %>%  # remove blank rows used for blank space in the excel file
+  mutate(across(everything(), ~str_replace_all(string = .x, pattern = "\\p{Pd}", replacement = "-"))) %>%  # replace all hyphen-likes with normal hyphen
   mutate(
     group = if_else(condition = is.na(icd_10_codes), true = condition_group_and_cause, false = NA_character_),
     original_codes = icd_10_codes
     ) %>%
   fill(group, .direction = "down") %>%  # forward-fill group
   drop_na(icd_10_codes) %>%
-  separate_rows(icd_10_codes, sep=",\\s*", ) %>%  # separate comma-separated values into rows so we have one entry per row
+  separate_rows(icd_10_codes, sep=",\\s*") %>%  # separate comma-separated values into rows so we have one entry per row
   extract(col = icd_10_codes, into = "exclusions", regex = "\\(excl\\.\\s*(.+)\\)", remove = FALSE) %>%  # extract the exclusions and put them in a separate column
   mutate(
     icd_10_codes = str_remove_all(string = icd_10_codes, pattern = "\\s*\\(excl.+\\)"),  # remove the exclusions from the code ranges
@@ -159,7 +162,7 @@ avoidable_deaths_raw %>%
   drop_na(condition_group_and_cause) %>%  # remove blank rows used for blank space in the excel file
   separate_rows(icd_10_codes, sep=",\\s*") %>%  # separate comma-separated values into rows so we have one entry per row
   extract(col = icd_10_codes, into = "exclusions", regex = "\\(excl\\.\\s*(.+)\\)", remove = FALSE) %>%  # extract the exclusions and put them in a separate column
-  filter(str_detect(string = icd_10_codes, pattern = "\\-")) %>%
+  filter(str_detect(string = icd_10_codes, pattern = "\\p{Pd}")) %>%
   mutate(
     icd_10_codes = str_remove_all(string = icd_10_codes, pattern = "\\s*\\(excl.+\\)"),  # remove the exclusions from the code ranges
     icd_10_codes_parsed = map_chr(.x = icd_10_codes, .f = ~parse_icd_10_range(.x))
@@ -173,11 +176,14 @@ avoidable_deaths_raw %>%
 There was previously an error with this, with some ages having a leading space, and a trailing invisible character. This is slightly overkill to check since the minimum and maximum ages are the same for all conditions, but it may change in the future! I fixed this by using `extract()` to parse the digits from the entries rather than just splitting them on the hyphen symbol.
 
 ```{r}
+avoidable_deaths_raw %>%
+  filter(age!="0-74")
+
 avoidable_deaths_raw %>% 
   count(age) %>%
   kable(caption = "The different possible entries for 'age' in the raw spreadsheet. Note how there are two identical-looking entries, probably due to an invisible character.")
 
-avoidable_deaths%>% 
+avoidable_deaths %>% 
   count(age_min, age_max) %>%
   kable(caption = "The different possible entries for 'age' in the clean data after parsing.")
 ```
