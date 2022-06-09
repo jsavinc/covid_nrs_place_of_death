@@ -91,6 +91,8 @@ only_2022_text <- glue::glue("Data for 2022 only include weeks 1-{format(weeks_a
 source_nrs_text <- "Source: National Records of Scotland"
 source_phs_text <- "Source: Public Health Scotland"
 
+crude_rate_text <- "Total cases = crude cumulative positive cases over time."
+
 death_registrations_text <- "Note: all figures are based on date of registration."
 
 vertical_line_text <- "Vertical dotted line at week number 54 represents start of 2021."
@@ -1008,6 +1010,8 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
 
 ## Map-based visualisations
 
+## Re-merge weekly deaths with 2015-2019 data for 2022 for LA & HB
+
 ```{r}
 ## merge the 2015-2019 period historical weekly averages to 2022 data
 merged_deaths_la_historic_period_2015_2019 <-
@@ -1048,7 +1052,7 @@ Because we only have partial data for 2022, we need to employ the weekly compari
        title = str_wrap("Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by Local Authority", width=40),
        # subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
        # caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
-       caption = paste0(c(source_nrs_text), collapse="\n"),
+       caption = paste0(c(only_2022_text,source_nrs_text), collapse="\n"),
        fill = "Home death\nincrease relative\nto 2015-2019"
        ) +
   NULL)
@@ -1087,7 +1091,7 @@ Because we only have partial data for 2022, we need to employ the weekly compari
   facet_wrap(~year, nrow = 1) +
   labs(x="", y="",
        title = "Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by Local Authority",
-       caption = paste0(c(source_nrs_text), collapse="\n"),
+       caption = paste0(c(only_2022_text,source_nrs_text), collapse="\n"),
        fill = "Home death\nincrease relative\nto 2015-2019"
        ) +
   NULL)
@@ -1099,7 +1103,6 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
 ### Home deaths increase vs. covid cases by LA, all deaths since 2019
 
 ```{r}
-# TODO: continue working on this!
 (figure_map_covid_cases_from_2020_la <-
   weekly_covid_cases_la %>%
   group_by(ref_area) %>%
@@ -1107,27 +1110,68 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
     ratio_covid_cases = max(crude_rate_positive_per100k),
     .groups = "drop"
   ) %>% 
-  # left_join(population_estimate_la_2019, by = c("ref_area"="la")) %>%
-  # dplyr::group_by(ref_area) %>%
-  # dplyr::summarise(
-  #   ratio_covid_cases = sum(weekly_positive, na.rm=TRUE) / all_ages *1e5, 
-  #   .groups = "drop"
-  # ) %>%
   left_join(shapefile_la, by=c("ref_area"="LAD20NM")) %>%
   ggplot(aes(geometry=geometry, fill=ratio_covid_cases), colour="grey10") +
   geom_sf(colour="grey10") +
   scale_fill_viridis_b(option = "B", labels = function(x) format(x, big.mark=",")) +
   theme(axis.text = element_blank(), panel.grid = element_blank()) +
   labs(x="", y="",
-       title = str_wrap("Total COVID-19 cases since the beginning of 2020 per 100,000 population, by Local Authority", width=50),
+       title = str_wrap("Total COVID-19 cases since the start of 2020, by Local Authority", width=40),
        subtitle = "",
-       caption = paste0(c(source_phs_text), collapse="\n"),
+       caption = paste0(c(only_2022_text,crude_rate_text,source_phs_text), collapse="\n"),
        fill = str_wrap("Cases per 100,000 population", width = 15)
        ) +
   NULL)
 
 figure_map_covid_cases_from_2020_la %>%
-save_output_file(filename = file.path(dir_outputs, paste0(c("figure_map_covid_cases_from_2020_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 13, height = 14, dpi = 300, units = "cm")
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_covid_cases_from_2020_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 13, height = 14, dpi = 300, units = "cm")
+
+## combine maps
+(figure_map_home_deaths_increase_vs_covid_case_from_2020_la <-
+  wrap_plots(
+    figure_map_home_deaths_increase_from_2020_la +
+      theme(plot.margin = margin(0,0,0,0), legend.box.margin = margin(0,0,0,0))
+      ,
+    figure_map_covid_cases_from_2020_la +
+      theme(plot.margin = margin(0,0,0,0), legend.box.margin = margin(0,0,0,0))
+  )
+)
+
+figure_map_home_deaths_increase_vs_covid_case_from_2020_la %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths_increase_vs_covid_case_from_2020_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 24, height = 16, dpi = 300, units = "cm")
+```
+
+#### LA covid rates over time
+
+I didn't finish this plot because the scale goes from 500 per 100k to 25k per 100k, which is a pain to depict in a meaningful way. Mayeb with a separate scale for each plot?
+
+```{r}
+## the problem with this plot is that there were between 500 per 100k cases to 25k per 100k cases over time and over LAs - how do we visualise that?
+(figure_map_covid_cases_by_year_la <-
+  weekly_covid_cases_la %>%
+  left_join(population_estimate_la_2019 %>% rename(population_estimate = all_ages, year_estimate = year), by = c("ref_area"="la")) %>%
+  group_by(ref_area, year, population_estimate) %>%
+  summarise(
+    cumulative_cases = sum(weekly_positive, na.rm=TRUE),
+    ratio_covid_cases = cumulative_cases / population_estimate * 1e5,
+    .groups = "drop"
+  ) %>%
+  distinct %>%
+  left_join(shapefile_la, by=c("ref_area"="LAD20NM")) %>%
+  # ggplot(aes(geometry=geometry, fill=log(ratio_covid_cases)), colour="grey10") +
+  ggplot(aes(geometry=geometry, fill=ratio_covid_cases), colour="grey10") +
+  geom_sf(colour="grey10") +
+  # scale_fill_viridis_b(option = "B", labels = function(x) format(exp(x), big.mark=",")) +
+  scale_fill_viridis_b(option = "B", labels = function(x) format(x, big.mark=",")) +
+  theme(axis.text = element_blank(), panel.grid = element_blank()) +
+  facet_wrap(~year, nrow = 1) +
+  labs(x="", y="",
+       title = str_wrap("Total COVID-19 cases since the start of 2020 per 100,000 population, by Local Authority", width=50),
+       subtitle = "",
+       caption = paste0(c(source_phs_text), collapse="\n"),
+       fill = str_wrap("Cases per 100,000 population", width = 15)
+       ) +
+  NULL)
 ```
 
 
