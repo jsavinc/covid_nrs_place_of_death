@@ -1280,6 +1280,7 @@ table_current_deaths_compared_to_past <-
       group_by(place_of_death) %>%
       summarise(
         period = glue::glue("Data from week 1, 2020 to week {weeks_available_2022}, 2022"),
+        historic_period = "2015-2019",
         deaths_all_causes = sum(deaths_all_causes),
         deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
         deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
@@ -1293,7 +1294,7 @@ table_current_deaths_compared_to_past <-
                sex == "all" &
                year == 2020
              ) %>% 
-      group_by(place_of_death) %>%
+      group_by(place_of_death, historic_period) %>%
       summarise(
         period = "2020",
         deaths_all_causes = sum(deaths_all_causes),
@@ -1303,8 +1304,8 @@ table_current_deaths_compared_to_past <-
       mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
     left_join(
       historical_annual_average_overall %>% 
-        select(place_of_death, mean_annual_deaths_2015_2019 = annual_deaths_mean),
-      by = "place_of_death"
+        select(place_of_death, mean_annual_deaths_2015_2019 = annual_deaths_mean, historic_period),
+      by = c("place_of_death","historic_period")
     )
     ,
     ## 2020 from week 12 onwards (including week 12) - pandemic part of 2020
@@ -1317,6 +1318,7 @@ table_current_deaths_compared_to_past <-
       group_by(place_of_death) %>%
       summarise(
         period = "2020, week 12 - week 53",
+        historic_period = "2015-2019",
         deaths_all_causes = sum(deaths_all_causes),
         deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
         .groups = "drop"
@@ -1339,6 +1341,7 @@ table_current_deaths_compared_to_past <-
       group_by(place_of_death) %>%
       summarise(
         period = "2021",
+        historic_period = "2015-2019",
         deaths_all_causes = sum(deaths_all_causes),
         deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
         .groups = "drop"
@@ -1346,8 +1349,40 @@ table_current_deaths_compared_to_past <-
       mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
     left_join(
       historical_annual_average_overall %>% 
-        select(place_of_death, mean_annual_deaths_2015_2019 = annual_deaths_mean),
-      by = "place_of_death"
+        select(place_of_death, mean_annual_deaths_2015_2019 = annual_deaths_mean, historic_period),
+      by = c("place_of_death","historic_period")
+    )
+    ,
+    ## 2022 data so far
+    merged_deaths_overall %>%
+      filter(
+        age == "all" &
+          sex == "all" &
+          year == 2022
+      ) %>%
+      group_by(place_of_death, week_number) %>%
+      summarise(
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        .groups = "drop"
+      ) %>% 
+    mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+    left_join(
+      weekly_deaths_2015_2019_overall %>% filter(year != "average") %>% group_by(week_number, place_of_death) %>% summarise(
+                                         average_weekly_deaths = sum(number_of_deaths) / 5,
+                                         .groups = "drop"
+                                       ),
+      by = c("week_number", "place_of_death")
+    ) %>% 
+    group_by(place_of_death) %>%
+    summarise(
+      period = glue::glue("2022 up to week {weeks_available_2022}"),
+      historic_period = "2015-2019",
+      deaths_all_causes = sum(deaths_all_causes),
+      deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
+      deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+      mean_annual_deaths_2015_2019 = sum(average_weekly_deaths),
+      .groups = "drop"
     )
   ) %>%
   mutate(
@@ -1438,8 +1473,6 @@ merged_proportions_of_deaths_by_place <-
     mutate(proportion_of_total = number_of_deaths / total_deaths)
   )
 ```
-
-##
 
 ## By HB/LA
 
