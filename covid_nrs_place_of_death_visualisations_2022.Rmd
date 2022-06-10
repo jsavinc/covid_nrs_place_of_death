@@ -69,8 +69,9 @@ load(file = "./workspace.RData")
 ## Common elements
 
 ```{r}
-loadfonts()  # load imported fonts
+loadfonts(device="win")  # load imported fonts
 # Sys.setenv(R_GSCMD = "C:/Program Files/gs/gs9.27/bin/gswin64c.exe")  # set the location of the GS file  # this not needed, just use device=device_cairo for pdfs in ggsave
+windowsFonts("Calibri" = windowsFont("Calibri"))  # to suppress the multiple error messages
 
 theme_set(theme_minimal(base_size = 12) +
             theme(panel.grid.minor = element_blank(),
@@ -135,7 +136,7 @@ save_output_file <- function(filename, extensions, plot, width, height, units, d
 
 ```{r}
 ## to put the arrows explaining historic range etc. only in one panel, need to construct a tibble to pass as data
-annotations_figure_place_of_death_explaining_historic_range <- tribble(
+annotations_fig_place_of_death_explaining_historic_range <- tribble(
    ~geom, ~place_of_death, ~label, ~x, ~y, ~xend, ~yend,
   "text", "Hospital", "Historic range (min & max)", 29, 850, NA, NA,
   "curve", "Hospital", NA, 29, 830, 32, 550,
@@ -146,7 +147,7 @@ annotations_figure_place_of_death_explaining_historic_range <- tribble(
   mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home")))  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
 
 
-figure_place_of_death <-
+fig_place_of_death <-
   merged_deaths_overall %>%
   filter(sex == "all" & age == "all") %>%
   filter(!place_of_death %in% c("All","Other")) %>%
@@ -179,20 +180,20 @@ figure_place_of_death <-
        colour = "Cause of death"
        ) +
   ## annotate historic range
-  geom_text(data = annotations_figure_place_of_death_explaining_historic_range %>% filter(geom=="text"), aes(x=x, y=y, label=label),  colour = "grey20", size = 8 / (14/5)) +  # the size is tricky
-  geom_curve(data = annotations_figure_place_of_death_explaining_historic_range %>% filter(geom=="curve"), aes(x=x, y=y, xend=xend, yend=yend), colour = c("#4477aa", "grey20"), alpha = c(0.5, 1), curvature = 0.20, arrow = arrow(length = unit(0.2, "cm"))) +
+  geom_text(data = annotations_fig_place_of_death_explaining_historic_range %>% filter(geom=="text"), aes(x=x, y=y, label=label),  colour = "grey20", size = 8 / (14/5)) +  # the size is tricky
+  geom_curve(data = annotations_fig_place_of_death_explaining_historic_range %>% filter(geom=="curve"), aes(x=x, y=y, xend=xend, yend=yend), colour = c("#4477aa", "grey20"), alpha = c(0.5, 1), curvature = 0.20, arrow = arrow(length = unit(0.2, "cm"))) +
   annotate(geom = "text", x=ymd("2021-01-07"), y=30, label = "2021", hjust = 0, colour = "grey40") +
   annotate(geom = "text", x=ymd("2022-01-07"), y=30, label = "'22", hjust = 0, colour = "grey40") +
   NULL
 
-figure_place_of_death %>%
+fig_place_of_death %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 28, height = 14, dpi = 300, units = "cm")
 ```
 
 ## Home deaths only
 
 ```{r}
-figure_place_of_death_home_only <-
+fig_place_of_death_home_only <-
   merged_deaths_overall %>%
   filter(sex == "all" & age == "all") %>%
   filter(place_of_death %in% c("Home & other non-institution")) %>%  # home death only
@@ -233,7 +234,7 @@ figure_place_of_death_home_only <-
   annotate(geom = "text", x=ymd("2022-01-07"), y=30, label = "'22", hjust = 0, colour = "grey40") +
   NULL
 
-figure_place_of_death_home_only %>%
+fig_place_of_death_home_only %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death_home_only", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 18, height = 14, dpi = 300, units = "cm")
 ```
 
@@ -258,7 +259,7 @@ merged_deaths_overall_2015_2019_historic_period <-
   )
 
 
-figure_place_of_death_home_2015_2019_historic_period <-
+fig_place_of_death_home_2015_2019_historic_period <-
   merged_deaths_overall_2015_2019_historic_period %>%
   filter(sex == "all" & age == "all") %>%
   filter(place_of_death %in% c("Home & other non-institution")) %>%  # home death only
@@ -299,7 +300,7 @@ figure_place_of_death_home_2015_2019_historic_period <-
   annotate(geom = "text", x=ymd("2022-01-07"), y=30, label = "2022", hjust = 0, colour = "grey40") +
   NULL
 
-figure_place_of_death_home_2015_2019_historic_period %>%
+fig_place_of_death_home_2015_2019_historic_period %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death_home_2015-2019_range", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 18, height = 14, dpi = 300, units = "cm")
 ```
 
@@ -309,7 +310,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death_
 Here we'll show 4 lines, one for each place of death, for each year so far.
 
 ```{r}
-(figure_proportion_annual_deaths_by_place <-
+(fig_proportion_annual_deaths_by_place <-
   merged_proportions_of_deaths_by_place %>%
   mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
   ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
@@ -333,7 +334,7 @@ Here we'll show 4 lines, one for each place of death, for each year so far.
   guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
   NULL
 )
-figure_proportion_annual_deaths_by_place %>%
+fig_proportion_annual_deaths_by_place %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_annual_deaths_by_place", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 13, height = 10, dpi = 300, units = "cm")
 ```
 
@@ -384,7 +385,7 @@ cumulative_deaths_by_place_by_year_min_max_2015_2019 <-
 These are non-cumulative proportions of place of death for each week. You can see how the proportions of place of death are fairly noisy over time, and in 2015-2019 they are relatively stable; it's not until 2020 that a big shift occurs.
 
 ```{r}
-figure_weekly_proportion_of_death_by_place <-
+fig_weekly_proportion_of_death_by_place <-
   bind_rows(
     ## current data
     merged_deaths_overall %>%
@@ -421,7 +422,7 @@ figure_weekly_proportion_of_death_by_place <-
   ) +
   NULL
 
-figure_weekly_proportion_of_death_by_place %>%
+fig_weekly_proportion_of_death_by_place %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_weekly_proportion_of_death_by_place", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 20, height = 15, dpi = 300, units = "cm")
 ```
 
@@ -433,7 +434,7 @@ This gives us context to be able to decide whether a decline in home deaths earl
 
 
 ```{r}
-figure_cumulative_weekly_proportion_of_deaths_by_place <-
+fig_cumulative_weekly_proportion_of_deaths_by_place <-
   cumulative_deaths_by_place_by_year %>%
   filter(place_of_death != "All") %>%
   mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
@@ -457,7 +458,7 @@ figure_cumulative_weekly_proportion_of_deaths_by_place <-
   ) +
   NULL
 
-figure_cumulative_weekly_proportion_of_deaths_by_place %>%
+fig_cumulative_weekly_proportion_of_deaths_by_place %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cumulative_weekly_proportion_of_deaths_by_place", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 20, height = 15, dpi = 300, units = "cm")
 ```
 
@@ -466,7 +467,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cumulative_week
 This is a similar graph to the above, but we include the weekly range (min/max) of the weekly proportions of place of death, as historic context for the data from 2020 onwards.
 
 ```{r}
-figure_cumulative_weekly_proportion_of_deaths_by_place_with_historic_range <-
+fig_cumulative_weekly_proportion_of_deaths_by_place_with_historic_range <-
   cumulative_deaths_by_place_by_year %>%
   filter(place_of_death != "All") %>%
   filter(!year %in% 2015:2019) %>%
@@ -492,8 +493,131 @@ figure_cumulative_weekly_proportion_of_deaths_by_place_with_historic_range <-
   ) +
   NULL
 
-figure_cumulative_weekly_proportion_of_deaths_by_place_with_historic_range %>%
+fig_cumulative_weekly_proportion_of_deaths_by_place_with_historic_range %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cumulative_weekly_proportion_of_deaths_by_place_with_historic_range", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 20, height = 15, dpi = 300, units = "cm")
+```
+
+# Causes of death compared to historic context
+
+Here I first merge the 2022 data series with the historic period 2015-2019 averages for weekly figures - this way we can compare the total in 2022 so far with the historical figures up to the same week.
+
+```{r}
+merged_deaths_cause_of_death_with_2015_2019_historic_period <-
+  bind_rows(
+    merged_deaths_cause_of_death %>%
+      filter(year %in% 2020:2021)
+    ,
+    merged_deaths_cause_of_death %>%
+      filter(year == 2022) %>%
+      select(-c(historic_period,deaths_mean)) %>%
+      left_join(
+        merged_deaths_cause_of_death %>%
+          filter(year==2021) %>%
+          select(place_of_death, week_number, cause_of_death, historic_period, deaths_mean),
+        by = c("place_of_death", "week_number", "cause_of_death")
+      )
+  )
+
+total_deaths_cause_of_death_so_far <-
+  merged_deaths_cause_of_death_with_2015_2019_historic_period %>%
+  group_by(year, cause_of_death, place_of_death, historic_period) %>%
+  summarise(
+    number_of_deaths = sum(number_of_deaths, na.rm = TRUE),
+    deaths_mean = sum(deaths_mean, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  group_by(year, place_of_death, historic_period) %>%
+  mutate(
+    proportion_all_deaths = number_of_deaths / sum(number_of_deaths, na.rm = TRUE),
+    proportion_all_deaths_historic = deaths_mean / sum(deaths_mean, na.rm = TRUE)
+  ) %>%
+  ungroup
+```
+
+## Cuases so far by place
+
+
+```{r}
+(fig_deaths_so_far_by_cause <-
+  total_deaths_cause_of_death_so_far %>%
+  filter(!place_of_death %in% c("Other","All")) %>%
+  group_by(cause_of_death, place_of_death, historic_period) %>%
+  summarise(
+    number_of_deaths = sum(number_of_deaths, na.rm = TRUE),
+    deaths_mean = sum(deaths_mean, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  group_by(place_of_death, historic_period) %>%
+  mutate(
+    proportion_all_deaths = number_of_deaths / sum(number_of_deaths, na.rm = TRUE),
+    proportion_all_deaths_historic = deaths_mean / sum(deaths_mean, na.rm = TRUE)
+  ) %>%
+  ungroup %>%
+  mutate(
+     cause_of_death = fct_rev(factor(cause_of_death)),
+     place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))
+     ) %>%
+  ggplot() +
+  geom_col(aes(y = cause_of_death, fill = cause_of_death, x = number_of_deaths), alpha = 0.8, colour = "grey10") +
+  geom_segment(aes(y = as.numeric(cause_of_death)-0.45, yend = as.numeric(cause_of_death)+0.45, x = deaths_mean, xend = deaths_mean), size = 0.8, colour = "grey1") +
+  scale_fill_viridis_d() +
+  facet_grid(~place_of_death) +
+  scale_x_continuous(labels = function(x) format(x, big.mark = ",")) +
+  scale_y_discrete(labels = ~str_wrap(.x, width = 20)) +
+  theme(
+    legend.position = "none", 
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    legend.title = element_blank(), 
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank()
+    ) +
+  labs(
+    x = NULL, y = NULL,
+    title = str_wrap("Total deaths since start of 2020 by cause and place of death, compared to 2015-2019", width = 60),
+    subtitle = paste0(c("Bars are no. of deaths, line segments are mean annual deaths 2015-2019", paste0("* ",only_2022_text)), collapse="\n"),
+    caption = paste0(c(death_registrations_text, source_nrs_text),collapse="\n")
+  ) +
+  NULL)
+
+fig_deaths_so_far_by_cause %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_deaths_so_far_by_cause", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 18, height = 12, dpi = 300, units = "cm")
+```
+
+
+## Causes by place & year
+
+```{r}
+(fig_annual_deaths_by_cause <-
+  total_deaths_cause_of_death_so_far %>%
+  filter(!place_of_death %in% c("Other","All")) %>%
+  mutate(
+     cause_of_death = fct_rev(factor(cause_of_death)),
+     place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))
+     ) %>%
+  ggplot() +
+  geom_col(aes(y = cause_of_death, fill = cause_of_death, x = number_of_deaths), alpha = 0.8, colour = "grey10") +
+  geom_segment(aes(y = as.numeric(cause_of_death)-0.45, yend = as.numeric(cause_of_death)+0.45, x = deaths_mean, xend = deaths_mean), size = 0.8, colour = "grey1") +
+  scale_fill_viridis_d() +
+  facet_grid(year~place_of_death) +
+  scale_x_continuous(labels = function(x) format(x, big.mark = ",")) +
+  scale_y_discrete(labels = ~str_wrap(.x, width = 20)) +
+  theme(
+    legend.position = "none", 
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    legend.title = element_blank(), 
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank()
+    ) +
+  labs(
+    x = NULL, y = NULL,
+    title = "Annual deaths by cause and place of death, compared to 2015-2019",
+    subtitle = paste0(c("Bars are no. of deaths, line segments are mean annual deaths 2015-2019", paste0("* ",only_2022_text)), collapse="\n"),
+    caption = paste0(c(death_registrations_text, source_nrs_text),collapse="\n")
+  ) +
+  NULL)
+
+fig_annual_deaths_by_cause %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_annual_deaths_by_cause", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 20, height = 15, dpi = 300, units = "cm")
 ```
 
 
@@ -504,7 +628,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cumulative_week
 This graph shows each of the causes of death divided by place of death - e.g. what proportion of cancer deaths happened at home vs hospital over time?
 
 ```{r}
-figure_cause_of_death_annual_proportion_by_place <-
+fig_cause_of_death_annual_proportion_by_place <-
   current_and_historical_deaths_by_cause_and_location %>%
   filter(!cause_of_death %in% c("All")) %>%
   filter(!year %in% c("2020-2021")) %>%
@@ -534,7 +658,7 @@ figure_cause_of_death_annual_proportion_by_place <-
   guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
   NULL
 
-figure_cause_of_death_annual_proportion_by_place %>%
+fig_cause_of_death_annual_proportion_by_place %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cause_of_death_annual_proportion_by_place", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 20, height = 15, dpi = 300, units = "cm")
 ```
 
@@ -544,7 +668,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cause_of_death_
 This is the same idea as above, but looking at weekly proportions of cause of death by place - where did deaths due to different causes happen, and did their proportion vary over the year (e.g. seasonal effects)
 
 ```{r}
-figure_cause_of_death_weekly_proportion_by_place <-
+fig_cause_of_death_weekly_proportion_by_place <-
   merged_deaths_cause_of_death %>%
   filter(!cause_of_death %in% c("All")) %>%
   mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home", "Other", "All"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
@@ -581,14 +705,14 @@ figure_cause_of_death_weekly_proportion_by_place <-
   guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
   NULL
 
-figure_cause_of_death_weekly_proportion_by_place %>%
+fig_cause_of_death_weekly_proportion_by_place %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cause_of_death_weekly_proportion_by_place", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 25, height = 30, dpi = 300, units = "cm")
 ```
 
 ### With 2015-2019 context also
 
 ```{r}
-figure_weekly_proportion_of_death_by_place_with_2015_2019 <-
+(fig_weekly_proportion_of_death_by_place_with_2015_2019 <-
   bind_rows(
     ## 2020 onwards
     merged_deaths_cause_of_death %>%
@@ -639,8 +763,8 @@ figure_weekly_proportion_of_death_by_place_with_2015_2019 <-
     ) +
   guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
   NULL
-
-figure_weekly_proportion_of_death_by_place_with_2015_2019 %>%
+)
+fig_weekly_proportion_of_death_by_place_with_2015_2019 %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cause_of_death_weekly_proportion_by_place_2015_2019", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 25, height = 30, dpi = 300, units = "cm")
 ```
 
@@ -656,7 +780,7 @@ annotations_for_2021_and_2022_in_home_deaths_by_cause <-
   group_by(cause_of_death) %>%
   summarise(max = max(number_of_deaths), .groups = "drop")
 
-figure_weekly_deaths_by_cause_at_home <-
+fig_weekly_deaths_by_cause_at_home <-
   merged_deaths_cause_of_death %>%
   filter(str_starts(place_of_death,"Home")) %>%
   filter(cause_of_death != "All") %>%
@@ -690,7 +814,7 @@ figure_weekly_deaths_by_cause_at_home <-
        ) +
   NULL
   
-figure_weekly_deaths_by_cause_at_home %>%
+fig_weekly_deaths_by_cause_at_home %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_weekly_deaths_by_cause_at_home", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 24, height = 18, dpi = 300, units = "cm")
 ```
 
@@ -698,7 +822,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_weekly_deaths_b
 # Deviation from mean
 
 ```{r}
-figure_place_of_death_deviation_from_mean <-
+fig_place_of_death_deviation_from_mean <-
   merged_deaths_overall %>%
   filter(sex == "all" & age == "all") %>%
   filter(!place_of_death %in% c("All","Other")) %>%
@@ -741,7 +865,7 @@ figure_place_of_death_deviation_from_mean <-
   annotate(geom = "text", x=ymd("2022-01-07"), y=-250, label = "'22", hjust = 0, colour = "grey40") +
   NULL
 
-figure_place_of_death_deviation_from_mean %>%
+fig_place_of_death_deviation_from_mean %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death_deviation_from_mean", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 28, height = 14, dpi = 300, units = "cm")
 ```
 
@@ -751,7 +875,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death_
 ## Home deaths by HB, 4-week average
 
 ```{r}
-(figure_home_deaths_over_time_by_hb_4_week_average <-
+(fig_home_deaths_over_time_by_hb_4_week_average <-
   merged_deaths_hb %>%
   filter(place_of_death == "Home & other non-institution") %>%
   mutate(ref_area = factor(x = ref_area, levels = order_hb_by_population)) %>%  # arrange hb/la by population size
@@ -794,14 +918,14 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death_
   NULL
  )
 
-figure_home_deaths_over_time_by_hb_4_week_average %>%
+fig_home_deaths_over_time_by_hb_4_week_average %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_home_deaths_4week_average_over_time_by_hb", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 30, height = 20, dpi = 300, units = "cm")
 ```
 
 ## Home deaths by LA, 4-week average
 
 ```{r}
-(figure_home_deaths_over_time_by_la_4_week_average <-
+(fig_home_deaths_over_time_by_la_4_week_average <-
   merged_deaths_la %>%
   filter(place_of_death == "Home & other non-institution") %>%
   mutate(ref_area = factor(x = ref_area, levels = order_la_by_population)) %>%  # arrange la/la by population size
@@ -844,7 +968,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_home_deaths_4we
   NULL
  )
 
-figure_home_deaths_over_time_by_la_4_week_average %>%
+fig_home_deaths_over_time_by_la_4_week_average %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_home_deaths_4week_average_over_time_by_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 40, height = 20, dpi = 300, units = "cm")
 ```
 
@@ -853,7 +977,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_home_deaths_4we
 ## Proportion of deaths by place, by HB
 
 ```{r}
-(figure_proportion_of_deaths_by_place_by_hb <-
+(fig_proportion_of_deaths_by_place_by_hb <-
   proportions_of_deaths_by_place_by_geography %>%
   filter(geography == "hb") %>%
   mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
@@ -884,14 +1008,14 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_home_deaths_4we
     ) +
   NULL)
 
-figure_proportion_of_deaths_by_place_by_hb %>%
+fig_proportion_of_deaths_by_place_by_hb %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_deaths_by_place_by_hb", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 30, height = 25, dpi = 300, units = "cm")
 ```
 
 ## Proportion of deaths by place, by LA
 
 ```{r}
-(figure_proportion_of_deaths_by_place_by_la <-
+(fig_proportion_of_deaths_by_place_by_la <-
   proportions_of_deaths_by_place_by_geography %>%
   filter(geography == "la") %>%
   mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
@@ -922,14 +1046,14 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
     ) +
   NULL)
 
-figure_proportion_of_deaths_by_place_by_la %>%
+fig_proportion_of_deaths_by_place_by_la %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_deaths_by_place_by_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 30, height = 25, dpi = 300, units = "cm")
 ```
 
 ## Home deaths only, HB
 
 ```{r}
-(figure_proportion_of_deaths_at_home_by_hb <-
+(fig_proportion_of_deaths_at_home_by_hb <-
   proportions_of_deaths_by_place_by_geography %>%
   filter(geography == "hb") %>%
   filter(place_of_death == "Home & other non-institution") %>%
@@ -963,14 +1087,14 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
     ) +
   NULL)
 
-figure_proportion_of_deaths_at_home_by_hb %>%
+fig_proportion_of_deaths_at_home_by_hb %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_deaths_at_home_by_hb", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 30, height = 25, dpi = 300, units = "cm")
 ```
 
 ## Home deaths only, LA
 
 ```{r}
-(figure_proportion_of_deaths_at_home_by_la <-
+(fig_proportion_of_deaths_at_home_by_la <-
   proportions_of_deaths_by_place_by_geography %>%
   filter(geography == "la") %>%
   filter(place_of_death == "Home & other non-institution") %>%
@@ -1004,7 +1128,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
     ) +
   NULL)
 
-figure_proportion_of_deaths_at_home_by_la %>%
+fig_proportion_of_deaths_at_home_by_la %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_deaths_at_home_by_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 30, height = 25, dpi = 300, units = "cm")
 ```
 
@@ -1023,6 +1147,16 @@ merged_deaths_la_historic_period_2015_2019 <-
       left_join(historical_weekly_average_la, by = c("week_number", "place_of_death", "ref_area", "historic_period"))
   ) %>%
   left_join(weekly_covid_cases_la, by = c("year","week_number","date_w_c","week_number_run_over","ref_area"))
+
+merged_deaths_hb_historic_period_2015_2019 <-
+  bind_rows(
+    merged_deaths_hb %>% filter(year %in% 2020:2021),
+    merged_deaths_hb %>% filter(year == 2022) %>%
+      select(-c(deaths_mean, deaths_min, deaths_max)) %>%
+      mutate(historic_period = "2015-2019") %>%
+      left_join(historical_weekly_average_hb, by = c("week_number", "place_of_death", "ref_area", "historic_period"))
+  ) %>%
+  left_join(weekly_covid_cases_hb, by = c("year","week_number","date_w_c","week_number_run_over","ref_area"))
 ```
 
 
@@ -1032,7 +1166,7 @@ For this we can take the total annual deaths in each LA and compare to historica
 Because we only have partial data for 2022, we need to employ the weekly comparison method - 
 
 ```{r}
-(figure_map_home_deaths_increase_from_2020_la <-
+(fig_map_home_deaths_increase_from_2020_la <-
   merged_deaths_la_historic_period_2015_2019 %>%
   filter(historic_period == "2015-2019") %>%
   group_by(ref_area, place_of_death) %>%
@@ -1057,8 +1191,40 @@ Because we only have partial data for 2022, we need to employ the weekly compari
        ) +
   NULL)
 
-figure_map_home_deaths_increase_from_2020_la %>%
+fig_map_home_deaths_increase_from_2020_la %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths_increase_from_2020_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 13, height = 14, dpi = 300, units = "cm")
+```
+
+### Home deaths increase since 2019 by HB
+
+```{r}
+(fig_map_home_deaths_increase_from_2020_hb <-
+  merged_deaths_hb_historic_period_2015_2019 %>%
+  filter(historic_period == "2015-2019") %>%
+  group_by(ref_area, place_of_death) %>%
+  summarise(
+    ratio_deaths_to_historic = sum(deaths_all_causes, na.rm=TRUE) / sum(deaths_mean, na.rm=TRUE),
+    percent_increase = ratio_deaths_to_historic - 1,
+    .groups = "drop"
+  ) %>%
+  filter(place_of_death == "Home & other non-institution") %>%
+  left_join(shapefile_hb_uk_wide, by=c("ref_area"="name")) %>%
+  ggplot(aes(geometry=geometry, fill=percent_increase), colour="grey10") +
+  geom_sf(colour="grey10") +
+  # scale_fill_viridis_b(limits = c(minimum_ratio_between_hb_and_hb_home_deaths-1, maximum_ratio_between_hb_and_hb_home_deaths-1), labels = function(x) scales::percent(x, accuracy = 1)) +
+  scale_fill_viridis_b(limits = c(0, 0.6), labels = function(x) scales::percent(x, accuracy = 1)) +
+  theme(axis.text = element_blank(), panel.grid = element_blank(), aspect.ratio = 1.4) +
+  labs(x="", y="",
+       title = str_wrap("Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by NHS Health Board", width=40),
+       # subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
+       # caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
+       caption = paste0(c(only_2022_text,source_nrs_text), collapse="\n"),
+       fill = "Home death\nincrease relative\nto 2015-2019"
+       ) +
+  NULL)
+
+fig_map_home_deaths_increase_from_2020_hb %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths_increase_from_2020_hb", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 13, height = 14, dpi = 300, units = "cm")
 ```
 
 
@@ -1068,7 +1234,7 @@ For this we can take the total annual deaths in each LA and compare to historica
 Because we only have partial data for 2022, we need to employ the weekly comparison method - 
 
 ```{r}
-(figure_map_home_deaths_increase_by_year_la <-
+(fig_map_home_deaths_increase_by_year_la <-
   merged_deaths_la_historic_period_2015_2019 %>%
   filter(historic_period == "2015-2019") %>%
   group_by(year, ref_area, place_of_death) %>%
@@ -1096,14 +1262,14 @@ Because we only have partial data for 2022, we need to employ the weekly compari
        ) +
   NULL)
 
-figure_map_home_deaths_increase_by_year_la %>%
+fig_map_home_deaths_increase_by_year_la %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths_increase_by_year_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 32, height = 18, dpi = 300, units = "cm")
 ```
 
 ### Home deaths increase vs. covid cases by LA, all deaths since 2019
 
 ```{r}
-(figure_map_covid_cases_from_2020_la <-
+(fig_map_covid_cases_from_2020_la <-
   weekly_covid_cases_la %>%
   group_by(ref_area) %>%
   summarise(
@@ -1123,22 +1289,105 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
        ) +
   NULL)
 
-figure_map_covid_cases_from_2020_la %>%
+fig_map_covid_cases_from_2020_la %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_covid_cases_from_2020_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 13, height = 14, dpi = 300, units = "cm")
 
 ## combine maps
-(figure_map_home_deaths_increase_vs_covid_case_from_2020_la <-
+(fig_map_home_deaths_increase_vs_covid_case_from_2020_la <-
   wrap_plots(
-    figure_map_home_deaths_increase_from_2020_la +
+    fig_map_home_deaths_increase_from_2020_la +
       theme(plot.margin = margin(0,0,0,0), legend.box.margin = margin(0,0,0,0))
       ,
-    figure_map_covid_cases_from_2020_la +
+    fig_map_covid_cases_from_2020_la +
       theme(plot.margin = margin(0,0,0,0), legend.box.margin = margin(0,0,0,0))
   )
 )
 
-figure_map_home_deaths_increase_vs_covid_case_from_2020_la %>%
+fig_map_home_deaths_increase_vs_covid_case_from_2020_la %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths_increase_vs_covid_case_from_2020_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 24, height = 16, dpi = 300, units = "cm")
+```
+
+
+### Home deaths increase since 2019 by HB, by year
+
+See above for how this was done for LA!
+
+```{r}
+(fig_map_home_deaths_increase_by_year_hb <-
+  merged_deaths_hb_historic_period_2015_2019 %>%
+  filter(historic_period == "2015-2019") %>%
+  group_by(year, ref_area, place_of_death) %>%
+  summarise(
+    ratio_deaths_to_historic = sum(deaths_all_causes, na.rm=TRUE) / sum(deaths_mean, na.rm=TRUE),
+    percent_increase = ratio_deaths_to_historic - 1,
+    .groups = "drop"
+  ) %>%
+  filter(place_of_death == "Home & other non-institution") %>%
+  left_join(shapefile_hb_uk_wide, by=c("ref_area"="name")) %>%
+  ggplot(aes(geometry=geometry, fill=percent_increase), colour="grey10") +
+  geom_sf(colour="grey10") +
+  # scale_fill_viridis_b(limits = c(minimum_ratio_between_hb_and_hb_home_deaths-1, maximum_ratio_between_hb_and_hb_home_deaths-1), labels = function(x) scales::percent(x, accuracy = 1)) +
+  scale_fill_viridis_b(limits = c(0, 0.6), labels = function(x) scales::percent(x, accuracy = 1)) +
+  theme(
+    axis.text = element_blank(), 
+    panel.grid = element_blank(),
+    aspect.ratio = 1.4
+    ) +
+  facet_wrap(~year, nrow = 1) +
+  labs(x="", y="",
+       title = "Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by NHS Health Board",
+       caption = paste0(c(only_2022_text,source_nrs_text), collapse="\n"),
+       fill = "Home death\nincrease relative\nto 2015-2019"
+       ) +
+  NULL)
+
+fig_map_home_deaths_increase_by_year_hb %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths_increase_by_year_hb", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 32, height = 18, dpi = 300, units = "cm")
+```
+
+### Home deaths increase vs. covid cases by HB, all deaths since 2019
+
+```{r}
+(fig_map_covid_cases_from_2020_hb <-
+  weekly_covid_cases_hb %>%
+  group_by(ref_area) %>%
+  summarise(
+    ratio_covid_cases = max(crude_rate_positive_per100k),
+    .groups = "drop"
+  ) %>% 
+  left_join(shapefile_hb_uk_wide, by=c("ref_area"="name")) %>%
+  ggplot(aes(geometry=geometry, fill=ratio_covid_cases), colour="grey10") +
+  geom_sf(colour="grey10") +
+  scale_fill_viridis_b(option = "B", labels = function(x) format(x, big.mark=",")) +
+  theme(
+    axis.text = element_blank(), 
+    panel.grid = element_blank(),
+    aspect.ratio = 1.4
+    ) +
+  labs(x="", y="",
+       title = str_wrap("Total COVID-19 cases since the start of 2020, by NHS Health Board", width=40),
+       subtitle = "",
+       caption = paste0(c(only_2022_text,crude_rate_text,source_phs_text), collapse="\n"),
+       fill = str_wrap("Cases per 100,000 population", width = 15)
+       ) +
+  NULL)
+
+fig_map_covid_cases_from_2020_hb %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_covid_cases_from_2020_hb", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 13, height = 14, dpi = 300, units = "cm")
+
+## combine maps
+(fig_map_home_deaths_increase_vs_covid_case_from_2020_hb <-
+  wrap_plots(
+    fig_map_home_deaths_increase_from_2020_hb +
+      theme(plot.margin = margin(0,0,0,0), legend.box.margin = margin(0,0,0,0))
+      ,
+    fig_map_covid_cases_from_2020_hb +
+      theme(plot.margin = margin(0,0,0,0), legend.box.margin = margin(0,0,0,0))
+  )
+)
+
+fig_map_home_deaths_increase_vs_covid_case_from_2020_hb %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths_increase_vs_covid_case_from_2020_hb", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 24, height = 16, dpi = 300, units = "cm")
 ```
 
 #### LA covid rates over time
@@ -1147,7 +1396,7 @@ I didn't finish this plot because the scale goes from 500 per 100k to 25k per 10
 
 ```{r}
 ## the problem with this plot is that there were between 500 per 100k cases to 25k per 100k cases over time and over LAs - how do we visualise that?
-(figure_map_covid_cases_by_year_la <-
+(fig_map_covid_cases_by_year_la <-
   weekly_covid_cases_la %>%
   left_join(population_estimate_la_2019 %>% rename(population_estimate = all_ages, year_estimate = year), by = c("ref_area"="la")) %>%
   group_by(ref_area, year, population_estimate) %>%
