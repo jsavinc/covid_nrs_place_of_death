@@ -264,25 +264,27 @@ if (!any(fonttable()$FullName=="Calibri")) font_import(pattern = "calibri", prom
 dir_reports <- "./reports"
 if (!dir.exists(dir_reports)) dir.create(dir_reports)
 
-render(
+rmarkdown::render(
   input = "./covid_nrs_place_of_death_data_2022.Rmd",
   output_file = paste0("covid_nrs_place_of_death_data_",today()),
   output_dir = dir_reports,
-  envir = new.env()
+  envir = new.env(),
+  quiet = TRUE
 )
 
-render(
+rmarkdown::render(
   input = "./covid_nrs_place_of_death_visualisations_2022.Rmd",
   output_file = paste0("covid_nrs_place_of_death_visualisations",today()),
   output_dir = dir_reports,
-  envir = new.env()
+  envir = new.env(),
+  quiet = TRUE
 )
 # 
 # render(
 #   input = "./paper_reporting_death_at_home_increase.Rmd",
 #   output_file = paste0("paper_reporting_death_at_home_increase_",today()),
 #   output_dir = dir_reports,
-#   envir = new.env()
+#   envir = new.env()https
 # )
 # 
 # render(
