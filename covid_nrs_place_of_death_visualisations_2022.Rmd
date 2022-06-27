@@ -1132,7 +1132,7 @@ fig_proportion_of_deaths_at_home_by_la %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_deaths_at_home_by_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 30, height = 25, dpi = 300, units = "cm")
 ```
 
-## Map-based visualisations
+# Map-based visualisations
 
 ## Re-merge weekly deaths with 2015-2019 data for 2022 for LA & HB
 
@@ -1160,7 +1160,7 @@ merged_deaths_hb_historic_period_2015_2019 <-
 ```
 
 
-### Home deaths increase since 2019 by LA
+## Home deaths increase since 2019 by LA
 
 For this we can take the total annual deaths in each LA and compare to historical figures, showing the ratio for each year so far; alternatively we can also average over 2020-2022, and compare that to the average!
 Because we only have partial data for 2022, we need to employ the weekly comparison method - 
@@ -1180,7 +1180,7 @@ Because we only have partial data for 2022, we need to employ the weekly compari
   ggplot(aes(geometry=geometry, fill=percent_increase), colour="grey10") +
   geom_sf(colour="grey10") +
   # scale_fill_viridis_b(limits = c(minimum_ratio_between_hb_and_la_home_deaths-1, maximum_ratio_between_hb_and_la_home_deaths-1), labels = function(x) scales::percent(x, accuracy = 1)) +
-  scale_fill_viridis_b(limits = c(0, 0.6), labels = function(x) scales::percent(x, accuracy = 1)) +
+  scale_fill_viridis_b(limits = c(0, 0.6), labels = function(x) scales::percent(x, accuracy = 1), direction = -1) +
   theme(axis.text = element_blank(), panel.grid = element_blank()) +
   labs(x="", y="",
        title = str_wrap("Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by Local Authority", width=40),
@@ -1195,7 +1195,7 @@ fig_map_home_deaths_increase_from_2020_la %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths_increase_from_2020_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 13, height = 14, dpi = 300, units = "cm")
 ```
 
-### Home deaths increase since 2019 by HB
+## Home deaths increase since 2019 by HB
 
 ```{r}
 (fig_map_home_deaths_increase_from_2020_hb <-
@@ -1212,7 +1212,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
   ggplot(aes(geometry=geometry, fill=percent_increase), colour="grey10") +
   geom_sf(colour="grey10") +
   # scale_fill_viridis_b(limits = c(minimum_ratio_between_hb_and_hb_home_deaths-1, maximum_ratio_between_hb_and_hb_home_deaths-1), labels = function(x) scales::percent(x, accuracy = 1)) +
-  scale_fill_viridis_b(limits = c(0, 0.6), labels = function(x) scales::percent(x, accuracy = 1)) +
+  scale_fill_viridis_b(limits = c(0, 0.6), labels = function(x) scales::percent(x, accuracy = 1), direction = -1) +
   theme(axis.text = element_blank(), panel.grid = element_blank(), aspect.ratio = 1.4) +
   labs(x="", y="",
        title = str_wrap("Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by NHS Health Board", width=40),
@@ -1228,7 +1228,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
 ```
 
 
-### Home deaths increase since 2019 by LA, by year
+## Home deaths increase since 2019 by LA, by year
 
 For this we can take the total annual deaths in each LA and compare to historical figures, showing the ratio for each year so far; alternatively we can also average over 2020-2022, and compare that to the average!
 Because we only have partial data for 2022, we need to employ the weekly comparison method - 
@@ -1247,12 +1247,10 @@ Because we only have partial data for 2022, we need to employ the weekly compari
   left_join(shapefile_la, by=c("ref_area"="LAD20NM")) %>%
   ggplot(aes(geometry=geometry, fill=percent_increase), colour="grey10") +
   geom_sf(colour="grey10") +
-  # scale_fill_viridis_b(limits = c(minimum_ratio_between_hb_and_la_home_deaths-1, maximum_ratio_between_hb_and_la_home_deaths-1), labels = function(x) scales::percent(x, accuracy = 1)) +
-  scale_fill_viridis_b(limits = c(0, 0.6), labels = function(x) scales::percent(x, accuracy = 1)) +
+  scale_fill_viridis_b(limits = c(0, 0.6), labels = function(x) scales::percent(x, accuracy = 1), direction = -1) +
   theme(
     axis.text = element_blank(), 
     panel.grid = element_blank(),
-    # legend.position = "bottom"
     ) +
   facet_wrap(~year, nrow = 1) +
   labs(x="", y="",
@@ -1266,7 +1264,7 @@ fig_map_home_deaths_increase_by_year_la %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths_increase_by_year_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 32, height = 18, dpi = 300, units = "cm")
 ```
 
-### Home deaths increase vs. covid cases by LA, all deaths since 2019
+## Home deaths increase vs. covid cases by LA, all deaths since 2019
 
 ```{r}
 (fig_map_covid_cases_from_2020_la <-
@@ -1279,7 +1277,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
   left_join(shapefile_la, by=c("ref_area"="LAD20NM")) %>%
   ggplot(aes(geometry=geometry, fill=ratio_covid_cases), colour="grey10") +
   geom_sf(colour="grey10") +
-  scale_fill_viridis_b(option = "B", labels = function(x) format(x, big.mark=",")) +
+  scale_fill_viridis_b(labels = function(x) format(x, big.mark=","), direction = -1) +
   theme(axis.text = element_blank(), panel.grid = element_blank()) +
   labs(x="", y="",
        title = str_wrap("Total COVID-19 cases since the start of 2020, by Local Authority", width=40),
@@ -1308,7 +1306,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
 ```
 
 
-### Home deaths increase since 2019 by HB, by year
+## Home deaths increase since 2019 by HB, by year
 
 See above for how this was done for LA!
 
@@ -1326,8 +1324,7 @@ See above for how this was done for LA!
   left_join(shapefile_hb_uk_wide, by=c("ref_area"="name")) %>%
   ggplot(aes(geometry=geometry, fill=percent_increase), colour="grey10") +
   geom_sf(colour="grey10") +
-  # scale_fill_viridis_b(limits = c(minimum_ratio_between_hb_and_hb_home_deaths-1, maximum_ratio_between_hb_and_hb_home_deaths-1), labels = function(x) scales::percent(x, accuracy = 1)) +
-  scale_fill_viridis_b(limits = c(0, 0.6), labels = function(x) scales::percent(x, accuracy = 1)) +
+  scale_fill_viridis_b(limits = c(0, 0.6), labels = function(x) scales::percent(x, accuracy = 1), direction = -1) +
   theme(
     axis.text = element_blank(), 
     panel.grid = element_blank(),
@@ -1345,7 +1342,7 @@ fig_map_home_deaths_increase_by_year_hb %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths_increase_by_year_hb", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 32, height = 18, dpi = 300, units = "cm")
 ```
 
-### Home deaths increase vs. covid cases by HB, all deaths since 2019
+## Home deaths increase vs. covid cases by HB, all deaths since 2019
 
 ```{r}
 (fig_map_covid_cases_from_2020_hb <-
@@ -1358,7 +1355,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
   left_join(shapefile_hb_uk_wide, by=c("ref_area"="name")) %>%
   ggplot(aes(geometry=geometry, fill=ratio_covid_cases), colour="grey10") +
   geom_sf(colour="grey10") +
-  scale_fill_viridis_b(option = "B", labels = function(x) format(x, big.mark=",")) +
+  scale_fill_viridis_b(labels = function(x) format(x, big.mark=","), direction = -1) +
   theme(
     axis.text = element_blank(), 
     panel.grid = element_blank(),
@@ -1390,7 +1387,7 @@ fig_map_home_deaths_increase_vs_covid_case_from_2020_hb %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths_increase_vs_covid_case_from_2020_hb", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 24, height = 16, dpi = 300, units = "cm")
 ```
 
-#### LA covid rates over time
+### LA covid rates over time
 
 I didn't finish this plot because the scale goes from 500 per 100k to 25k per 100k, which is a pain to depict in a meaningful way. Mayeb with a separate scale for each plot?
 
@@ -1407,11 +1404,9 @@ I didn't finish this plot because the scale goes from 500 per 100k to 25k per 10
   ) %>%
   distinct %>%
   left_join(shapefile_la, by=c("ref_area"="LAD20NM")) %>%
-  # ggplot(aes(geometry=geometry, fill=log(ratio_covid_cases)), colour="grey10") +
   ggplot(aes(geometry=geometry, fill=ratio_covid_cases), colour="grey10") +
   geom_sf(colour="grey10") +
-  # scale_fill_viridis_b(option = "B", labels = function(x) format(exp(x), big.mark=",")) +
-  scale_fill_viridis_b(option = "B", labels = function(x) format(x, big.mark=",")) +
+  scale_fill_viridis_b(labels = function(x) format(x, big.mark=","), direction = -1) +
   theme(axis.text = element_blank(), panel.grid = element_blank()) +
   facet_wrap(~year, nrow = 1) +
   labs(x="", y="",
@@ -1424,7 +1419,7 @@ I didn't finish this plot because the scale goes from 500 per 100k to 25k per 10
 ```
 
 
-## cumulative deaths at home over time
+# Cumulative deaths at home over time
 
 For this visualisation, we'll compare home deaths over time (e.g. years 2020, 2021, and 2022) with their historic period annual average, at HB-level. For this, we need to calculate the 2022 rate to be comparable to the complete data for years 2020 & 2021 - this is achieved by taking the sum of deaths in 2022 and dividing by the sum of the weekly average deaths in its historic period
 
