@@ -81,13 +81,15 @@ if (file.exists(file_historical_data_sources)) {
   table_of_historical_data_sources <- read_csv(file = file_historical_data_sources)
 } else {
   table_of_historical_data_sources <- tibble(
-    short_name = c("overall","sex_age","la","hb","2020-2021"),
+    # short_name = c("overall","sex_age","la","hb","2020-2021"),
+    short_name = c("overall","sex_age","la","hb","2020","2021"),
     url = c(
       "https://www.nrscotland.gov.uk/files/statistics/covid19/weekly-deaths-by-location-2015-2019.csv",
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-age-group-sex-15-19.xlsx",
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-council-areas.xlsx",
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-health-board-location-15-19.xlsx",
-      "https://www.nrscotland.gov.uk/files//statistics/covid19/covid-deaths-21-data-week-52.xlsx"  # last 2021 data which included 2020 also
+      "https://www.nrscotland.gov.uk/files//statistics/covid19/covid-deaths-21-data-week-52.xlsx",  # last 2021 data which included 2020 also
+      "https://www.nrscotland.gov.uk/files//statistics/covid19/covid-deaths-22-data-week-25.xlsx"  # last 2022 data which included 2021 also
     )
   ) %>% mutate(
     # filename = basename(url),
@@ -301,3 +303,4 @@ rmarkdown::render(
 #   envir = new.env()
 # )
 
+message("Finished successfully!")

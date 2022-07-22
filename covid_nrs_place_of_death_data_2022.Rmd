@@ -279,7 +279,9 @@ The format of the main report file has changed from what was used in 2021.
 
 However, the main report file is still only being used for cause of death data, which simplifies parsing the file!
 
-Causes of death are reported in `sheet 8` of the report, and include figure from 2021 and 2022. The worksheet contains data split by location of death, which are contained within different tables arranged vertically, so their boundaries need to be written out; the tables have been pre-filled for all of 2021 and 2022, so some proportion of entries will be blank for 2022.
+Causes of death are reported in `sheet 8` of the report, ~~and include figure from 2021 and 2022. The worksheet contains data split by location of death, which are contained within different tables arranged vertically, so their boundaries need to be written out; the tables have been pre-filled for all of 2021 and 2022, so some proportion of entries will be blank for 2022.~~
+
+Note: the above no longer holds as of 20 July 2022 - only 2022 data re included in `sheet 8` now, which means the 2021 data need to be imported from an older file.
 
 Note that excess deaths and 5-year average deaths are computed differently between 2020-2021 and 2022:
 
@@ -292,15 +294,24 @@ Note that excess deaths and 5-year average deaths are computed differently betwe
 ```{r}
 sheet_cause_of_death_data <- "8"
 
+# TODO: delete below, it's for the previous releases that included 2021 data also
+# cell_ranges_for_causes_of_death_data <- list(
+#   "All" = "A6:V110",
+#   "Care home" = "A113:V217",
+#   "Home & other non-institution" = "A220:V324",
+#   "Hospital" = "A327:V431",
+#   "Other" = "A434:V538"
+# )
+
 cell_ranges_for_causes_of_death_data <- list(
-  "All" = "A6:V110",
-  "Care home" = "A113:V217",
-  "Home & other non-institution" = "A220:V324",
-  "Hospital" = "A327:V431",
-  "Other" = "A434:V538"
+  "All" = "A6:V58",
+  "Care home" = "A61:V113",
+  "Home & other non-institution" = "A116:V168",
+  "Hospital" = "A171:V223",
+  "Other" = "A226:V278"
 )
 
-weekly_cause_of_death_2021_onwards <-
+weekly_deaths_cause_of_death_2022_onwards <-
   map_dfr(
     .x = cell_ranges_for_causes_of_death_data,
     .f = ~readxl::read_excel(files_weekly_deaths$main_report, sheet = sheet_cause_of_death_data, range = .x), 
@@ -315,7 +326,7 @@ weekly_cause_of_death_2021_onwards <-
     year = as.integer(year),
     cause_of_death = str_remove_all(name, "_five_year_average|_deaths"),
     cause_of_death = return_pretty_cause_of_death(cause_of_death),
-    date_w_c = as.Date(date_w_c),
+    date_w_c = as.Date(date_w_c, origin = "1899-12-30"),
     week_number_run_over = compute_week_run_over(week_number, year, start_year = 2020)  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
   ) %>%
   select(-name) %>%
@@ -323,75 +334,23 @@ weekly_cause_of_death_2021_onwards <-
 ```
 
 
-### Historical causes of death
-
-Historical here refers to the 2015-2019 period for 2020 & 2021, and 2016-2021 (skipping 2020) for 2022. There is another 'historical' dataset, which includes cause of death figures for 2020.
-
-In the `2015-2019` period there were no Covid-19 deaths, so the historical average should be `NA`, which can possibly be interpreted as 0 for the purposes of comparing a year to the historical average.
-For the `2016-2019, 2021` period the average number of covid deaths should be equivalent to the deaths in 2021 - we wouldn't want to make an average between 4 years of 0 deaths and one year with any deaths! Similarly if the period were `2017-2019, 2021-2022`, we would compute the average for 2021-2022, and so on.
-
-```{r}
-## this is an ugly hack - we set average weekly deaths due to C19 to NA for 2021
-## and we set the average covid deaths for 2015-2019, 2021 to the same as in 2021
-## however, for the latter, we set the dates to 2022
-average_weekly_covid_deaths_2021_onwards <-
-  bind_rows(
-    ## set 2021 averages to NA
-    weekly_cause_of_death_2021_onwards %>%
-    filter(cause_of_death == "COVID-19" & year == 2021) %>%
-    mutate(number_of_deaths = NA_real_) %>%
-    rename(deaths_mean = number_of_deaths),
-    ## use 2021 weekly deaths as 2022 historic average
-    weekly_cause_of_death_2021_onwards %>%
-    filter(cause_of_death == "COVID-19" & year == 2021) %>%
-    mutate(year = 2022) %>%
-    select(-c(week_number_run_over, date_w_c)) %>%
-    rename(deaths_mean = number_of_deaths) %>%
-    inner_join(weekly_cause_of_death_2021_onwards %>% 
-                select(year, week_number, week_number_run_over, date_w_c, place_of_death, cause_of_death)
-              )
-  ) %>%
-  mutate(historic_period = historic_period_depending_on_year(year))
-
-historical_average_cause_of_death_2021_onwards <-
-  bind_rows(
-    ## the hacked averages for 2021 and 2022 above
-    average_weekly_covid_deaths_2021_onwards,
-    ## extract averages from most recent file for 2021 onwards
-    map_dfr(
-      .x = cell_ranges_for_causes_of_death_data,
-      .f = ~readxl::read_excel(files_weekly_deaths$main_report, sheet = sheet_cause_of_death_data, range = .x), 
-      .id = "place_of_death"
-    ) %>%
-    janitor::clean_names() %>%
-    rename(year = registration_year, date_w_c = week_beginning) %>%
-    select(place_of_death, year, week_number, date_w_c, matches("five_year_average")) %>%
-    pivot_longer(cols = 5:ncol(.), names_to = "name", values_to = "deaths_mean") %>%
-    mutate(
-      year = as.integer(year),
-      cause_of_death = str_remove_all(name, "_five_year_average|_deaths"),
-      cause_of_death = return_pretty_cause_of_death(cause_of_death),
-      cause_of_death = if_else(cause_of_death == "All causes", "All", cause_of_death),
-      date_w_c = as.Date(date_w_c),
-      week_number_run_over = compute_week_run_over(week_number, year, start_year = 2020),  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
-      historic_period = historic_period_depending_on_year(year)
-    ) %>%
-    select(-name) %>%
-    drop_na(deaths_mean)  # remove blank entries - these are for the current year but for dates in the future
-  )
-```
-
 ### Data from 2020 & 2021
 
-The reports available from NRS in 2022 include data from 2021-2022, but we can also include data from 2020 for context. For this I'll load the last 'main report' file from 2021.
+The reports available from NRS in 2022 include data from 2021-2022 up until week 25, and partly in weeks 26 and 27 where there is data from 2021 for specific places of death but not for all places of death. I also include data from 2020 for context. For this I'll load the last 'main report' file from 2021.
 
 The weekly causes of death data for 2020 is included in the sheet `Table 3 (2020)`.
 
-#### 'Main report' file
+The weekly causes of death data for 2021 is included in the week 25 'main report' file, table `8`.
+
+#### 2020
 
 ```{r}
+# this uses the combined 2020-2021 file
+# nrs_weekly_data_sheet_2020 <- 
+#   excel_sheets(files_historical_deaths$`2020-2021`)[which(str_detect(tolower(excel_sheets(files_historical_deaths$`2020-2021`)), pattern = "table 3.*2020"))]
+
 nrs_weekly_data_sheet_2020 <- 
-  excel_sheets(files_historical_deaths$`2020-2021`)[which(str_detect(tolower(excel_sheets(files_historical_deaths$`2020-2021`)), pattern = "table 3.*2020"))]
+  excel_sheets(files_historical_deaths$`2020`)[which(str_detect(tolower(excel_sheets(files_historical_deaths$`2020`)), pattern = "table 3.*2020"))]
 
 ## construct column names for the data
 headers_in_nrs_data_2020 <-
@@ -406,7 +365,7 @@ headers_in_nrs_data_2020 <-
 
 ## extract data... this is dense but I've tried to annotate it clearly!
 weekly_deaths_cause_of_death_2020 <-
-  readxl::read_excel(files_historical_deaths$`2020-2021`, sheet = nrs_weekly_data_sheet_2020, col_names = headers_in_nrs_data_2020, range = cell_rows(6:125)) %>%  # the data are inrows 6:125
+  readxl::read_excel(files_historical_deaths$`2020`, sheet = nrs_weekly_data_sheet_2020, col_names = headers_in_nrs_data_2020, range = cell_rows(6:125)) %>%  # the data are inrows 6:125
   select(-matches("remove")) %>%  # remove irrelevant summary columns at the end
   mutate(across(.cols = matches("week"), .fns = as.numeric)) %>%  # remove erroneous "count1, count2, ..." entries due to superscript in previous column
   mutate(dataset = if_else(condition = str_detect(string = cause_of_death, pattern = regex(pattern = "^registered|^difference", ignore_case = TRUE)), true = cause_of_death, false = NA_character_)) %>%  # extract the Registered deaths: historical, 2020/2021, and Difference sections
@@ -428,7 +387,116 @@ weekly_deaths_cause_of_death_2020 <-
   rename(deaths_mean = `five year average`, number_of_deaths = `2020`)
 ```
 
-#### Merge 2020 data with current data
+#### 2021
+
+```{r}
+cell_ranges_for_causes_of_death_data_2021 <- list(
+  "All" = "A6:V58",
+  "Care home" = "A113:V165",
+  "Home & other non-institution" = "A220:V272",
+  "Hospital" = "A327:V379",
+  "Other" = "A434:V486"
+)
+
+weekly_deaths_cause_of_death_2021 <-
+  map_dfr(
+    .x = cell_ranges_for_causes_of_death_data_2021,
+    .f = ~readxl::read_excel(files_historical_deaths$`2021`, sheet = sheet_cause_of_death_data, range = .x), 
+    .id = "place_of_death"
+  ) %>%
+  janitor::clean_names() %>%
+  rename(year = registration_year, date_w_c = week_beginning) %>%
+  select(-matches("_excess$|_average$")) %>%  # we can compute excess & averages later
+  pivot_longer(cols = 5:ncol(.), names_to = "name", values_to = "number_of_deaths") %>%
+  filter(!str_detect(name, "all_causes")) %>%  # we can calculate that from the others
+  mutate(
+    year = as.integer(year),
+    cause_of_death = str_remove_all(name, "_five_year_average|_deaths"),
+    cause_of_death = return_pretty_cause_of_death(cause_of_death),
+    date_w_c = as.Date(date_w_c, origin = "1899-12-30"),  # origin to account for Excel's integer date format
+    week_number_run_over = compute_week_run_over(week_number, year, start_year = 2020)  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
+  ) %>%
+  select(-name) %>%
+  filter(!is.na(number_of_deaths))  # remove blank entries - these are for the current year but for dates in the future
+```
+
+
+#### Historical causes of death
+
+Historical here refers to the 2015-2019 period for 2020 & 2021, and 2016-2021 (skipping 2020) for 2022, useful for a comparison with the historical context of the pre-pandemic years. (There is another 'historical' dataset, which includes cause of death figures for 2020 and for 2021.)
+
+In the `2015-2019` period there were no Covid-19 deaths, so the historical average should be `NA`, which can possibly be interpreted as 0 for the purposes of comparing a year to the historical average.
+For the `2016-2019, 2021` period the average number of covid deaths should be equivalent to the deaths in 2021 - we wouldn't want to make an average between 4 years of 0 deaths and one year with any deaths! Similarly if the period were `2017-2019, 2021-2022`, we would compute the average for 2021-2022, and so on. The year 2020 is considered exceptional and so is not used for computing the historical averages in 2021 and onwards.
+
+Because the data from July 2022 onwards are split up so that I load the 2020 and 2021 from different sources, I'll compute the 
+
+```{r}
+## this is an ugly hack - we set average weekly deaths due to C19 to NA for 2021
+## and we set the average covid deaths for 2015-2019, 2021 to the same as in 2021
+## however, for the latter, we set the dates to 2022
+# average_weekly_covid_deaths_2021_onwards <-
+average_weekly_covid_deaths_2021_onwards <-
+  bind_rows(
+    ## set 2021 averages to NA
+    weekly_deaths_cause_of_death_2021 %>%
+    filter(cause_of_death == "COVID-19") %>%
+    mutate(number_of_deaths = NA_real_) %>%
+    rename(deaths_mean = number_of_deaths),
+    ## use 2021 weekly deaths as 2022 historic average
+    weekly_deaths_cause_of_death_2021 %>%
+    filter(cause_of_death == "COVID-19") %>%
+    mutate(year = 2022) %>%
+    select(-c(week_number_run_over, date_w_c)) %>%
+    rename(deaths_mean = number_of_deaths) %>%
+    inner_join(weekly_deaths_cause_of_death_2022_onwards %>% 
+                select(year, week_number, week_number_run_over, date_w_c, place_of_death, cause_of_death)
+              )
+  ) %>%
+  mutate(historic_period = historic_period_depending_on_year(year))
+
+average_weekly_noncovid_deaths_2021_onwards <-
+    ## extract 5-year averages from most recent file for 2021 onwards
+    ## this doesn't include covid, which we've manually extracted above!
+  bind_rows(
+    ## 2022+ data
+    map_dfr(
+      .x = cell_ranges_for_causes_of_death_data,
+      .f = ~readxl::read_excel(files_weekly_deaths$main_report, sheet = sheet_cause_of_death_data, range = .x), 
+      .id = "place_of_death"
+    ),
+    ## 2021 data
+    map_dfr(
+      .x = cell_ranges_for_causes_of_death_data_2021,
+      .f = ~readxl::read_excel(files_historical_deaths$`2021`, sheet = sheet_cause_of_death_data, range = .x), 
+      .id = "place_of_death"
+    )
+  ) %>%
+    janitor::clean_names() %>%
+    rename(year = registration_year, date_w_c = week_beginning) %>%
+    select(place_of_death, year, week_number, date_w_c, matches("five_year_average")) %>%
+    pivot_longer(cols = 5:ncol(.), names_to = "name", values_to = "deaths_mean") %>%
+    mutate(
+      year = as.integer(year),
+      cause_of_death = str_remove_all(name, "_five_year_average|_deaths"),
+      cause_of_death = return_pretty_cause_of_death(cause_of_death),
+      cause_of_death = if_else(cause_of_death == "All causes", "All", cause_of_death),
+      date_w_c = as.Date(date_w_c, origin = "1899-12-30"),
+      week_number_run_over = compute_week_run_over(week_number, year, start_year = 2020),  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
+      historic_period = historic_period_depending_on_year(year)
+    ) %>%
+    select(-name) %>%
+    drop_na(deaths_mean)  # remove blank entries - these are for the current year but for dates in the future
+
+historical_average_cause_of_death_2021_onwards <-
+  bind_rows(
+    ## the hacked averages for 2021 and 2022 above
+    average_weekly_covid_deaths_2021_onwards,
+    ## the non-covid deaths in the 'main report' files
+    average_weekly_noncovid_deaths_2021_onwards
+  )
+```
+
+#### Merge 2020 & 2021 data with current data
 
 Note: the 5-year average for 2022 (spanning 2016-2019 & 2021) is only published along with the running weekly counts of deaths by cause of death; it's just that NRS has decided to only publish them at the same time as new data comes out! This is a bit of a bummer - it means we can't populate the whole year of 'historical context' data for 2022.
 
@@ -437,7 +505,8 @@ They could be calculated by hand if the 2015-2019 weekly data were available bro
 ```{r}
 weekly_deaths_cause_of_death <-
   bind_rows(
-    weekly_cause_of_death_2021_onwards,
+    weekly_deaths_cause_of_death_2022_onwards,
+    weekly_deaths_cause_of_death_2021,
     weekly_deaths_cause_of_death_2020 %>% 
       select(-deaths_mean) %>%
       filter(cause_of_death != "All")  # don't need all cause data in causes breadkown!
@@ -886,8 +955,7 @@ historical_annual_average_cause_of_death_2015_2019 <-
   )
 
 deaths_by_cause_2021 <-
-  weekly_cause_of_death_2021_onwards %>% 
-  filter(year == 2021) %>% 
+  weekly_deaths_cause_of_death_2021 %>% 
   group_by(place_of_death, cause_of_death) %>% 
   summarise(deaths_2021 = sum(number_of_deaths), .groups = "drop")
 
