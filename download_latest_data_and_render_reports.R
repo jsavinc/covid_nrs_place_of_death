@@ -303,4 +303,4 @@ rmarkdown::render(
 #   envir = new.env()
 # )
 
-message("Finished successfully!")
+message("...\nFinished successfully!")
