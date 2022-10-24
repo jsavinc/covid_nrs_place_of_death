@@ -1472,3 +1472,51 @@ merged_deaths_hb %>%
   NULL
 ```
 
+
+# Years 'skipped ahead' due to Covid
+
+There was a pre-pandemic trend of increasing deaths at home - by plotting a regression line we can compute the 'years skipped ahead' equivalent to the increase in deaths at home due to covid
+
+```{r}
+regression_data <- 
+  merged_proportions_of_deaths_by_place %>% 
+  filter(place_of_death == "Home & other non-institution" & year %in% 2015:2019) %>% 
+  mutate(years_since_2015 = 0:(n()-1))
+
+regression_model <- lm(data = regression_data, formula = number_of_deaths ~ years_since_2015)
+
+predicted_data <- tibble(years_since_2015 = seq(from=0, to=30, by = 0.1)) %>%
+  mutate(year = 2015 + years_since_2015,
+         predicted = predict.lm(object = regression_model, newdata = tibble(years_since_2015))
+         )
+
+# TODO: make the plot nicer, and print out the predicted year somewhere
+# TODO: figure out how to adjust the incomplete 2022 data
+actual_data <- tibble(year = c(2020:2022)) %>% 
+  left_join(
+    merged_proportions_of_deaths_by_place %>%
+      select(year, number_of_deaths, place_of_death) %>%
+      filter(place_of_death == "Home & other non-institution"),
+    by = "year"
+  ) %>%
+  mutate(
+    predicted_year =  if_else(
+      condition = year != 2022,
+      true = 2015 + (number_of_deaths - coef(regression_model)[1]) / coef(regression_model)[2],
+      ## for 2022, we use slightly different computation
+      false = NA_real_
+    ),
+    label = paste0("Actual home deaths in ", year)
+  )
+  
+
+ggplot(data = predicted_data, aes(x=year, y=predicted)) + 
+  geom_point(data = regression_data, aes(x = year, y = number_of_deaths)) +
+  geom_line(linetype = "dashed") +
+  ggrepel::geom_label_repel(data = actual_data, aes(x = predicted_year, y = number_of_deaths, label = label)) +
+  geom_vline(data = actual_data, aes(xintercept = predicted_year)) +
+  xlim(c(2015,2035)) +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::comma)
+```
+
