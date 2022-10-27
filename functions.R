@@ -237,3 +237,12 @@ add_scotland_total_to_population_estimate <- function(data_tbl) {
   new_row$all_ages <- scotland_total
   bind_rows(data_tbl, new_row)
 }
+
+## compute y var from x, given a linear regression
+compute_y_from_x_using_regression <- function(x, regression_model) {
+  coef(regression_model)[1] + (x * coef(regression_model)[2])
+}
+## compute x var from y, given a linear regression
+compute_x_from_y_using_regression <- function(y, regression_model) {
+  (y - coef(regression_model)[1]) / coef(regression_model)[2]
+}
