@@ -1490,33 +1490,64 @@ predicted_data <- tibble(years_since_2015 = seq(from=0, to=30, by = 0.1)) %>%
          predicted = predict.lm(object = regression_model, newdata = tibble(years_since_2015))
          )
 
-# TODO: make the plot nicer, and print out the predicted year somewhere
-# TODO: figure out how to adjust the incomplete 2022 data
-actual_data <- tibble(year = c(2020:2022)) %>% 
-  left_join(
+## 2022 only has X weeks' worth of data available; we can extrapolate the annual
+## total by computing the percentage of annual data represented by previous
+## years at X weeks, and then averaging across those, or taking the min & max
+extrapolated_2020_data <-
+  historical_weekly_average_overall %>%
+  filter(place_of_death == "Home & other non-institution" & historic_period == "2015-2019") %>%
+  summarise(
+    deaths_mean_so_far = sum(deaths_mean[week_number <= weeks_available_2022], na.rm= TRUE),
+    deaths_mean_total = sum(deaths_mean, na.rm= TRUE),
+    proportion_of_deaths_so_far = deaths_mean_so_far / deaths_mean_total
+    )
+
+predicted_data_annotations <- tribble(
+  ~x, ~y, ~label,
+  2021, 20e3, "Predicted home deaths 2020-2022 using 2015-2019 data",
+  2033, 23e3, "Actual home deaths 2020-2022*",
+  2033, 17.5e3, "If the 2015-2019 trend continued we wouldn't observe this number of home deaths until 2031",
+)
+
+actual_and_predicted_data <-
+  bind_rows(
+    merged_proportions_of_deaths_by_place %>%
+    select(year, number_of_deaths, place_of_death) %>%
+    filter(place_of_death == "Home & other non-institution" & year %in% 2015:2019) %>%
+      mutate(data_type = "Actual")
+    ,
+    merged_proportions_of_deaths_by_place %>%
+    select(year, number_of_deaths, place_of_death) %>%
+    filter(place_of_death == "Home & other non-institution" & year %in% 2020:2022) %>%
+    mutate(
+      data_type = "Predicted",
+      number_of_deaths = if_else(year %in% 2020:2022, compute_y_from_x_using_regression(x = year-2015, regression_model = regression_model), number_of_deaths)
+      )
+    ,
     merged_proportions_of_deaths_by_place %>%
       select(year, number_of_deaths, place_of_death) %>%
-      filter(place_of_death == "Home & other non-institution"),
-    by = "year"
-  ) %>%
-  mutate(
-    predicted_year =  if_else(
-      condition = year != 2022,
-      true = 2015 + (number_of_deaths - coef(regression_model)[1]) / coef(regression_model)[2],
-      ## for 2022, we use slightly different computation
-      false = NA_real_
-    ),
-    label = paste0("Actual home deaths in ", year)
+      filter(place_of_death == "Home & other non-institution" & year %in% 2020:2022) %>%
+      mutate(
+        number_of_deaths = if_else(year == 2022, number_of_deaths / extrapolated_2020_data$proportion_of_deaths_so_far, number_of_deaths),
+        year = 2015 + compute_x_from_y_using_regression(y = number_of_deaths, regression_model = regression_model),  # compute predicted X
+        data_type = "Actual"  # note: this is actual figures but
+      )
   )
-  
 
-ggplot(data = predicted_data, aes(x=year, y=predicted)) + 
-  geom_point(data = regression_data, aes(x = year, y = number_of_deaths)) +
-  geom_line(linetype = "dashed") +
-  ggrepel::geom_label_repel(data = actual_data, aes(x = predicted_year, y = number_of_deaths, label = label)) +
-  geom_vline(data = actual_data, aes(xintercept = predicted_year)) +
-  xlim(c(2015,2035)) +
+fig_expected_home_deaths_regression <-
+  ggplot(data = actual_and_predicted_data, aes(x=year, y=number_of_deaths)) +
+  geom_rect(aes(xmin = 2019.5, xmax = 2022.5, ymin = 15.5e3, ymax = 18.5e3), fill = "yellow", alpha = 0.3) +
+  geom_rect(aes(xmin = 2030, xmax = 2035, ymin = 19.5e3, ymax = 22e3), fill = "yellow", alpha = 0.3) +
+  geom_text(data = predicted_data_annotations, aes(x=x,y=y,label=str_wrap(label, width = 40))) +
+  geom_point(aes(shape = data_type)) +
+  geom_line(data = predicted_data, aes(x = year, y = predicted), linetype = "dotted") +
   theme_minimal() +
-  scale_y_continuous(labels = scales::comma)
+  theme(legend.position = "top", legend.title = element_blank()) +
+  xlim(c(2015,2037)) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(y = NULL, x = "Year (hypothetical)", title = "Increasing deaths at home", subtitle = str_wrap("Home deaths were on the increase before the pandemic.\nIf we assumed the same annual increases from 2015-2019 we wouldn't expect the pandemic levels of home deaths until 2031!", width = 90), caption = paste0(c(glue::glue("*Annual home deaths for 2022 extrapolated from data for weeks 1-{weeks_available_2022}"),source_nrs_text), collapse="\n"))
+
+fig_expected_home_deaths_regression %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_expected_home_deaths_regression", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 18, height = 12, dpi = 300, units = "cm")
 ```
 
