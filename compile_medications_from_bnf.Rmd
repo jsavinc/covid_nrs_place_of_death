@@ -1,0 +1,156 @@
+---
+title: "Compiling list of medications based on BNF codes for dementia/AD & palliative care drugs"
+author: "Jan Savinc"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: 
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_float: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Introduction
+
+For the analysis of prescription/dispensing data, lists of specific medicines are needed to make the analysis tractable and applicable to dementia/Alzheimer's disease and for the analysis of anticipatory medicines used in palliative care.
+
+## Source of BNF codes
+
+One source for a list of all BNF codes is the Information Services Portal of the NHS Business Services Authority, https://applications.nhsbsa.nhs.uk/infosystems/data/showDataSelector.do?reportId=126. This is available after putting in a captcha-like password, so I've downloaded the file manually.
+
+File used: `01-01-2023 : 84`
+  
+# Load packages
+
+```{r}
+library(tidyverse)
+library(readxl)  # for loading excel files
+library(janitor)  # for cleaning data
+library(knitr)  # for pretty tables in the report
+```
+
+
+# Download file
+
+Note: this was done manually from the above website!
+
+# Load BNF data
+
+```{r}
+## the .csv file is inside a .zip file!
+bnf <- read_csv(file = unzip( "./bnf/20230104_1672833147341_BNF_Code_Information.zip", "20230104_1672833147341_BNF_Code_Information.csv")) %>%
+  clean_names()
+```
+
+# Defining medicines
+
+## Helper functions for searching BNF
+
+```{r}
+find_substance <- function(keyword) {
+  bnf %>%
+    filter(str_detect(bnf_chemical_substance, pattern = regex(keyword, ignore_case = TRUE))) %>%
+    group_by(bnf_chemical_substance, bnf_paragraph) %>%
+    summarise(
+      n = n(),
+      products = paste(bnf_presentation, collapse = ";")
+    )
+}
+```
+
+
+## Dementia / Alzheimer's disease
+
+The medicines of interest are:
+
+- donepezil
+- galantamine
+- rivastigmine
+- memantine
+
+~~I can manually search for the above keywords in the `chemical substance` field in the BNF and include all relevant medicines.~~
+
+Note that the above drugs correspond to the entirety of the BNF section `4.11, Drugs for dementia`
+
+```{r}
+bnf_dementia <- 
+  bnf %>%
+  filter(bnf_section == "Drugs for dementia") %>%
+  mutate(medication = word(bnf_chemical_substance, 1)) %>%
+  select(medication, bnf_section, bnf_section_code, bnf_chemical_substance_code) %>%
+  distinct
+```
+
+
+## Palliative care / anticipatory medicines
+
+Marie Curie lists [the following anticipatory medicines](https://www.mariecurie.org.uk/professionals/palliative-care-knowledge-zone/symptom-control/anticipatory-medicines):
+
+- Medicine for pain in palliative care – an appropriate opioid, for example, morphine, diamorphine, oxycodone or alfentanil.
+- Medicine for breathlessness – midazolam or an opioid.
+- Medicine for anxiety – midazolam.
+- Medicine for delirium or agitation – haloperidol, levomepromazine, midazolam or phenobarbital.
+- Medicine for nausea and vomiting – cyclizine, metoclopramide, haloperidol or levomepromazine.
+- Medicine for noisy chest secretions – hyoscine hydrobromide or glycopyrronium.
+
+Some of the above are specific chemicals, and some are classes of medicines (e.g. opioids). For opioids, some examples are listed, but I will include the entire class, i.e. the BNF section `4.7.2, Opioid analgesics`. For the other medicines, I will only include the specific substances listed.
+
+Note that alfentanil is not listed as an opioid in the BNF but as a general anaesthetic!
+
+```{r}
+bnf_palliative <-
+  ## pain: opioids + alfentanil
+  list(
+    bind_rows(
+      bnf %>% filter(bnf_paragraph_code == "040702"),  # opioids
+      bnf %>% filter(str_detect(bnf_chemical_substance, pattern = regex("alfentanil", ignore_case = TRUE)))
+    ) %>% mutate(medicine = "Pain")
+    ,
+    ## breathlessness: midazolam or opioid
+    bind_rows(
+      bnf %>% filter(bnf_paragraph_code == "040702"),  # opioids
+      bnf %>% filter(str_detect(bnf_chemical_substance, pattern = regex("midazolam", ignore_case = TRUE)))
+    ) %>% mutate(medicine = "Breathlessness")
+    ,
+    ## anxiety
+    bnf %>% filter(str_detect(bnf_chemical_substance, pattern = regex("midazolam", ignore_case = TRUE))) %>% 
+      mutate(medicine = "Anxiety")
+    ,
+    ## delirium/agitation
+    bnf %>% filter(str_detect(bnf_chemical_substance, pattern = regex("haloperidol|levomepromazine|midazolam|phenobarbital", ignore_case = TRUE))) %>% 
+      mutate(medicine = "Delirium or agitation")
+    ,
+    ## nausea or vomiting
+    bnf %>% filter(str_detect(bnf_chemical_substance, pattern = regex("cyclizine|metoclopramide|haloperidol|levomepromazine", ignore_case = TRUE))) %>% 
+      mutate(medicine = "Nausea or vomiting")
+    ,
+    ## noisy chest secretions
+    bnf %>% filter(str_detect(bnf_chemical_substance, pattern = regex("hyoscine hydrobromide|glycopyrronium", ignore_case = TRUE))) %>% 
+      mutate(medicine = "Noisy chest secretions")
+  ) %>%
+  bind_rows() %>%
+  select(medicine, bnf_chemical_substance, bnf_chemical_substance_code) %>%
+  distinct %>%
+  pivot_wider(names_from = medicine, values_from = medicine, names_prefix = "bin_", values_fill = FALSE, values_fn = ~TRUE) %>%
+  clean_names()
+```
+
+# Conclusion
+
+We are now left with two files listing medicines used in dementia/AD and palliative/anticipatory care; the palliative list is slightly more complex and it includes, for each substance, a number of binary variables indicating its use (e.g. pain, breathlessness, agitation, etc.)
+
+# Save .csv files
+
+```{r}
+write_csv(bnf_dementia, file = "./bnf/bnf_codes_dementia_alzheimers.csv")
+
+write_csv(bnf_palliative, file = "./bnf/bnf_codes_palliative_anticipatory.csv")
+```
+
