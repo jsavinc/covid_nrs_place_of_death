@@ -138,7 +138,7 @@ bnf_palliative <-
   bind_rows() %>%
   select(medicine, bnf_chemical_substance, bnf_chemical_substance_code) %>%
   distinct %>%
-  pivot_wider(names_from = medicine, values_from = medicine, names_prefix = "bin_", values_fill = FALSE, values_fn = ~TRUE) %>%
+  pivot_wider(names_from = medicine, values_from = medicine, names_prefix = "bin_", values_fill = 0L, values_fn = ~1L) %>%
   clean_names()
 ```
 
@@ -153,4 +153,3 @@ write_csv(bnf_dementia, file = "./bnf/bnf_codes_dementia_alzheimers.csv")
 
 write_csv(bnf_palliative, file = "./bnf/bnf_codes_palliative_anticipatory.csv")
 ```
-
