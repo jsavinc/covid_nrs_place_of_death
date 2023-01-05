@@ -246,3 +246,35 @@ compute_y_from_x_using_regression <- function(x, regression_model) {
 compute_x_from_y_using_regression <- function(y, regression_model) {
   (y - coef(regression_model)[1]) / coef(regression_model)[2]
 }
+
+## parse the date given in ref_period depending on format
+## this assumes there is a ref_period variable in the data!
+parse_ref_period = function(data_tbl) {
+  if (!"ref_period" %in% names(data_tbl)) 
+    stop("A 'ref_period' column not found in the data!")
+  ## this assumes the entirety of ref_period has the same format
+  ## I think it's unlikely for the data to come as a mix of the two formats
+  if (str_starts(data_tbl[["ref_period"]][1], pattern = "w\\/c")) {
+    ## continue with assumption that ref_period is given as w/c
+    data_tbl %>%
+      mutate(
+        date_w_c = 
+          ymd(str_extract(ref_period, pattern = "\\d{4}\\-\\d{1,2}\\-\\d{1,2}")),
+        year = as.integer(str_sub(ISOweek::ISOweek(date_w_c), 1, 4)),
+        week_number = lubridate::isoweek(date_w_c),
+        week_number_run_over = compute_week_run_over(week_number = week_number, year = year, start_year = 2020)  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
+      )
+  }
+  else {
+    ## otherwise, ref_period is given in isoweek format: e.g. 2020-W01
+    data_tbl %>%
+      mutate(
+        year = parse_integer(str_extract(ref_period, pattern="^(202[0-3])")),
+        week_number = parse_integer(str_remove(ref_period, pattern = "^(202[0-3])\\-")),
+        date_w_c = compute_start_date_from_week_number(week_number = week_number, year = year),
+        number_of_deaths = as.numeric(number_of_deaths),  # convert to numeric!
+        week_number_run_over = compute_week_run_over(week_number, year, start_year = 2020)  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
+      )
+  }
+    
+}
