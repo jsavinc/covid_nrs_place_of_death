@@ -176,7 +176,7 @@ weekly_deaths_age <-
 
 ```{r}
 weekly_deaths_la <- 
-  read_excel(files_weekly_deaths$la, sheet = 2, skip = 2) %>% 
+  read_excel(files_weekly_deaths$la, sheet = "Data", skip = 2) %>% 
   clean_names %>%
   rename(week_number = week_of_occurrence, ref_area = council, place_of_death = location_of_death, number_of_deaths = deaths) %>%
   filter(!is.na(number_of_deaths)) %>%  # remove blank rows & copyright entry
@@ -194,7 +194,7 @@ weekly_deaths_la <-
   set_covid_and_non_covid_deaths_to_zero_before_reporting_started()
 
 weekly_deaths_hb <- 
-  read_excel(files_weekly_deaths$hb, sheet = 2, skip = 2) %>% 
+  read_excel(files_weekly_deaths$hb, sheet = "Data", skip = 2) %>% 
   clean_names %>%
   rename(week_number = week_of_occurrence, ref_area = health_board, place_of_death = location_of_death, number_of_deaths = deaths) %>%
   filter(!is.na(number_of_deaths)) %>%  # remove blank rows & copyright entry
