@@ -45,9 +45,10 @@ tibble(text = read_lines("./parsing_toc/example.md")) %>%
   mutate(
     heading_number = glue::glue("{h1}.{h2}.{h3}"),
     heading_text = str_extract(text, "(?<=### ).*") %>% replace_na(""),
-    # find the captions
+    # find the captions inside tags <caption> BLABLA <\/caption>
     caption = 
      str_extract(text, "(?<=\\<caption\\>).+(?=\\<\\\\\\/caption\\>)") %>% 
+      textutils::HTMLdecode() %>%  # decodes things like "&amp" to "&"
      replace_na("")
   ) %>%
   distinct %>%
