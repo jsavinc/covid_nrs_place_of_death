@@ -1,0 +1,58 @@
+---
+title: "Example of report with tables"
+output: 
+  html_document:
+    keep_md: true
+    number_sections: true
+date: "2022-11-22"
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(DT)
+```
+
+# Top level header
+
+## Subheading L2 without much content
+
+### What
+
+### is this
+
+## Subheading
+
+### L3 subheading without a table
+
+Just some lorem ipsum
+
+### Table 1: SW characters shorter than 100
+
+Some lorem ipsum that doesn't need to be in a listing of tables.
+
+```{r}
+starwars %>% filter(height<100) %>%
+datatable(caption = "SW characters shorter than 100 units, presumably centimeters.")
+```
+
+### Table 2: SW characters taller than 200
+
+Some more lorem ipsum that doesn't need to be in a listing of tables.
+
+```{r}
+starwars %>% filter(height>200) %>%
+  datatable(caption = "SW characters taller than 200 units, presumably centimeters.")
+```
+
+## Subheading 2
+
+### Table 2 contains `glue`
+
+Some more lorem ipsum that doesn't need to be in a listing of tables.
+
+```{r}
+starwars %>% filter(height>200) %>%
+  datatable(caption = glue::glue("SW characters taller than 200 units, presumably centimeters."))
+```
