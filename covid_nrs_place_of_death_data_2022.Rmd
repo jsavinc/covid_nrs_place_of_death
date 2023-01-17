@@ -121,7 +121,7 @@ weekly_deaths_overall <-
   rename_at(.vars = vars(matches("sex", ignore.case = TRUE)), ~"sex") %>%
   rename_at(.vars = vars(matches("age", ignore.case = TRUE)), ~"age") %>%
   rename_at(.vars = vars(matches("value", ignore.case = TRUE)), ~"number_of_deaths") %>%  # rename so it's consistent with other data
-  filter(!ref_period %in% as.character(2020:2023)) %>% # remove totals for 2020, 2021, 2022, we only want the weekly figures
+  filter(!ref_period %in% as.character(2020:2029)) %>% # remove totals for 2020, 2021, 2022, etc., we only want the weekly figures
   parse_ref_period() %>%
   mutate(
     number_of_deaths = as.numeric(number_of_deaths),  # convert to numeric!
