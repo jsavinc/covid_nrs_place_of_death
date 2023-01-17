@@ -27,7 +27,7 @@ all_nrs_links <-
   html_nodes("a") %>%
   html_attr("href")  # find all links on the page
 
-nrs_filename_pattern <- "covid-deaths-(21|22)-data.*xlsx"  # to accommodate 2022 data also once the filename changes!
+nrs_filename_pattern <- "covid-deaths-(2\\d)-data.*xlsx"  # this will last for the decade... 202X
 
 # TODO: incorporate both weekly and monthly data?
 weekly_deaths_url_relative <- # keep only links that are probably weekly deaths
