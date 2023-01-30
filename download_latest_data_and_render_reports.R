@@ -267,7 +267,7 @@ dir_reports <- "./reports"
 if (!dir.exists(dir_reports)) dir.create(dir_reports)
 
 rmarkdown::render(
-  input = "./covid_nrs_place_of_death_data_2022.Rmd",
+  input = "./covid_nrs_place_of_death_data_2023.Rmd",
   output_file = paste0("covid_nrs_place_of_death_data_",today()),
   output_dir = dir_reports,
   envir = new.env(),
@@ -275,7 +275,7 @@ rmarkdown::render(
 )
 
 rmarkdown::render(
-  input = "./covid_nrs_place_of_death_visualisations_2022.Rmd",
+  input = "./covid_nrs_place_of_death_visualisations_2023.Rmd",
   output_file = paste0("covid_nrs_place_of_death_visualisations",today()),
   output_dir = dir_reports,
   envir = new.env(),
