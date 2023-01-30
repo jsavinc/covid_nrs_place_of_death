@@ -26,6 +26,13 @@ For the analysis of prescription/dispensing data, lists of specific medicines ar
 One source for a list of all BNF codes is the Information Services Portal of the NHS Business Services Authority, https://applications.nhsbsa.nhs.uk/infosystems/data/showDataSelector.do?reportId=126. This is available after putting in a captcha-like password, so I've downloaded the file manually.
 
 File used: `01-01-2023 : 84`
+
+
+## List of discrete medications
+
+To count the number of different prescriptions or measure polypharmacy, we need to define discrete medications that can be prescribed/dispensed, whilst removing things like dressings, vaccines, etc.
+
+[Guthrie et al., 2015 ("The rising tide of polypharmacy and drug-drug interactions: population database analysis 1995–2010")](https://doi.org/10.1186/s12916-015-0322-7) define this in their Additional file, table S1, which I'll copy-paste and export as .csv below.
   
 # Load packages
 
@@ -34,12 +41,27 @@ library(tidyverse)
 library(readxl)  # for loading excel files
 library(janitor)  # for cleaning data
 library(knitr)  # for pretty tables in the report
+library(docxtractr)  # for reading data from table in .docx file
 ```
 
 
 # Download file
 
+## BNF codes
+
 Note: this was done manually from the above website!
+
+## List of medicines
+
+Note: there appears to be an error with using `docxtractor::read_docx()` with a file downloaded to OneDrive; reading directly from the URL works fine, however! Therefore I've skipped downloading the file below.
+
+```{r}
+url_medicines <- "https://static-content.springer.com/esm/art%3A10.1186%2Fs12916-015-0322-7/MediaObjects/12916_2015_322_MOESM1_ESM.doc"
+
+# path_medicines <- file.path("./bnf", basename(url_medicines))
+# download.file(url = url_medicines, destfile = path_medicines)
+```
+
 
 # Load BNF data
 
@@ -47,6 +69,16 @@ Note: this was done manually from the above website!
 ## the .csv file is inside a .zip file!
 bnf <- read_csv(file = unzip( "./bnf/20230104_1672833147341_BNF_Code_Information.zip", "20230104_1672833147341_BNF_Code_Information.csv")) %>%
   clean_names()
+```
+
+## List of medicines
+
+```{r}
+# doc <- read_docx(path_medicines)
+## error with reading from OneDrive folder?
+doc <- read_docx(url_medicines)
+extracted_table <- 
+  docx_extract_tbl(doc, 1)
 ```
 
 # Defining medicines
@@ -141,6 +173,22 @@ bnf_palliative <-
   pivot_wider(names_from = medicine, values_from = medicine, names_prefix = "bin_", values_fill = 0L, values_fn = ~1L) %>%
   clean_names()
 ```
+
+## Discrete medicines from Guthrie et al., 2015 paper
+
+```{r}
+# TODO: process this if needed?
+medicines_list <- 
+  extracted_table %>%
+  clean_names() %>%
+  mutate(
+    chapter = as.integer(str_extract(drug_class_name, pattern = "(?<=Chapter )\\d+"))
+  ) %>%
+  filter(bnf_subsection!="") %>%
+  fill(chapter, .direction = "down")
+```
+
+
 
 # Conclusion
 
