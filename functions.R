@@ -166,13 +166,28 @@ return_pretty_cause_of_death <- function(raw_cause_of_death) {
   causes_of_death_nrs$pretty[match(x = raw_cause_of_death, table = causes_of_death_nrs$raw)]
 }
 
+
 ## helper function to return the historic period for average number of death calculations
+# TODO: at some point this will need updating!
 historic_period_depending_on_year <- function(year) {
   case_when(
     year %in% 2020:2021 ~ "2015-2019",
     year == 2022 ~ "2016-2019, 2021",
+    year == 2023 ~ "2017-2019, 2021-2022",
+    year == 2024 ~ "2018-2019, 2021-2023",
     TRUE ~ NA_character_
   )
+}
+
+## helper function for generating sequences of years excluding 2020
+## this is for use with computign historic periods
+generate_5_years_historic_period_excl_2020 <- function(starting_year) {
+  seq_years <- seq.int(from = starting_year, by = 1, length.out = 5)
+  if (2020 %in% seq_years) {
+    seq_years <- c(seq_years, tail(seq_years, 1) + 1L)
+  }
+  seq_years <- seq_years[seq_years!=2020]
+  return(seq_years)
 }
 
 ## helper function that creates week 53 data by taking week 52 in years with no year 53 and relabels it as 53
