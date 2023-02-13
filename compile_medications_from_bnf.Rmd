@@ -42,6 +42,7 @@ library(readxl)  # for loading excel files
 library(janitor)  # for cleaning data
 library(knitr)  # for pretty tables in the report
 library(docxtractr)  # for reading data from table in .docx file
+library(fuzzyjoin)  # for regex merges
 ```
 
 
@@ -184,8 +185,48 @@ medicines_list <-
   mutate(
     chapter = as.integer(str_extract(drug_class_name, pattern = "(?<=Chapter )\\d+"))
   ) %>%
-  filter(bnf_subsection!="") %>%
-  fill(chapter, .direction = "down")
+  fill(chapter, .direction = "down") %>%  # complete blanks between chapters with the last non-blank chapter
+  filter(bnf_subsection!="")  # remove chapters from the drug class column
+
+zero_pad <- function(x) str_pad(string = x, width = 2, pad = "0")
+
+test_list <-
+  medicines_list %>%
+  separate(col = bnf_subsection, into = paste0("c",1:4), sep = "\\.", remove = FALSE) %>%
+  mutate(across(c1:c3, zero_pad)) %>%  # zero-pad digits except for 4th character, c4
+  unite(col = "code", c1:c4, sep = "", na.rm = TRUE, remove = TRUE)
+```
+
+## Test against BNF to see if I get the same substances
+
+Note: these need to be done in sections by how long the code given is - does it pick up a chapter, a section, a subsection, or specific medicines only?
+
+```{r}
+test_merge <-
+  # test_list %>% 
+  # select(drug_class_name, bnf_subsection, code) %>%
+  # mutate(code = paste0("^",code)) %>%
+  # regex_right_join(bnf, by = c("code"="bnf_chemical_substance_code"))
+  bnf %>%
+  regex_right_join(
+    test_list %>%
+      select(drug_class_name, bnf_subsection, code) %>%
+      mutate(code = paste0("^",code)),
+    by = c(bnf_chemical_substance_code = "code")
+  )
+
+# View(test_merge)
+
+## what's left after matching all of the bnf to the provided codes?
+test_merge2 <-
+  bnf %>%
+  regex_anti_join(
+    test_list %>%
+      select(drug_class_name, bnf_subsection, code) %>%
+      mutate(code = paste0("^",code)),
+    by = c(bnf_chemical_substance_code = "code")
+  )
+test_merge2 %>% count(bnf_section, bnf_section_code)
 ```
 
 
