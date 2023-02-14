@@ -293,3 +293,13 @@ parse_ref_period = function(data_tbl) {
   }
     
 }
+
+## helper function to infer how many years of Covid data to average from for
+## historic figures, given current year covid data started in 2020: 2020 has no
+## historic figures, in 2021 we take the weekly average from 2020, in 2022 we
+## take from 2020-2021, and so on
+infer_year_range_for_calculating_covid_deaths <- function(year) {
+  year_range <- seq.int(from = year-5L, to = year-1L)
+  year_range <- year_range[year_range>=2020]
+  return(year_range)
+}
