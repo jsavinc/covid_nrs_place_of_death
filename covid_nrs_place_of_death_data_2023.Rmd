@@ -101,6 +101,8 @@ There are several files that the data are imported from.
 
 ```{r}
 ## a separate raw file makes it easier to debug, and also reduces the number of requests I make while debugging!
+## Note: as of 16 Feb 2023, this returns a strange error
+# TODO: if error persists, load data from the main report file instead?
 ods_raw <- ods_dataset("deaths-involving-coronavirus-covid-19", geography = "sc")
 
 ## Note: as of 12 Dec 2022, the format of the ref_period variable changed from
@@ -972,12 +974,15 @@ weekly_deaths_cause_of_death_noncovid <-
   ) %>%
   filter(cause_of_death != "COVID-19")
 
-weekly_deaths_cause_of_death_covid <-
+weekly_deaths_cause_of_death_covid_before_processing <-
   bind_rows(
     weekly_deaths_cause_of_death_2020,
     weekly_deaths_cause_of_death_2021,
     weekly_deaths_cause_of_death_2022_onwards
-  ) %>%
+  )
+
+weekly_deaths_cause_of_death_covid <-
+  weekly_deaths_cause_of_death_covid_before_processing %>%
   filter(cause_of_death == "COVID-19") %>%
   group_by(year) %>%
   group_map(
@@ -985,7 +990,7 @@ weekly_deaths_cause_of_death_covid <-
       current_year <- year_tbl$year  # get year from the function arguments
       year_range <- infer_year_range_for_calculating_covid_deaths(current_year)  # work out which years of data to use
       weekly_means <-  
-        weekly_deaths_cause_of_death_covid %>%
+        weekly_deaths_cause_of_death_covid_before_processing %>%  # bind again weekly deaths
         filter(year %in% year_range) %>%  # filter the covid data to the relevant years to compute from
         create_week_53_data_for_years_with_52_weeks() %>%  # create 53rd week if needed
         group_by(place_of_death, cause_of_death, week_number) %>%
@@ -1024,7 +1029,7 @@ historical_annual_average_cause_of_death <-
     annual_deaths_mean = sum(deaths_mean),
     .groups = "drop"
   ) %>% 
-  filter(year!=2020)  # 2020 and 2021 should have identical annual means so I remove one %>%
+  filter(year!=2020) %>%  # 2020 and 2021 should have identical annual means so I remove one %>%
   select(-year)
 
 ## checking discrepancy:
@@ -1075,13 +1080,17 @@ merged_deaths_age <-
   mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
   inner_join(historical_weekly_average_age, by = c("place_of_death", "week_number", "age", "historic_period"))
 
+## Note: previously I computed the historical average separately fro mthe weekly cause of death data
+## Now it's already computed in the same dataset, so I just assign it here, no joining needed
 merged_deaths_cause_of_death <-
-  weekly_deaths_cause_of_death %>%
-  mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
-  left_join(  # left_join so that the historical Covid-19 rates are blank!
-    historical_average_cause_of_death %>% select(-week_number_run_over), 
-    by = c("place_of_death", "week_number", "cause_of_death", "historic_period", "year", "date_w_c")
-  )
+  weekly_deaths_cause_of_death
+# merged_deaths_cause_of_death <-
+#   weekly_deaths_cause_of_death %>%
+#   mutate(historic_period = historic_period_depending_on_year(year)) %>%  # add historic period so we match with the correct historic period data
+#   left_join(  # left_join so that the historical Covid-19 rates are blank!
+#     historical_average_cause_of_death %>% select(-week_number_run_over), 
+#     by = c("place_of_death", "week_number", "cause_of_death", "historic_period", "year", "date_w_c")
+#   )
 ```
 
 
@@ -1255,14 +1264,15 @@ merged_deaths_hb %>%
 
 # Constants about latest data available
 
-These are used for saying in plots what data were included e.g. weeks 1-12 in 2022.
+These are used for saying in plots what data were included e.g. weeks 1-12 in 2023.
 
 ```{r}
 ## constants for use in graphs & annotations
-weeks_available_2022 <- max(merged_deaths_age$week_number[merged_deaths_age$year==2022])
-most_recent_date_available_2022 <- max(merged_deaths_age$date_w_c)
+weeks_available_2023 <- max(merged_deaths_age$week_number[merged_deaths_age$year==2023])
+most_recent_date_available_2023 <- max(merged_deaths_age$date_w_c)
 
 earliest_date <- min(merged_deaths_age$date_w_c)
+current_year <- isoyear(most_recent_date_available_2023)
 ```
 
 # Ordering geographical data by population size
@@ -1396,7 +1406,7 @@ table_current_deaths_compared_to_past <-
       ) %>% 
       group_by(place_of_death) %>%
       summarise(
-        period = glue::glue("Data from week 1, 2020 to week {weeks_available_2022}, 2022"),
+        period = glue::glue("Data from week 1, 2020 to week {weeks_available_2023}, 2022"),
         historic_period = "2015-2019",
         deaths_all_causes = sum(deaths_all_causes),
         deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
@@ -1493,7 +1503,7 @@ table_current_deaths_compared_to_past <-
     ) %>% 
     group_by(place_of_death) %>%
     summarise(
-      period = glue::glue("2022 up to week {weeks_available_2022}"),
+      period = glue::glue("2022 up to week {weeks_available_2023}"),
       historic_period = "2015-2019",
       deaths_all_causes = sum(deaths_all_causes),
       deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),

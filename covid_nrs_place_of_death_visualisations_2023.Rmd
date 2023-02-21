@@ -82,12 +82,12 @@ theme_set(theme_minimal(base_size = 12) +
             ))
 
 
-date_range_text <- glue::glue("Data from w/c {format(earliest_date, '%d %B %Y')} to w/c {format(most_recent_date_available_2022, '%d %B %Y')} (inclusive).")
+date_range_text <- glue::glue("Data from w/c {format(earliest_date, '%d %B %Y')} to w/c {format(most_recent_date_available_2023, '%d %B %Y')} (inclusive).")
 
 dashed_line_historical_range_text <- "Range of deaths 2015-19 shown as shaded area; mean shown as dashed line."
 
 only_2020_text <- glue::glue("Data from 2020 included, starting with w/c {format(earliest_date)}.")
-only_2022_text <- glue::glue("Data for 2022 only include weeks 1-{format(weeks_available_2022)} (w/c {format(most_recent_date_available_2022)}).")
+only_2023_text <- glue::glue("Data for 2023 only include weeks 1-{format(weeks_available_2023)} (w/c {format(most_recent_date_available_2023)}).")
 
 source_nrs_text <- "Source: National Records of Scotland"
 source_phs_text <- "Source: Public Health Scotland"
@@ -158,7 +158,7 @@ fig_place_of_death <-
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2021), linetype = "dashed", colour="grey50") +  # start of 2021
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2022), linetype = "dashed", colour="grey50") +  # start of 2022
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2023), linetype = "dashed", colour="grey50") +  # start of 2023
-  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2023)) +
   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
   geom_line(aes(y = deaths, colour = deaths_type)) +
   geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
@@ -224,7 +224,7 @@ fig_place_of_death_2015_2019_range <-
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2021), linetype = "dashed", colour="grey50") +  # start of 2021
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2022), linetype = "dashed", colour="grey50") +  # start of 2022
    geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2023), linetype = "dashed", colour="grey50") +  # start of 2023
-  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2023)) +
   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
   geom_line(aes(y = deaths, colour = deaths_type)) +
   geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
@@ -273,7 +273,7 @@ fig_place_of_death_home_only <-
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2021), linetype = "dashed", colour="grey50") +  # start of 2021
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2022), linetype = "dashed", colour="grey50") +  # start of 2022
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2023), linetype = "dashed", colour="grey50") +  # start of 2023
-  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2023)) +
   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
   geom_line(aes(y = deaths, colour = deaths_type)) +
   geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
@@ -323,7 +323,7 @@ fig_place_of_death_home_2015_2019_historic_period <-
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2021), linetype = "dashed", colour="grey50") +  # start of 2021
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2022), linetype = "dashed", colour="grey50") +  # start of 2022
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2023), linetype = "dashed", colour="grey50") +  # start of 2023
-  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2023)) +
   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
   geom_line(aes(y = deaths, colour = deaths_type)) +
   geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
@@ -383,7 +383,7 @@ Here we'll show 4 lines, one for each place of death, for each year so far.
   labs(
     x = "Year", y = "Proportion of yearly deaths (%)",
     colour = NULL,
-    subtitle = paste0("* ",only_2022_text),
+    subtitle = paste0("* ",only_2023_text),
     caption = paste0(c(death_registrations_text,source_nrs_text),collapse="\n")
     ) +
   guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
@@ -472,7 +472,7 @@ fig_weekly_proportion_of_death_by_place <-
   labs(
     x = "Week number", y = "Weekly proportion of deaths (%)",
     colour = NULL,
-    subtitle = paste0("* ",only_2022_text),
+    subtitle = paste0("* ",only_2023_text),
     caption = paste0(c(death_registrations_text,source_nrs_text),collapse="\n")
   ) +
   NULL
@@ -508,7 +508,7 @@ fig_cumulative_weekly_proportion_of_deaths_by_place <-
   labs(
     x = "Week number", y = "Cumulative proportion of place of death (%)",
     colour = NULL,
-    subtitle = paste0("* ",only_2022_text),
+    subtitle = paste0("* ",only_2023_text),
     caption = paste0(c(death_registrations_text,source_nrs_text),collapse="\n")
   ) +
   NULL
@@ -543,7 +543,7 @@ fig_cumulative_weekly_proportion_of_deaths_by_place_with_historic_range <-
   ) +
   labs(
     x = "Week number", y = "Cumulative proportion of place of death (%)",
-    subtitle = paste0("* ",only_2022_text),
+    subtitle = paste0("* ",only_2023_text),
     caption = paste0(c("Shaded areas represent the range of cumulative weekly proportion of deaths by place for the 2015-2019 period",death_registrations_text, source_nrs_text),collapse="\n")
   ) +
   NULL
@@ -629,7 +629,7 @@ total_deaths_cause_of_death_so_far <-
   labs(
     x = NULL, y = NULL,
     title = str_wrap("Total deaths since start of 2020 by cause and place of death, compared to 2015-2019", width = 60),
-    subtitle = paste0(c("Bars are no. of deaths, line segments are mean annual deaths 2015-2019", paste0("* ",only_2022_text)), collapse="\n"),
+    subtitle = paste0(c("Bars are no. of deaths, line segments are mean annual deaths 2015-2019", paste0("* ",only_2023_text)), collapse="\n"),
     caption = paste0(c(death_registrations_text, source_nrs_text),collapse="\n")
   ) +
   NULL)
@@ -666,7 +666,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_deaths_so_far_b
   labs(
     x = NULL, y = NULL,
     title = "Annual deaths by cause and place of death, compared to 2015-2019",
-    subtitle = paste0(c("Bars are no. of deaths, line segments are mean annual deaths 2015-2019", paste0("* ",only_2022_text)), collapse="\n"),
+    subtitle = paste0(c("Bars are no. of deaths, line segments are mean annual deaths 2015-2019", paste0("* ",only_2023_text)), collapse="\n"),
     caption = paste0(c(death_registrations_text, source_nrs_text),collapse="\n")
   ) +
   NULL)
@@ -702,7 +702,7 @@ fig_cause_of_death_annual_proportion_by_place <-
     x = "Year",
     y = "Percentage yearly deaths by place (%)",
     title = "In 2020 and 2021 the share of deaths at <b style='color:#31688E;'>Home</b> increased for all causes.\nDuring the pandemic, more cancer deaths happened at <b style='color:#31688E;'>Home</b> than in <b style='color:#440154;'>Hospital</b>.",
-    subtitle = paste0("\n* ",only_2022_text),
+    subtitle = paste0("\n* ",only_2023_text),
     caption = paste0(c("The 2015-2019 number of deaths is the annual mean for the period.",death_registrations_text,source_nrs_text), collapse = "\n")
   ) +
   theme(
@@ -742,13 +742,13 @@ fig_cause_of_death_weekly_proportion_by_place <-
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2022), linetype = "dashed", colour="grey50") +  # start of 2022
   facet_rep_wrap(~cause_of_death, repeat.tick.labels = TRUE, ncol = 2) +
   scale_colour_viridis_d() +
-  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2023)) +
   scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1)) +
   labs(
     x = "Year",
     y = "Percentage weekly deaths by place (%)",
     # title = "In 2020 and 2021 the share of deaths at <b style='color:#31688E;'>Home</b> increased for all causes.\nDuring the pandemic, more cancer deaths happened at <b style='color:#31688E;'>Home</b> than in <b style='color:#440154;'>Hospital</b>.",
-    subtitle = paste0("\n* ",only_2022_text),
+    subtitle = paste0("\n* ",only_2023_text),
     caption = paste0(c("The 2015-2019 figures are average weekly deaths.",death_registrations_text,source_nrs_text), collapse = "\n")
   ) +
   theme(
@@ -807,7 +807,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_cause_of_death_
   labs(
     x = "Year",
     y = "Percentage weekly deaths by place (%)",
-    subtitle = paste0("\n* ",only_2022_text),
+    subtitle = paste0("\n* ",only_2023_text),
     caption = paste0(c("The 2015-2019 figures are average weekly deaths",death_registrations_text,source_nrs_text), collapse = "\n")
   ) +
   theme(
@@ -845,7 +845,7 @@ fig_weekly_deaths_by_cause_at_home <-
   filter(!(deaths_type=="deaths_mean" & cause_of_death=="COVID-19")) %>%  # remove historical average for covid, it's 0 anyway
   mutate(place_of_death = factor(place_of_death, levels = c("Hospital", "Home & other non-institution", "Care home"))) %>%  # needs to be factor with same levels, otherwise it messes up level order when added as geom_text later!)
   ggplot(aes(x = date_w_c)) +
-  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2023)) +
   # geom_line(aes(y = number_of_deaths, colour = deaths_type, linetype = deaths_type)) +
   geom_line(aes(y = number_of_deaths, colour = deaths_type)) +
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2021), linetype = "dotted", colour="grey70") +  # start of 2021
@@ -892,7 +892,7 @@ fig_place_of_death_deviation_from_mean <-
   ggplot(aes(x = date_w_c)) +
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2021), linetype = "dashed", colour="grey50") +  # start of 2021
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2022), linetype = "dashed", colour="grey50") +  # start of 2022
-  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2023)) +
   geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max, fill = "#4477aa"), alpha = 0.5) +
   geom_line(aes(y = deaths, colour = deaths_type)) +
   geom_line(aes(y = 0, linetype = "dashed"), colour="grey20") +
@@ -937,7 +937,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death_
   pivot_longer(cols = c(ma4w_deaths_all_causes, ma4w_deaths_non_covid), 
                names_to = "deaths_type", values_to = "deaths") %>% 
   ggplot(aes(x = date_w_c)) +
-  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2023)) +
   geom_ribbon(aes(ymin = ma4w_deaths_min, ymax = ma4w_deaths_max, fill = "#4477aa"), alpha = 0.5) +
   # geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
   geom_line(aes(y = deaths, colour = deaths_type)) +
@@ -987,7 +987,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_home_deaths_4we
   pivot_longer(cols = c(ma4w_deaths_all_causes, ma4w_deaths_non_covid), 
                names_to = "deaths_type", values_to = "deaths") %>% 
   ggplot(aes(x = date_w_c)) +
-  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2022)) +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks", limits = c(earliest_date, most_recent_date_available_2023)) +
   geom_ribbon(aes(ymin = ma4w_deaths_min, ymax = ma4w_deaths_max, fill = "#4477aa"), alpha = 0.5) +
   # geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
   geom_line(aes(y = deaths, colour = deaths_type)) +
@@ -1058,7 +1058,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_home_deaths_4we
          size = guide_legend(nrow=2, title = NULL)) +
   labs(
     x = NULL, y= "Proportion of yearly deaths (%)",
-    subtitle = paste0("* ",only_2022_text),
+    subtitle = paste0("* ",only_2023_text),
     caption = paste0(c("Health boards sorted by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
     ) +
   NULL)
@@ -1096,7 +1096,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
          size = guide_legend(nrow=2, title = NULL)) +
   labs(
     x = NULL, y= "Proportion of yearly deaths (%)",
-    subtitle = paste0("* ",only_2022_text),
+    subtitle = paste0("* ",only_2023_text),
     caption = paste0(c("Local Authorities sorted by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
     ) +
   NULL)
@@ -1137,7 +1137,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
   labs(
     linetype = NULL,
     x = NULL, y= "Proportion of yearly deaths that happened at home or other non-institution (%)",
-    subtitle = paste0("* ",only_2022_text),
+    subtitle = paste0("* ",only_2023_text),
     caption = paste0(c("Health boards sorted by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
     ) +
   NULL)
@@ -1178,7 +1178,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
   labs(
     linetype = NULL,
     x = NULL, y= "Proportion of yearly deaths that happened at home or other non-institution (%)",
-    subtitle = paste0("* ",only_2022_text),
+    subtitle = paste0("* ",only_2023_text),
     caption = paste0(c("Local Authorities sorted by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
     ) +
   NULL)
@@ -1241,7 +1241,7 @@ Because we only have partial data for 2022, we need to employ the weekly compari
        title = str_wrap("Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by Local Authority", width=40),
        # subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
        # caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
-       caption = paste0(c(only_2022_text,source_nrs_text), collapse="\n"),
+       caption = paste0(c(only_2023_text,source_nrs_text), collapse="\n"),
        fill = "Home death\nincrease relative\nto 2015-2019"
        ) +
   NULL)
@@ -1273,7 +1273,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
        title = str_wrap("Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by NHS Health Board", width=40),
        # subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
        # caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
-       caption = paste0(c(only_2022_text,source_nrs_text), collapse="\n"),
+       caption = paste0(c(only_2023_text,source_nrs_text), collapse="\n"),
        fill = "Home death\nincrease relative\nto 2015-2019"
        ) +
   NULL)
@@ -1310,7 +1310,7 @@ Because we only have partial data for 2022, we need to employ the weekly compari
   facet_wrap(~year, nrow = 1) +
   labs(x="", y="",
        title = "Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by Local Authority",
-       caption = paste0(c(only_2022_text,source_nrs_text), collapse="\n"),
+       caption = paste0(c(only_2023_text,source_nrs_text), collapse="\n"),
        fill = "Home death\nincrease relative\nto 2015-2019"
        ) +
   NULL)
@@ -1337,7 +1337,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
   labs(x="", y="",
        title = str_wrap("Total COVID-19 cases since the start of 2020, by Local Authority", width=40),
        subtitle = "",
-       caption = paste0(c(only_2022_text,crude_rate_text,source_phs_text), collapse="\n"),
+       caption = paste0(c(only_2023_text,crude_rate_text,source_phs_text), collapse="\n"),
        fill = str_wrap("Cases per 100,000 population", width = 15)
        ) +
   NULL)
@@ -1388,7 +1388,7 @@ See above for how this was done for LA!
   facet_wrap(~year, nrow = 1) +
   labs(x="", y="",
        title = "Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by NHS Health Board",
-       caption = paste0(c(only_2022_text,source_nrs_text), collapse="\n"),
+       caption = paste0(c(only_2023_text,source_nrs_text), collapse="\n"),
        fill = "Home death\nincrease relative\nto 2015-2019"
        ) +
   NULL)
@@ -1419,7 +1419,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
   labs(x="", y="",
        title = str_wrap("Total COVID-19 cases since the start of 2020, by NHS Health Board", width=40),
        subtitle = "",
-       caption = paste0(c(only_2022_text,crude_rate_text,source_phs_text), collapse="\n"),
+       caption = paste0(c(only_2023_text,crude_rate_text,source_phs_text), collapse="\n"),
        fill = str_wrap("Cases per 100,000 population", width = 15)
        ) +
   NULL)
@@ -1552,55 +1552,69 @@ extrapolated_2020_data <-
   historical_weekly_average_overall %>%
   filter(place_of_death == "Home & other non-institution" & historic_period == "2015-2019") %>%
   summarise(
-    deaths_mean_so_far = sum(deaths_mean[week_number <= weeks_available_2022], na.rm= TRUE),
+    deaths_mean_so_far = sum(deaths_mean[week_number <= weeks_available_2023], na.rm= TRUE),
     deaths_mean_total = sum(deaths_mean, na.rm= TRUE),
     proportion_of_deaths_so_far = deaths_mean_so_far / deaths_mean_total
     )
-
-predicted_data_annotations <- tribble(
-  ~x, ~y, ~label,
-  2021, 20e3, "Predicted home deaths 2020-2022 using 2015-2019 data",
-  2033, 23e3, "Actual home deaths 2020-2022*",
-  2033, 17.5e3, "If the 2015-2019 trend continued we wouldn't observe this number of home deaths until 2031",
-)
 
 actual_and_predicted_data <-
   bind_rows(
     merged_proportions_of_deaths_by_place %>%
     select(year, number_of_deaths, place_of_death) %>%
     filter(place_of_death == "Home & other non-institution" & year %in% 2015:2019) %>%
-      mutate(data_type = "Actual")
+      mutate(data_type = "Historic")
     ,
     merged_proportions_of_deaths_by_place %>%
     select(year, number_of_deaths, place_of_death) %>%
-    filter(place_of_death == "Home & other non-institution" & year %in% 2020:2022) %>%
+    filter(place_of_death == "Home & other non-institution" & year %in% 2020:current_year) %>%
     mutate(
       data_type = "Predicted",
-      number_of_deaths = if_else(year %in% 2020:2022, compute_y_from_x_using_regression(x = year-2015, regression_model = regression_model), number_of_deaths)
+      number_of_deaths = if_else(year %in% 2020:current_year, compute_y_from_x_using_regression(x = year-2015, regression_model = regression_model), number_of_deaths)
       )
     ,
     merged_proportions_of_deaths_by_place %>%
       select(year, number_of_deaths, place_of_death) %>%
-      filter(place_of_death == "Home & other non-institution" & year %in% 2020:2022) %>%
+      filter(place_of_death == "Home & other non-institution" & year %in% 2020:current_year) %>%
       mutate(
-        number_of_deaths = if_else(year == 2022, number_of_deaths / extrapolated_2020_data$proportion_of_deaths_so_far, number_of_deaths),
+        number_of_deaths = if_else(year == current_year, number_of_deaths / extrapolated_2020_data$proportion_of_deaths_so_far, number_of_deaths),
         year = 2015 + compute_x_from_y_using_regression(y = number_of_deaths, regression_model = regression_model),  # compute predicted X
-        data_type = "Actual"  # note: this is actual figures but
+        data_type = "Actual",  # note: this is actual figures, but at the extrapolated year
+        actual_year = 2020:current_year
       )
-  )
+  ) %>%
+  mutate(data_type = factor(data_type, levels = unique(data_type)))
+
+## define the limites of the rectangles used to highlight areas of the graph
+regression_rectangles <-
+  actual_and_predicted_data %>% 
+  filter(data_type %in% c("Predicted","Actual")) %>%
+  group_by(data_type) %>%
+  summarise(year_min = min(year), year_max = max(year), deaths_min = min(number_of_deaths), deaths_max = max(number_of_deaths))
+
+## annotations to go above the rectangles
+predicted_data_annotations <- tribble(
+  ~x, ~y, ~label,
+  rowMeans(regression_rectangles[1,c("year_min","year_max")]), regression_rectangles[[1,"deaths_max"]]+2000, glue::glue("Predicted home deaths 2020-{current_year} using 2015-2019 data"),
+  rowMeans(regression_rectangles[2,c("year_min","year_max")]), regression_rectangles[[2,"deaths_max"]]+2000, glue::glue("Actual home deaths 2020-{current_year}*"),
+  rowMeans(regression_rectangles[2,c("year_min","year_max")]), regression_rectangles[[2,"deaths_min"]]-3000, "If the 2015-2019 trend continued we wouldn't observe this number of home deaths until 2031",
+)
 
 fig_expected_home_deaths_regression <-
   ggplot(data = actual_and_predicted_data, aes(x=year, y=number_of_deaths)) +
-  geom_rect(aes(xmin = 2019.5, xmax = 2022.5, ymin = 15.5e3, ymax = 18.5e3), fill = "yellow", alpha = 0.3) +
-  geom_rect(aes(xmin = 2030, xmax = 2035, ymin = 19.5e3, ymax = 22e3), fill = "yellow", alpha = 0.3) +
-  geom_text(data = predicted_data_annotations, aes(x=x,y=y,label=str_wrap(label, width = 40))) +
+  # highlighting predicted data for 2020 onwards
+  statebins:::geom_rrect(aes(xmin = regression_rectangles[[1,"year_min"]]-0.5, xmax = regression_rectangles[[1,"year_max"]]+0.5, ymin = regression_rectangles[[1,"deaths_min"]]-1000, ymax = regression_rectangles[[1,"deaths_max"]]+1000), fill = alpha("grey",0), colour = "red") +
+  # highlighting actual data
+  statebins:::geom_rrect(aes(xmin = regression_rectangles[[2,"year_min"]]-0.5, xmax = regression_rectangles[[2,"year_max"]]+0.5, ymin = regression_rectangles[[2,"deaths_min"]]-1000, ymax = regression_rectangles[[2,"deaths_max"]]+1000), fill = alpha("grey",0), colour = "orange") +
+  geom_text(data = predicted_data_annotations, aes(x=x,y=y,label=str_wrap(label, width = 60))) +
+  geom_text(data = actual_and_predicted_data %>% filter(actual_year %in% 2020:current_year), aes(x = year, y = number_of_deaths + 500, label = if_else(actual_year==current_year, paste0(actual_year,"*"), as.character(actual_year))), angle = 30) +
   geom_point(aes(shape = data_type)) +
-  geom_line(data = predicted_data, aes(x = year, y = predicted), linetype = "dotted") +
+  geom_line(data = predicted_data %>% filter(year <= ceiling(max(regression_rectangles$year_max))), aes(x = year, y = predicted), linetype = "dotted") +
   theme_minimal() +
   theme(legend.position = "top", legend.title = element_blank()) +
-  xlim(c(2015,2037)) +
   scale_y_continuous(labels = scales::comma) +
-  labs(y = NULL, x = "Year (hypothetical)", title = "Increasing deaths at home", subtitle = str_wrap("Home deaths were on the increase before the pandemic.\nIf we assumed the same annual increases from 2015-2019 we wouldn't expect the pandemic levels of home deaths until 2031!", width = 90), caption = paste0(c(glue::glue("*Annual home deaths for 2022 extrapolated from data for weeks 1-{weeks_available_2022}"),source_nrs_text), collapse="\n"))
+  scale_x_continuous(breaks = 2015:2045, minor_breaks = NULL, limits = c(2015,ceiling(max(regression_rectangles$year_max)))) +
+  theme(axis.text.x = element_text(size = rel(0.8), angle = 45, hjust = 1)) +
+  labs(y = NULL, x = "Year (hypothetical)", title = "Increasing deaths at home", subtitle = str_wrap("Home deaths were on the increase before the pandemic.\nIf we assumed the same annual increases from 2015-2019 we wouldn't expect the pandemic levels of home deaths until 2031!", width = 90), caption = paste0(c(glue::glue("*Annual home deaths for 2023 extrapolated from data for weeks 1-{weeks_available_2023}"),source_nrs_text), collapse="\n"))
 
 fig_expected_home_deaths_regression %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_expected_home_deaths_regression", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 18, height = 12, dpi = 300, units = "cm")
