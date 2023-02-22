@@ -1480,12 +1480,32 @@ table_current_deaths_compared_to_past <-
       by = c("place_of_death","historic_period")
     )
     ,
-    ## 2022 data so far
+    ## 2022
+    merged_deaths_overall %>%
+      filter(age == "all" &
+               sex == "all" &
+               year == 2022
+             ) %>% 
+      group_by(place_of_death) %>%
+      summarise(
+        period = "2022",
+        historic_period = "2015-2019",
+        deaths_all_causes = sum(deaths_all_causes),
+        deaths_covid_related = sum(deaths_covid_related, na.rm = TRUE),
+        .groups = "drop"
+      ) %>% 
+      mutate(deaths_non_covid = deaths_all_causes - deaths_covid_related) %>%
+    left_join(
+      historical_annual_average_overall %>% 
+        select(place_of_death, mean_annual_deaths_2015_2019 = annual_deaths_mean, historic_period),
+      by = c("place_of_death","historic_period")
+    ),
+    ## 2023 data so far
     merged_deaths_overall %>%
       filter(
         age == "all" &
           sex == "all" &
-          year == 2022
+          year == 2023
       ) %>%
       group_by(place_of_death, week_number) %>%
       summarise(
@@ -1503,7 +1523,7 @@ table_current_deaths_compared_to_past <-
     ) %>% 
     group_by(place_of_death) %>%
     summarise(
-      period = glue::glue("2022 up to week {weeks_available_2023}"),
+      period = glue::glue("2023, up to week {weeks_available_2023}"),
       historic_period = "2015-2019",
       deaths_all_causes = sum(deaths_all_causes),
       deaths_non_covid = sum(deaths_non_covid, na.rm = TRUE),
@@ -1650,6 +1670,68 @@ order_of_causes_of_death <-
   filter(year == 2020 & place_of_death == "All") %>% 
   arrange(desc(deaths)) %>% 
   pull(cause_of_death)
+```
+
+# Causes of death over time, proportion inside and between places
+
+Table of number of deaths by cause, place of death and year, showing proportion of deaths by cause within each place `prop_cod_within_pod` (e.g. Covid deaths were 2% of home deaths) and proportion of deaths by place within each cause `prop_pod_within_cod` (e.g. 70% of all Covid deaths happened in hospital).
+Note that because historic data was given averaged over the 5 year period, the historic figures are given as a mean over the period rather than an annual total.
+
+```{r}
+table_proportions_of_cause_of_death <-
+  bind_rows(
+    ## historic periods
+    historical_annual_average_cause_of_death %>%
+      rename(year = historic_period, deaths = annual_deaths_mean),
+    ## current data
+    total_deaths_cause_of_death %>%
+      select(-c(historic_period,annual_deaths_mean:ncol(.))) %>%
+      mutate(year = as.character(year))
+  ) %>%
+  filter(place_of_death!="All" & cause_of_death!="All") %>%
+  group_by(year,place_of_death) %>%
+  mutate(prop_cod_within_pod = deaths / sum(deaths)) %>%
+  group_by(year,cause_of_death) %>%
+  mutate(prop_pod_within_cod = deaths / sum(deaths)) %>%
+  ungroup %>%
+  (function(data_tbl){
+    bind_rows(
+      data_tbl,
+      ## all cause
+      data_tbl %>%
+        group_by(year, place_of_death) %>%
+        summarise(
+          cause_of_death = "All",
+          deaths = sum(deaths),
+          prop_cod_within_pod = 1,
+          .groups = "drop"
+        ) %>%
+        group_by(year, cause_of_death) %>%
+        mutate(prop_pod_within_cod = deaths/sum(deaths)) %>%
+        ungroup,
+      ## all place of death
+      data_tbl %>%
+        group_by(year, cause_of_death) %>%
+        summarise(
+          place_of_death = "All",
+          deaths = sum(deaths),
+          prop_pod_within_cod = 1,
+          .groups = "drop"
+        ) %>%
+        group_by(year, place_of_death) %>%
+        mutate(prop_cod_within_pod = deaths/sum(deaths)) %>%
+        ungroup
+    )
+  }) %>%
+  mutate(
+    year = factor(year, levels = unique(year)),
+    cause_of_death = factor(cause_of_death, levels = order_of_causes_of_death),
+    place_of_death = factor(place_of_death, levels = order_of_place_of_death_levels[c(5,1,3,2,4)])
+    ) %>%
+  arrange(year, place_of_death, cause_of_death)
+
+table_proportions_of_cause_of_death %>%
+  write_csv(file = paste0(dir_outputs,"/proportions_of_deaths_by_place_&_cause.csv"))
 ```
 
 
