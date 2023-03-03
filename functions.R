@@ -303,3 +303,67 @@ infer_year_range_for_calculating_covid_deaths <- function(year) {
   year_range <- year_range[year_range>=2020]
   return(year_range)
 }
+
+
+## Function to save files to multiple formats Saving to multiple formats is easy
+## enough - the trouble is with saving PDF files with custom fonts, since they
+## need to be embedded in the .pdf file. This requires:
+## 1) telling R where to load the font from, using `extrafont::font_import()` - 
+## this was done in a previous step
+## 2) registering fonts with R using `extrafont::loadfonts()` - 
+## note: this isn't strictly necessary, since once imported, `extrafont` keeps
+## track of fonts to load when the `extrafont` package is loaded
+## 3) instead of manually embedding fonts (which resulted in garbled text on my
+## setup!), just use `device=device_cairo` as an argument to `ggsave()` when
+## saving `.pdf` files and it just works
+
+save_output_file <- function(filename, extensions, plot, width, height, units, dpi) {
+  walk(
+    .x = extensions,
+    .f = function(ext) {
+      ggsave(
+        filename = paste0(filename, ext),
+        plot = plot,
+        width = width,
+        height = height,
+        units = units,
+        dpi = dpi,
+        device = 
+          if (tolower(ext) == ".pdf") cairo_pdf
+          else NULL
+      )
+    }
+  )
+}
+
+
+## helper function for plotting - adds a vertical dashed line and writes the
+## year at the start of the year, for the requested years
+## this saves me having to change graphs to add the year line to each
+add_vertical_lines_and_annotations_for_years <- function(years, y_annotation, shorten_year = TRUE) {
+  c(
+    map(
+      .x = years,
+      .f = function(year) {
+        annotate(
+          geom = "text",
+          x = compute_start_date_from_week_number(week_number = 1, year_number = year),
+          y = y_annotation,
+          label = if (shorten_year) paste0("'",str_sub(year,3,4)) else year,
+          hjust = 0,
+          colour = "grey40"
+        )
+      }
+    ),
+    map(
+      .x = years,
+      .f = function(year) {
+        geom_vline(
+          xintercept = compute_start_date_from_week_number(week_number = 1, year_number = year),
+          linetype = "dashed",
+          colour = "grey50"
+        )
+      }
+    )
+  )
+}

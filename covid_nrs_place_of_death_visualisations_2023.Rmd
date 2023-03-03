@@ -109,29 +109,6 @@ historic_period_2015_2019_text <- "Historic mean & range for 2015-2019 throughou
 historic_period_2022_text <- "2020-21 use 2015-2019 historic mean & range; 2022 uses 2016-2019 & 2021."
 ```
 
-## Function to save files to multiple formats
-
-Saving to multiple formats is easy enough - the trouble is with saving PDF files with custom fonts, since they need to be embedded in the .pdf file. This requires:
-  
-  * telling R where to load the font from, using `extrafont::font_import()` - this was done in a previous step
-* registering fonts with R using `extrafont::loadfonts()` - note: this isn't strictly necessary, since once imported, `extrafont` keeps track of fonts to load when the `extrafont` package is loaded
-* ~~telling R where the `gs` executable is, i.e. the installation of ghostscript on the current machine~~
-* ~~embedding the fonts in the `.pdf` files once they've been written, using `extrafont::embed_fonts()`~~
-  * instead of manually embedding fonts (which resulted in garbled text on my setup!), just use `device=device_cairo` as an argument to `ggsave()` when saving `.pdf` files and it just works
-
-```{r}
-save_output_file <- function(filename, extensions, plot, width, height, units, dpi) {
-  
-  walk(
-    .x = extensions,
-    .f = function(ext) {
-      # if (tolower(ext)==".pdf") device <- cairo_pdf
-      ggsave(filename = paste0(filename, ext), plot = plot, width = width, height = height, units = units, dpi = dpi, device = if (tolower(ext)==".pdf") cairo_pdf else NULL)
-    }
-  )
-}
-```
-
 # Place of death over time
 
 ```{r}
