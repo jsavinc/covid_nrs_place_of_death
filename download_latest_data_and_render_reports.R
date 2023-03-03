@@ -281,6 +281,13 @@ rmarkdown::render(
   envir = new.env(),
   quiet = TRUE
 )
+rmarkdown::render(
+  input = "./visualisations_for_short_paper_feb2023.qmd",
+  output_file = paste0("visualisations_for_short_paper_feb2023",today()),
+  output_dir = dir_reports,
+  envir = new.env(),
+  quiet = TRUE
+)
 # 
 # render(
 #   input = "./paper_reporting_death_at_home_increase.Rmd",
