@@ -20,29 +20,44 @@ library(xml2)  # for the url_absolute() function
 
 # Find latest NRS weekly deaths spreadsheet URL ---------------------------
 
-url_nrs_weekly_deaths <- "https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/vital-events/general-publications/weekly-and-monthly-data-on-births-and-deaths/deaths-involving-coronavirus-covid-19-in-scotland"
+## fixed url now and filename no longer updated weekly, so I need to rename the file myself after it's downloaded
+url_nrs_weekly_deaths_2023 <- "https://www.nrscotland.gov.uk/files//statistics/vital-events/weekly-deaths/weekly-deaths-23.xlsx"
 
-all_nrs_links <-
-  read_html(url_nrs_weekly_deaths) %>% 
-  html_nodes("a") %>%
-  html_attr("href")  # find all links on the page
+## Note: previously the filename for the most recent spreadsheet reporting
+## weekly deaths changed weekly and reflected the date of publication (week
+## number & year); additionally, every 4 weeks or so the publication included
+## more detailed statistics, which was also reflected in the filename.
+## Therefore, I was inferring the latest filename by scraping the NRS website
+## and finding the most likely link. As of late March 2023, the website has been
+## renamed to no longer be Covid-specific (though the format of the report has
+## not changed and still contains Covid-related deaths). 
 
-nrs_filename_pattern <- "covid-deaths-(2\\d)-data.*xlsx"  # this will last for the decade... 202X
+## Below is the previously used code to infer the clatest URL for the report
 
-# TODO: incorporate both weekly and monthly data?
-weekly_deaths_url_relative <- # keep only links that are probably weekly deaths
-  tail(  # take last entry (n=1)
-    sort(  # sort so that last entry has the highest week number
-      unique(  # on some occasions, duplicate urls are extracted
-        all_nrs_links[which(
-          str_detect(all_nrs_links, pattern = nrs_filename_pattern) &
-          !str_detect(all_nrs_links, pattern = "monthly")  # remove "monthly" file
-          )])
-      ),
-    n = 1
-  )
+# url_nrs_weekly_deaths <- "https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/vital-events/general-publications/weekly-and-monthly-data-on-births-and-deaths/deaths-involving-coronavirus-covid-19-in-scotland"
 
-weekly_deaths_url_absolute <- url_absolute(weekly_deaths_url_relative, base = url_nrs_weekly_deaths)
+# all_nrs_links <-
+#   read_html(url_nrs_weekly_deaths) %>% 
+#   html_nodes("a") %>%
+#   html_attr("href")  # find all links on the page
+# 
+# nrs_filename_pattern <- "covid-deaths-(2\\d)-data.*xlsx"  # this will last for the decade... 202X
+# 
+# # TODO: incorporate both weekly and monthly data?
+# weekly_deaths_url_relative <- # keep only links that are probably weekly deaths
+#   tail(  # take last entry (n=1)
+#     sort(  # sort so that last entry has the highest week number
+#       unique(  # on some occasions, duplicate urls are extracted
+#         all_nrs_links[which(
+#           str_detect(all_nrs_links, pattern = nrs_filename_pattern) &
+#           !str_detect(all_nrs_links, pattern = "monthly")  # remove "monthly" file
+#           )])
+#       ),
+#     n = 1
+#   )
+# 
+# weekly_deaths_url_absolute <- url_absolute(weekly_deaths_url_relative, base = url_nrs_weekly_deaths)
+
 
 ## the format changed between 2021 and 2022 for weekly deaths data, and the 2022 data no longer include 2020 figures, so we need to load the 2020 data separately from the latest available data
 weekly_deaths_2020_and_2021_last_file <- "https://www.nrscotland.gov.uk/files/statistics/covid19/covid-deaths-21-data-week-52.xlsx"
@@ -65,7 +80,8 @@ if (file.exists(file_data_sources)) {
   table_of_data_sources <- tibble(
     short_name = c("main_report","sex_age","la","hb"),
     url = c(
-      weekly_deaths_url_absolute,  # found automatically above!
+      # weekly_deaths_url_absolute,  # found automatically above!
+      url_nrs_weekly_deaths_2023,  # fixed URL from March 2023
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-age-sex.xlsx",
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-council-area-location.xlsx",
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-health-board-location.xlsx"
@@ -125,7 +141,7 @@ if (file.exists(file_case_trends_data_sources)) {
 # download_file_if_newer_available <- function(url, filename, last_modified, directory, record_tbl) {
 download_file_if_newer_available <- function(url, short_name, filename=NULL, last_modified, directory, record_tbl) {  # note:removed filename argument, I can get it from the url!
   if (short_name == "main_report") {
-    url <- weekly_deaths_url_absolute  # replace with latest url of main report 
+    url <- url_nrs_weekly_deaths_2023  # replace with latest url of main report 
   }
   todays_file <- curl_fetch_disk(url, path = tempfile())
   message(paste0("Checking if we have latest file for: ",short_name))

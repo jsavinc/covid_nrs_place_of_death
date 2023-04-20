@@ -83,11 +83,14 @@ theme_set(theme_minimal(base_size = 12) +
 
 
 date_range_text <- glue::glue("Data from w/c {format(earliest_date, '%d %B %Y')} to w/c {format(most_recent_date_available_2023, '%d %B %Y')} (inclusive).")
+date_range_text_disaggregated <- glue::glue("Data from w/c {format(earliest_date, '%d %B %Y')} to w/c {format(most_recent_date_available_2023_disaggregated, '%d %B %Y')} (inclusive).")
 
 dashed_line_historical_range_text <- "Range of deaths 2015-19 shown as shaded area; mean shown as dashed line."
 
 only_2020_text <- glue::glue("Data from 2020 included, starting with w/c {format(earliest_date)}.")
+
 only_2023_text <- glue::glue("Data for 2023 only include weeks 1-{format(weeks_available_2023)} (w/c {format(most_recent_date_available_2023)}).")
+only_2023_disaggregated_text <- glue::glue("Data for 2023 only include weeks 1-{format(weeks_available_2023_disaggregated)} (w/c {format(most_recent_date_available_2023_disaggregated)}).")
 
 source_nrs_text <- "Source: National Records of Scotland"
 source_phs_text <- "Source: Public Health Scotland"
@@ -347,8 +350,8 @@ Here we'll show 4 lines, one for each place of death, for each year so far.
   mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
   ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
   geom_point() +
-  geom_line(size = 1) +
-  geom_text(data = ~filter(.x, year==2022), aes(x=2022.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+  geom_line(linewidth = 1) +
+  geom_text(data = ~filter(.x, year==latest_year), aes(x=latest_year+0.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
   scale_x_continuous(breaks = sort(unique(merged_proportions_of_deaths_by_place$year))) +
   scale_y_continuous(label = function(x) scales::percent(x = x, accuracy = 1)) +
   scale_colour_viridis_d(option="C") +
@@ -671,7 +674,7 @@ fig_cause_of_death_annual_proportion_by_place <-
   ggplot(aes(x = year, y = proportion, colour = place_of_death, group = place_of_death)) +
   geom_line() +
   geom_point() +
-  geom_text(data = ~filter(.x, year==2022), aes(x=4.2, y=proportion, label="*"), inherit.aes = FALSE) +  # 4.2 here is 4th (final) place on the scale!
+  geom_text(data = ~filter(.x, year==as.character(latest_year)), aes(x=n_distinct(current_and_historical_deaths_by_cause_and_location$year)+0.2, y=proportion, label="*"), inherit.aes = FALSE) +  # cobble together the final year position from the data!
   facet_rep_wrap(~cause_of_death, repeat.tick.labels = TRUE) +
   scale_colour_viridis_d() +
   scale_y_continuous(labels = function(x) scales::percent(x, accuracy = 1)) +
@@ -918,7 +921,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death_
   geom_ribbon(aes(ymin = ma4w_deaths_min, ymax = ma4w_deaths_max, fill = "#4477aa"), alpha = 0.5) +
   # geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
   geom_line(aes(y = deaths, colour = deaths_type)) +
-  geom_line(aes(y = ma4w_deaths_mean, linetype = "dashed"), size = 0.2) +
+  geom_line(aes(y = ma4w_deaths_mean, linetype = "dashed"), linewidth = 0.2) +
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2021), linetype = "dashed", colour="grey50") +  # start of 2021
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2022), linetype = "dashed", colour="grey50") +  # start of 2022
   # scale_x_continuous(breaks = seq(0,60,by=10)) +
@@ -968,7 +971,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_home_deaths_4we
   geom_ribbon(aes(ymin = ma4w_deaths_min, ymax = ma4w_deaths_max, fill = "#4477aa"), alpha = 0.5) +
   # geom_ribbon(aes(ymin = deaths_min, ymax = deaths_max), fill = "#4477aa", alpha = 0.5) +
   geom_line(aes(y = deaths, colour = deaths_type)) +
-  geom_line(aes(y = ma4w_deaths_mean, linetype = "dashed"), size = 0.2) +
+  geom_line(aes(y = ma4w_deaths_mean, linetype = "dashed"), linewidth = 0.2) +
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2021), linetype = "dashed", colour="grey50") +  # start of 2021
   geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = 2022), linetype = "dashed", colour="grey50") +  # start of 2022
   # scale_x_continuous(breaks = seq(0,60,by=10)) +
@@ -1016,10 +1019,10 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_home_deaths_4we
   mutate(ref_area = factor(x = ref_area, levels = order_hb_by_population)) %>%  # arrange hb/la by population size
   ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
   geom_point(aes(size = place_of_death)) +
-  geom_line(aes(size = place_of_death)) +
-  geom_text(data = ~filter(.x, year==2022), aes(x=2022.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+  geom_line(aes(linewidth = place_of_death)) +
+  geom_text(data = ~filter(.x, year==latest_year), aes(x=latest_year+0.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
   facet_rep_wrap(~ ref_area, repeat.tick.labels = TRUE) +
-  scale_size_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
+  scale_linewidth_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
   scale_x_continuous(breaks = sort(unique(proportions_of_deaths_by_place_by_geography$year))) +
   scale_y_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
   scale_colour_viridis_d(option="C", name="Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
@@ -1035,8 +1038,8 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_home_deaths_4we
          size = guide_legend(nrow=2, title = NULL)) +
   labs(
     x = NULL, y= "Proportion of yearly deaths (%)",
-    subtitle = paste0("* ",only_2023_text),
-    caption = paste0(c("Health boards sorted by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
+    subtitle = paste0("* ",only_2023_disaggregated_text),
+    caption = paste0(c("Health boards ordered by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
     ) +
   NULL)
 
@@ -1054,10 +1057,10 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
   mutate(ref_area = factor(x = ref_area, levels = order_la_by_population)) %>%  # arrange la/la by population size
   ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
   geom_point(aes(size = place_of_death)) +
-  geom_line(aes(size = place_of_death)) +
-  geom_text(data = ~filter(.x, year==2022), aes(x=2022.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+  geom_line(aes(linewidth = place_of_death)) +
+  geom_text(data = ~filter(.x, year==latest_year), aes(x=latest_year+0.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
   facet_rep_wrap(~ ref_area, repeat.tick.labels = TRUE) +
-  scale_size_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
+  scale_linewidth_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
   scale_x_continuous(breaks = sort(unique(proportions_of_deaths_by_place_by_geography$year))) +
   scale_y_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
   scale_colour_viridis_d(option="C", name="Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
@@ -1073,8 +1076,8 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
          size = guide_legend(nrow=2, title = NULL)) +
   labs(
     x = NULL, y= "Proportion of yearly deaths (%)",
-    subtitle = paste0("* ",only_2023_text),
-    caption = paste0(c("Local Authorities sorted by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
+    subtitle = paste0("* ",only_2023_disaggregated_text),
+    caption = paste0(c("Local Authorities ordered by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
     ) +
   NULL)
 
@@ -1090,16 +1093,15 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
   filter(geography == "hb") %>%
   filter(place_of_death == "Home & other non-institution") %>%
   left_join(merged_proportions_of_deaths_by_place %>% select(year, place_of_death, proportion_scotland = proportion_of_total), by = c("year","place_of_death")) %>%
-  mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
   mutate(ref_area = factor(x = ref_area, levels = order_hb_by_population)) %>%  # arrange hb/la by population size
   pivot_longer(cols = c(proportion_of_total, proportion_scotland), names_to = "measure", values_to = "proportion_of_total") %>%
   mutate(measure = if_else(measure == "proportion_of_total", true = "Health board", false = "Scotland")) %>%
   ggplot(., aes(x=year, y=proportion_of_total, linetype = measure)) +
   geom_point() +
   geom_line() +
-  geom_text(data = ~filter(.x, year==2022), aes(x=2022.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+  geom_text(data = ~filter(.x, year==latest_year), aes(x=latest_year+0.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
   facet_rep_wrap(~ ref_area, repeat.tick.labels = TRUE) +
-  scale_size_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
+  scale_linewidth_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
   scale_x_continuous(breaks = sort(unique(proportions_of_deaths_by_place_by_geography$year))) +
   scale_y_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
   scale_colour_viridis_d(option="C", name="Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
@@ -1114,8 +1116,8 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
   labs(
     linetype = NULL,
     x = NULL, y= "Proportion of yearly deaths that happened at home or other non-institution (%)",
-    subtitle = paste0("* ",only_2023_text),
-    caption = paste0(c("Health boards sorted by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
+    subtitle = paste0("* ",only_2023_disaggregated_text),
+    caption = paste0(c("Health boards ordered by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
     ) +
   NULL)
 
@@ -1131,16 +1133,15 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
   filter(geography == "la") %>%
   filter(place_of_death == "Home & other non-institution") %>%
   left_join(merged_proportions_of_deaths_by_place %>% select(year, place_of_death, proportion_scotland = proportion_of_total), by = c("year","place_of_death")) %>%
-  mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
   mutate(ref_area = factor(x = ref_area, levels = order_la_by_population)) %>%  # arrange la/la by population size
   pivot_longer(cols = c(proportion_of_total, proportion_scotland), names_to = "measure", values_to = "proportion_of_total") %>%
   mutate(measure = if_else(measure == "proportion_of_total", true = "Health board", false = "Scotland")) %>%
   ggplot(., aes(x=year, y=proportion_of_total, linetype = measure)) +
   geom_point() +
   geom_line() +
-  geom_text(data = ~filter(.x, year==2022), aes(x=2022.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+  geom_text(data = ~filter(.x, year==latest_year), aes(x=latest_year+0.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
   facet_rep_wrap(~ ref_area, repeat.tick.labels = TRUE) +
-  scale_size_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
+  scale_linewidth_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
   scale_x_continuous(breaks = sort(unique(proportions_of_deaths_by_place_by_geography$year))) +
   scale_y_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
   scale_colour_viridis_d(option="C", name="Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
@@ -1155,13 +1156,73 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_d
   labs(
     linetype = NULL,
     x = NULL, y= "Proportion of yearly deaths that happened at home or other non-institution (%)",
-    subtitle = paste0("* ",only_2023_text),
-    caption = paste0(c("Local Authorities sorted by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
+    subtitle = paste0("* ",only_2023_disaggregated_text),
+    caption = paste0(c("Local Authorities ordered by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
     ) +
   NULL)
 
 fig_proportion_of_deaths_at_home_by_la %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_of_deaths_at_home_by_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 30, height = 25, dpi = 300, units = "cm")
+```
+
+## Absolute num. home deaths by LA
+
+```{r}
+# TODO: remove theme_minimal when done testing
+# TODO: add Scotland graph also
+# TODO: check  if all PoD would work?
+
+la_group <- tibble(  # group LAs into 4 groups of 8
+  ref_area = factor(order_la_by_population),
+  # la_group = rep(1:4, each = 8))
+  la_group = rep(1:6, times = c(6,5,5,5,5,6))
+  ) %>%
+  group_by(la_group) %>%
+  mutate(la_group_label = paste0(ref_area[1], " - ", ref_area[n()])) %>%
+  ungroup %>%
+  mutate(la_group_label = factor(la_group_label, levels = unique(la_group_label)))
+  
+
+(fig_number_of_deaths_by_place_by_la <-
+  proportions_of_deaths_by_place_by_geography %>%
+  filter(geography == "la") %>%
+  filter(place_of_death == "Home & other non-institution") %>%
+  left_join(la_group, by = "ref_area") %>%  # group LAs
+  mutate(ref_area = factor(x = ref_area, levels = order_la_by_population)) %>%  # arrange la/la by population size
+  ggplot(. , aes(x=year, y=number_of_deaths, colour=ref_area, shape = ref_area)) +
+    theme_minimal() +
+    geom_point(size = rel(2)) +
+    geom_line() +
+    geom_text(data = ~filter(.x, year==latest_year), aes(x=latest_year+0.2, y=number_of_deaths, label="*"), inherit.aes = FALSE) +
+    facet_rep_wrap(~ la_group_label, repeat.tick.labels = TRUE, scales = "free_y") +
+    scale_x_continuous(breaks = sort(unique(proportions_of_deaths_by_place_by_geography$year))) +
+    scale_y_continuous(label = scales::comma) +
+    scale_shape_manual(values = map(c(6,5,5,5,5,6), scales::shape_pal()) %>% unlist) +
+    scale_colour_manual(values = map(c(6,5,5,5,5,6), viridis::viridis_pal()) %>% unlist) +
+    theme(
+      legend.position = "top",
+      legend.title = element_blank(),
+      legend.text = element_text(size = 12),
+      plot.caption = element_text(size = 10, colour = "gray60"),
+      panel.border = element_rect(fill = NA, colour = "gray80"),  # draw a transparent rectangle as the border
+      strip.background = element_rect(fill = NA, colour = "gray80"),
+      axis.text.x = element_text(angle = 45, hjust = 1)
+      ) +
+    guides(
+      colour = guide_legend(ncol = 6, title = NULL), 
+      shape = guide_legend(ncol = 6, title = NULL)
+      ) +
+    labs(
+      x = NULL, y = NULL,
+      title = "Deaths at home by LA",
+  subtitle = paste0("* ",only_2023_disaggregated_text),
+  caption = paste0(c("Local Authorities ordered by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
+      ) +
+    NULL
+)
+
+fig_number_of_deaths_by_place_by_la %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_number_of_deaths_by_place_by_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 30, height = 25, dpi = 300, units = "cm")
 ```
 
 # Map-based visualisations
@@ -1218,7 +1279,7 @@ Because we only have partial data for 2022, we need to employ the weekly compari
        title = str_wrap("Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by Local Authority", width=40),
        # subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
        # caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
-       caption = paste0(c(only_2023_text,source_nrs_text), collapse="\n"),
+       caption = paste0(c(only_2023_disaggregated_text,source_nrs_text), collapse="\n"),
        fill = "Home death\nincrease relative\nto 2015-2019"
        ) +
   NULL)
@@ -1250,7 +1311,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
        title = str_wrap("Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by NHS Health Board", width=40),
        # subtitle = str_wrap("A ratio of 1 means there was no increase; A ratio of 1.6 means there was a 60% increase of home deaths in 2020 over the mean 2015-2019.", width = 80),
        # caption = paste0(c(areas_relatively_higher_number_home_deaths_text, home_deaths_ratio_text, source_nrs_text), collapse="\n"),
-       caption = paste0(c(only_2023_text,source_nrs_text), collapse="\n"),
+       caption = paste0(c(only_2023_disaggregated_text,source_nrs_text), collapse="\n"),
        fill = "Home death\nincrease relative\nto 2015-2019"
        ) +
   NULL)
@@ -1287,7 +1348,7 @@ Because we only have partial data for 2022, we need to employ the weekly compari
   facet_wrap(~year, nrow = 1) +
   labs(x="", y="",
        title = "Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by Local Authority",
-       caption = paste0(c(only_2023_text,source_nrs_text), collapse="\n"),
+       caption = paste0(c(only_2023_disaggregated_text,source_nrs_text), collapse="\n"),
        fill = "Home death\nincrease relative\nto 2015-2019"
        ) +
   NULL)
@@ -1314,7 +1375,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
   labs(x="", y="",
        title = str_wrap("Total COVID-19 cases since the start of 2020, by Local Authority", width=40),
        subtitle = "",
-       caption = paste0(c(only_2023_text,crude_rate_text,source_phs_text), collapse="\n"),
+       caption = paste0(c(only_2023_disaggregated_text,crude_rate_text,source_phs_text), collapse="\n"),
        fill = str_wrap("Cases per 100,000 population", width = 15)
        ) +
   NULL)
@@ -1365,7 +1426,7 @@ See above for how this was done for LA!
   facet_wrap(~year, nrow = 1) +
   labs(x="", y="",
        title = "Increased home deaths since the start of 2020 relative to historical mean 2015-2019, by NHS Health Board",
-       caption = paste0(c(only_2023_text,source_nrs_text), collapse="\n"),
+       caption = paste0(c(only_2023_disaggregated_text,source_nrs_text), collapse="\n"),
        fill = "Home death\nincrease relative\nto 2015-2019"
        ) +
   NULL)
@@ -1396,7 +1457,7 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_map_home_deaths
   labs(x="", y="",
        title = str_wrap("Total COVID-19 cases since the start of 2020, by NHS Health Board", width=40),
        subtitle = "",
-       caption = paste0(c(only_2023_text,crude_rate_text,source_phs_text), collapse="\n"),
+       caption = paste0(c(only_2023_disaggregated_text,crude_rate_text,source_phs_text), collapse="\n"),
        fill = str_wrap("Cases per 100,000 population", width = 15)
        ) +
   NULL)
@@ -1591,7 +1652,7 @@ fig_expected_home_deaths_regression <-
   scale_y_continuous(labels = scales::comma) +
   scale_x_continuous(breaks = 2015:2045, minor_breaks = NULL, limits = c(2015,ceiling(max(regression_rectangles$year_max)))) +
   theme(axis.text.x = element_text(size = rel(0.8), angle = 45, hjust = 1)) +
-  labs(y = NULL, x = "Year (hypothetical)", title = "Increasing deaths at home", subtitle = str_wrap("Home deaths were on the increase before the pandemic.\nIf we assumed the same annual increases from 2015-2019 we wouldn't expect the pandemic levels of home deaths until 2031!", width = 90), caption = paste0(c(glue::glue("*Annual home deaths for 2023 extrapolated from data for weeks 1-{weeks_available_2023}"),source_nrs_text), collapse="\n"))
+  labs(y = NULL, x = "Year (hypothetical)", title = "Increasing deaths at home", subtitle = str_wrap("Home deaths were on the increase before the pandemic.\nIf we assumed the same annual increases from 2015-2019 we wouldn't expect the pandemic levels of home deaths until approx. 2031!", width = 90), caption = paste0(c(glue::glue("*Annual home deaths for 2023 extrapolated from data for weeks 1-{weeks_available_2023}"),source_nrs_text), collapse="\n"))
 
 fig_expected_home_deaths_regression %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_expected_home_deaths_regression", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 18, height = 12, dpi = 300, units = "cm")

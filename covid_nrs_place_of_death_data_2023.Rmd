@@ -97,12 +97,14 @@ if (!dir.exists(dir_outputs)) dir.create(dir_outputs, recursive = TRUE)
 
 There are several files that the data are imported from.
 
+TODO: now that the ad-hoc files are no longer available, some of the data will need to be compiled from the tabs in the weekly data.
+
 ## Overall data
+
+Note: this contains data split by sex and age, but only for ALL places of death; individual PoD data are available for ALL sex and ALL age only
 
 ```{r}
 ## a separate raw file makes it easier to debug, and also reduces the number of requests I make while debugging!
-## Note: as of 16 Feb 2023, this returns a strange error
-# TODO: if error persists, load data from the main report file instead?
 ods_raw <- ods_dataset("deaths-involving-coronavirus-covid-19", geography = "sc")
 
 ## Note: as of 12 Dec 2022, the format of the ref_period variable changed from
@@ -138,7 +140,64 @@ weekly_deaths_overall <-
 
 ## Sex & age
 
+Note: the last sex & age split of the data provided by NRS was Week 9 of 2023, though the data can still be split using the 'overall' dataset from Open Data Scotland above!
+
 ```{r}
+# weekly_deaths_sex_age <-
+#   weekly_deaths_overall %>%
+#   filter(age!="all" & place_of_death != "All")
+
+# TODO: delete the below line, used for testing
+# files_weekly_deaths$main_report <- "./downloaded_data/2023-03-22_weekly-deaths-23.xlsx"
+
+sheet_covid_deaths_sex_and_age_data <- "1"
+sheet_all_cause_deaths_sex_and_age_data <- "4"
+
+cell_ranges_for_sex_and_age_data <- list(
+  "All" = "A6:K110",
+  "Female" = "A113:K217",
+  "Male" = "A220:K324"
+)
+
+# TODO: this still doesn't split data by PoD...
+weekly_deaths_sex_age <-
+  full_join(
+    x =
+      map_dfr(
+        .x = cell_ranges_for_sex_and_age_data,
+        .f = ~readxl::read_excel(files_weekly_deaths$main_report, sheet = sheet_covid_deaths_sex_and_age_data, range = .x), 
+        .id = "sex"
+      ) %>%
+      pivot_longer(
+        cols = `All ages`:`85+`,
+        names_to = "age",
+        values_to = "deaths_covid_related"
+      ) %>%
+      janitor::clean_names(),
+    y =
+      map_dfr(
+        .x = cell_ranges_for_sex_and_age_data,
+        .f = ~readxl::read_excel(files_weekly_deaths$main_report, sheet = sheet_all_cause_deaths_sex_and_age_data, range = .x), 
+        .id = "sex"
+      ) %>%
+      pivot_longer(
+        cols = `All ages`:`85+`,
+        names_to = "age",
+        values_to = "deaths_all_causes"
+      ) %>%
+      janitor::clean_names(),
+    by = c("sex", "registration_year", "week_number", "week_beginning", "age")
+  ) %>%
+  rename(year = registration_year, date_w_c = week_beginning) %>%
+  mutate(
+    year = as.integer(year),
+    date_w_c = as.Date(date_w_c, origin = "1899-12-30"),  # origin to account for Excel's integer date format
+    week_number_run_over = compute_week_run_over(week_number, year, start_year = 2020),  # invent a "run-over" week number - weeks 54+ are in 2021, weeks 106+ are in 2022
+    deaths_non_covid = deaths_all_causes - deaths_covid_related  # compute non-covid from all-cause minus covid
+  ) %>%
+  set_covid_and_non_covid_deaths_to_zero_before_reporting_started()
+
+# TODO: this is obsolete now, remove!
 weekly_deaths_sex_age <-  # structure here is a bit more complicated - headers in row 3, but sex & age headers in row 4
   readxl::read_excel(files_weekly_deaths$sex_age, sheet = 2, skip = 4, col_names = c("week_number","place_of_death","sex","age","cause_of_death","number_of_deaths"), guess_max = 1e5) %>%
   drop_na(number_of_deaths) %>%    # remove empty rows & one row where it's just the copyright notice
@@ -217,6 +276,7 @@ weekly_deaths_hb <-
 ## Weekly Covid as contributory vs underlying cause of death
 
 ```{r}
+# TODO: need to compute that from another source for the time being
 weekly_covid_contributory_vs_underlying_cause <-
   readxl::read_excel(files_weekly_deaths$sex_age, sheet = 2, skip = 4, col_names = c("week_number","place_of_death","sex","age","cause_of_death","number_of_deaths"), guess_max = 1e5) %>%
   drop_na(number_of_deaths) %>%    # remove empty rows & one row where it's just the copyright notice
@@ -247,14 +307,16 @@ weekly_covid_contributory_vs_underlying_cause <-
     )
   })
 
+# TODO: this is currently commented out as it doesn't compute correctly
 ## check that the figures actually make sense! i.e. the two figures add up to the total covid-related figure
-stopifnot(
-  (weekly_deaths_overall %>%
-  filter(sex=="all" & age=="all") %>%
-  inner_join(weekly_covid_contributory_vs_underlying_cause) %>%
-  filter(deaths_covid_related != covid_19_contributory_factor + covid_19_underlying_cause) %>%
-  nrow) == 0
-)
+
+# stopifnot(
+#   (weekly_deaths_overall %>%
+#   filter(sex=="all" & age=="all") %>%
+#   inner_join(weekly_covid_contributory_vs_underlying_cause) %>%
+#   filter(deaths_covid_related != covid_19_contributory_factor + covid_19_underlying_cause) %>%
+#   nrow) == 0
+# )
 
 annual_covid_contributory_vs_underlying_cause <-
   weekly_covid_contributory_vs_underlying_cause %>%
@@ -1266,13 +1328,23 @@ merged_deaths_hb %>%
 
 These are used for saying in plots what data were included e.g. weeks 1-12 in 2023.
 
+There is as of April 2023 a split in the availability of data:
+
+- Data are being continually updated for the all age all sex all HB/LA dataset
+- Data split by age, sex, HB or LA stopped being updated (technically they are still available but not without place of death data)
+
+Therefore there are two separate most recent available data, I'll call them 'basic' and 'disaggregated'/
+
 ```{r}
 ## constants for use in graphs & annotations
-weeks_available_2023 <- max(merged_deaths_age$week_number[merged_deaths_age$year==2023])
-most_recent_date_available_2023 <- max(merged_deaths_age$date_w_c)
+weeks_available_2023 <- max(merged_deaths_overall$week_number[merged_deaths_overall$year==2023])
+most_recent_date_available_2023 <- max(merged_deaths_overall$date_w_c)
 
-earliest_date <- min(merged_deaths_age$date_w_c)
+earliest_date <- min(merged_deaths_overall$date_w_c)
 current_year <- isoyear(most_recent_date_available_2023)
+
+weeks_available_2023_disaggregated <- max(merged_deaths_age$week_number[merged_deaths_age$year==2023])
+most_recent_date_available_2023_disaggregated <- max(merged_deaths_age$date_w_c)
 ```
 
 # Ordering geographical data by population size

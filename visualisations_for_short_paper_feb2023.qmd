@@ -144,6 +144,7 @@ fig_paper_pod_2015_2019_range <-
   merged_deaths_overall_2015_2019_historic_period %>%
   filter(sex == "all" & age == "all") %>%
   filter(!place_of_death %in% c("All","Other")) %>%
+  mutate(place_of_death = factor(place_of_death, levels = order_of_place_of_death_levels[c(1,3,2)])) %>%
   pivot_longer(cols = c(deaths_all_causes, deaths_non_covid), 
                names_to = "deaths_type", values_to = "deaths") %>% 
   ggplot(aes(x = date_w_c)) +
@@ -307,5 +308,53 @@ fig_paper_pod_2015_2019_range_1abc_footnote <- c(
 
 fig_paper_pod_2015_2019_range_1abc_footnote %>%
   write_lines(file = file.path(dir_paper, paste0("fig_paper_pod_2015_2019_range_1abc_footnote_", latest_data_modified_date, ".txt")))
+```
+
+# Place of death by LA
+
+```{r}
+fig_proportion_of_deaths_at_home_by_la <-
+  proportions_of_deaths_by_place_by_geography %>%
+  filter(geography == "la") %>%
+  filter(place_of_death == "Home & other non-institution") %>%
+  left_join(merged_proportions_of_deaths_by_place %>% select(year, place_of_death, proportion_scotland = proportion_of_total), by = c("year","place_of_death")) %>%
+  mutate(ref_area = factor(x = ref_area, levels = order_la_by_population)) %>%  # arrange la/la by population size
+  pivot_longer(cols = c(proportion_of_total, proportion_scotland), names_to = "measure", values_to = "proportion_of_total") %>%
+  mutate(measure = if_else(measure == "proportion_of_total", true = "Health board", false = "Scotland")) %>%
+  ggplot(., aes(x=year, y=proportion_of_total, linetype = measure)) +
+  geom_point() +
+  geom_line() +
+  geom_text(data = ~filter(.x, year==latest_year), aes(x=latest_year+0.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+  facet_rep_wrap(~ ref_area, repeat.tick.labels = TRUE) +
+  scale_linewidth_manual(values = c(1,1.8,1,1), name = "Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
+  scale_x_continuous(breaks = sort(unique(proportions_of_deaths_by_place_by_geography$year))) +
+  scale_y_continuous(label = function(x) scales::percent(x, accuracy = 1)) +
+  scale_colour_viridis_d(option="C", name="Place of death", labels = order_of_place_of_death_levels[c(1,3,2,4)]) +
+  theme(
+    legend.position = "top",
+    legend.text = element_text(size = 12),
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    panel.border = element_rect(fill = NA, colour = "gray80"),  # draw a transparent rectangle as the border
+    strip.background = element_rect(fill = NA, colour = "gray80"),
+    axis.text.x = element_text(angle = 45, hjust = 1)
+    ) +
+  labs(
+    linetype = NULL,
+    x = NULL, y= "Proportion of yearly deaths that happened at home or other non-institution (%)",
+    subtitle = paste0("* ",only_2023_disaggregated_text),
+    # caption = paste0(c("Local Authorities ordered by 2020 population estimate.",death_registrations_text,source_nrs_text),collapse="\n")
+    ) +
+  NULL
+
+fig_proportion_of_deaths_at_home_by_la %>%
+save_output_file(filename = file.path(dir_paper, paste0(c("fig_proportion_of_deaths_at_home_by_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png", ".tiff"), plot = ., width = 30, height = 25, dpi = 300, units = "cm")
+
+fig_proportion_of_deaths_at_home_by_la_footnote <- c(
+  "Local Authorities are shown in order of 2020 popoulation estimate.",
+  date_range_text_disaggregated,
+  paste0(c(death_registrations_text,source_nrs_text), collapse="\n")
+)
+fig_proportion_of_deaths_at_home_by_la_footnote %>%
+  write_lines(file = file.path(dir_paper, paste0("fig_proportion_of_deaths_at_home_by_la_footnote_", latest_data_modified_date, ".txt")))
 ```
 

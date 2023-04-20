@@ -330,7 +330,8 @@ save_output_file <- function(filename, extensions, plot, width, height, units, d
         dpi = dpi,
         device = 
           if (tolower(ext) == ".pdf") cairo_pdf
-          else NULL
+          else NULL,
+        bg = "white"
       )
     }
   )
