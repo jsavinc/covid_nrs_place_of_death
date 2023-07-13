@@ -1,30 +1,31 @@
 # script to render gganimate file as multiple images that will be rendered as a .gif or .mp4 at a later step
 
 library(tidyverse)
+library(ggplot2)
 library(gganimate)
 
 dir_animation <- "./animation_test/"
 if (!dir.exists(dir_animation)) dir.create(dir_animation)
 
 
-iris$group <- seq_len(nrow(iris))
-anim1 <- ggplot(iris, aes(Sepal.Width, Petal.Width, group = group)) +
+animated_plot <- 
+  ggplot(mtcars, aes(x = wt, y = hp, colour = as.factor(cyl))) +
   geom_point() +
-  labs(title = "{closest_state}") +
-  transition_states(Species, transition_length = 3, state_length = 1) +
+  transition_states(cyl, transition_length = 3, state_length = 1) +
   enter_fade() +
-  exit_fade()
+  exit_fade() +
+  labs(title = "Cyl: {closest_state}")
 
 ## save directly as gif
 anim_save(
   filename = file.path(dir_animation, "anim_test_1stage.gif"), 
-  animation = animate(anim1)
+  animation = animate(animated_plot)
   )
 
 ## save directly as mp4
 anim_save(
   filename = file.path(dir_animation, "anim_test_1stage.mp4"), 
-  animation = animate(anim1, 
+  animation = animate(animated_plot, 
                       renderer = av_renderer())
 )
 
@@ -38,7 +39,7 @@ duration = 10
 nframes = fps * duration
 
 animate(
-  anim1,
+  animated_plot,
   fps = fps,
   nframes = nframes,
   renderer = file_renderer(
