@@ -84,11 +84,13 @@ theme_set(theme_minimal(base_size = 12) +
 
 
 date_range_text <- glue::glue("Data from w/c {format(earliest_date, '%d %B %Y')} to w/c {format(most_recent_date_available_2023, '%d %B %Y')} (inclusive).")
+date_range_text_disaggregated <- glue::glue("Data from w/c {format(earliest_date, '%d %B %Y')} to w/c {format(most_recent_date_available_2023_disaggregated, '%d %B %Y')} (inclusive).")
 
 dashed_line_historical_range_text <- "Range of deaths 2015-19 shown as shaded area; mean shown as dashed line."
 
 only_2020_text <- glue::glue("Data from 2020 included, starting with w/c {format(earliest_date)}.")
 only_2023_text <- glue::glue("Data for 2023 only include weeks 1-{format(weeks_available_2023)} (w/c {format(most_recent_date_available_2023)}).")
+only_2023_disaggregated_text <- glue::glue("Data for 2023 only include weeks 1-{format(weeks_available_2023_disaggregated)} (w/c {format(most_recent_date_available_2023_disaggregated)}).")
 
 source_nrs_text <- "Source: National Records of Scotland"
 source_phs_text <- "Source: Public Health Scotland"
@@ -108,6 +110,7 @@ removed_other_category_text <- glue::glue("Excluding 'Other' institutional place
 
 historic_period_2015_2019_text <- "Historic mean & range for 2015-2019 throughout."
 historic_period_2022_text <- "2020-21 use 2015-2019 historic mean & range; 2022 uses 2016-2019 & 2021."
+
 ```
 
 
