@@ -1567,7 +1567,7 @@ actual_and_predicted_data <-
     filter(place_of_death == "Home & other non-institution" & year %in% 2020:2022) %>%
     mutate(
       data_type = "Predicted",
-      number_of_deaths = if_else(year %in% 2020:2022, compute_y_from_x_using_regression(x = year-2015, regression_model = regression_model), number_of_deaths)
+      number_of_deaths = if_else(year %in% 2020:2022, compute_y_from_x_using_linear_regression(x = year-2015, regression_model = regression_model), number_of_deaths)
       )
     ,
     merged_proportions_of_deaths_by_place %>%
@@ -1575,7 +1575,7 @@ actual_and_predicted_data <-
       filter(place_of_death == "Home & other non-institution" & year %in% 2020:2022) %>%
       mutate(
         number_of_deaths = if_else(year == 2022, number_of_deaths / extrapolated_2020_data$proportion_of_deaths_so_far, number_of_deaths),
-        year = 2015 + compute_x_from_y_using_regression(y = number_of_deaths, regression_model = regression_model),  # compute predicted X
+        year = 2015 + compute_x_from_y_using_linear_regression(y = number_of_deaths, regression_model = regression_model),  # compute predicted X
         data_type = "Actual"  # note: this is actual figures but
       )
   )
