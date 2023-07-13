@@ -254,12 +254,22 @@ add_scotland_total_to_population_estimate <- function(data_tbl) {
 }
 
 ## compute y var from x, given a linear regression
-compute_y_from_x_using_regression <- function(x, regression_model) {
+compute_y_from_x_using_linear_regression <- function(x, regression_model) {
   coef(regression_model)[1] + (x * coef(regression_model)[2])
 }
 ## compute x var from y, given a linear regression
-compute_x_from_y_using_regression <- function(y, regression_model) {
+compute_x_from_y_using_linear_regression <- function(y, regression_model) {
   (y - coef(regression_model)[1]) / coef(regression_model)[2]
+}
+
+## compute y from x, given logistic regression
+compute_y_from_x_using_logistic_regression <- function(x, regression_model) {
+  predictor_var <- names(coef(regression_model)[2])
+  predict.glm(object = regression_model, newdata = tibble({{predictor_var}} := x), type = "response")
+}
+## compute x var from y, given a logistic regression
+compute_x_from_y_using_logistic_regression <- function(y, regression_model) {
+  (1/coef(model_proportions)[2])*(model_proportions$family$linkfun(y)-coef(model_proportions)[1])
 }
 
 ## parse the date given in ref_period depending on format
@@ -317,21 +327,18 @@ infer_year_range_for_calculating_covid_deaths <- function(year) {
 ## setup!), just use `device=device_cairo` as an argument to `ggsave()` when
 ## saving `.pdf` files and it just works
 
-save_output_file <- function(filename, extensions, plot, width, height, units, dpi) {
+save_output_file <- function(filename, extensions, plot, ...) {
   walk(
     .x = extensions,
     .f = function(ext) {
       ggsave(
         filename = paste0(filename, ext),
         plot = plot,
-        width = width,
-        height = height,
-        units = units,
-        dpi = dpi,
         device = 
           if (tolower(ext) == ".pdf") cairo_pdf
           else NULL,
-        bg = "white"
+        bg = "white",
+        ...
       )
     }
   )
