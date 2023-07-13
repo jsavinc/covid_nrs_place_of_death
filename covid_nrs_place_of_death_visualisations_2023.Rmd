@@ -340,14 +340,16 @@ save_output_file(filename = file.path(dir_outputs, paste0(c("fig_place_of_death_
 ```
 
 
-# Proportion annual deaths by place
+# Number & Proportion annual deaths by place
+
+## Proportion only
 
 Here we'll show 4 lines, one for each place of death, for each year so far.
 
 ```{r}
 (fig_proportion_annual_deaths_by_place <-
   merged_proportions_of_deaths_by_place %>%
-  mutate(place_of_death = factor(x = place_of_death, levels = order_of_place_of_death_levels[c(1,3,2,4)])) %>%  # move home to 2nd position to match order in plot
+  filter(place_of_death!="All") %>%
   ggplot(., aes(x=year, y=proportion_of_total, colour=place_of_death)) +
   geom_point() +
   geom_line(linewidth = 1) +
@@ -369,9 +371,64 @@ Here we'll show 4 lines, one for each place of death, for each year so far.
   guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
   NULL
 )
+
 fig_proportion_annual_deaths_by_place %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_annual_deaths_by_place", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 13, height = 10, dpi = 300, units = "cm")
 ```
+
+## Number & proportion
+
+```{r}
+(fig_annual_deaths_by_place <-
+  wrap_plots(
+    # Number
+    merged_proportions_of_deaths_by_place %>%
+    ggplot(data = ., 
+           aes(x = year, y = number_of_deaths, colour = place_of_death, shape = place_of_death, linetype = place_of_death)
+           ) +
+    geom_line(linewidth = 1) +
+    geom_point(size = rel(2)) +
+    geom_text(data = ~filter(.x, year==latest_year), aes(x=latest_year+0.2, y=number_of_deaths, label="*"), inherit.aes = FALSE) +
+    theme_minimal() +
+    theme(legend.position = "top", legend.title = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_x_continuous(breaks = sort(unique(merged_proportions_of_deaths_by_place$year)), minor_breaks = NULL) +
+    scale_y_continuous(labels = scales::comma, breaks = seq.int(from=0, to=7e4, by=1e4), minor_breaks = seq.int(from=0,t=7e4,by=5e3)) +
+    scale_colour_manual(values = c(scales::viridis_pal(option = "C")(4),"grey")) +
+    scale_shape_manual(values = c(scales::shape_pal()(4),NA)) +
+    scale_linetype_manual(values = c(rep("solid", 4),"dashed")) +
+    guides(colour = guide_legend(nrow=2)) +  # spread colour legend over two rows
+    labs(
+      title = "Number of deaths",
+      x = NULL, y = NULL
+    ),
+    # Proportion
+    merged_proportions_of_deaths_by_place %>%
+    filter(place_of_death!="All") %>%
+    ggplot(data = ., 
+           aes(x = year, y = proportion_of_total, colour = place_of_death, shape = place_of_death)
+           ) +
+    geom_line(linewidth = 1) +
+    geom_point(size = rel(2)) +
+    geom_text(data = ~filter(.x, year==latest_year), aes(x=latest_year+0.2, y=proportion_of_total, label="*"), inherit.aes = FALSE) +
+    theme_minimal() +
+    theme(legend.position = "none", legend.title = element_blank(), axis.text.x = element_text(angle = 45, hjust = 1)) +
+    scale_x_continuous(breaks = sort(unique(merged_proportions_of_deaths_by_place$year)), minor_breaks = NULL) +
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+    scale_colour_viridis_d(option = "C") +
+    labs(
+      title = "Proportion of deaths",
+      x = NULL, y = NULL
+    ), 
+    guides = "collect"
+  ) +
+   plot_annotation(theme = theme(legend.position = "top"), subtitle = paste0("* ",only_2023_text),
+    caption = paste0(c(death_registrations_text,source_nrs_text),collapse="\n"))
+ )
+
+fig_annual_deaths_by_place %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_annual_deaths_by_place", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 20, height = 10, dpi = 300, units = "cm")
+```
+
 
 
 # Proportion of cumulative deaths by place, over the course of a year
@@ -1580,7 +1637,7 @@ regression_model <- lm(data = regression_data, formula = number_of_deaths ~ year
 
 predicted_data <- tibble(years_since_2015 = seq(from=0, to=30, by = 0.1)) %>%
   mutate(year = 2015 + years_since_2015,
-         predicted = predict.lm(object = regression_model, newdata = tibble(years_since_2015))
+         predicted = predict.lm(object = regression_model, newdata = tibble(years_since_2015), type = "response")
          )
 
 ## 2022 only has X weeks' worth of data available; we can extrapolate the annual
@@ -1607,7 +1664,7 @@ actual_and_predicted_data <-
     filter(place_of_death == "Home & other non-institution" & year %in% 2020:current_year) %>%
     mutate(
       data_type = "Predicted",
-      number_of_deaths = if_else(year %in% 2020:current_year, compute_y_from_x_using_regression(x = year-2015, regression_model = regression_model), number_of_deaths)
+      number_of_deaths = if_else(year %in% 2020:current_year, compute_y_from_x_using_linear_regression(x = year-2015, regression_model = regression_model), number_of_deaths)
       )
     ,
     merged_proportions_of_deaths_by_place %>%
@@ -1615,7 +1672,7 @@ actual_and_predicted_data <-
       filter(place_of_death == "Home & other non-institution" & year %in% 2020:current_year) %>%
       mutate(
         number_of_deaths = if_else(year == current_year, number_of_deaths / extrapolated_2020_data$proportion_of_deaths_so_far, number_of_deaths),
-        year = 2015 + compute_x_from_y_using_regression(y = number_of_deaths, regression_model = regression_model),  # compute predicted X
+        year = 2015 + compute_x_from_y_using_linear_regression(y = number_of_deaths, regression_model = regression_model),  # compute predicted X
         data_type = "Actual",  # note: this is actual figures, but at the extrapolated year
         actual_year = 2020:current_year
       )
@@ -1657,4 +1714,3 @@ fig_expected_home_deaths_regression <-
 fig_expected_home_deaths_regression %>%
 save_output_file(filename = file.path(dir_outputs, paste0(c("fig_expected_home_deaths_regression", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png"), plot = ., width = 18, height = 12, dpi = 300, units = "cm")
 ```
-
