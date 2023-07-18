@@ -164,3 +164,14 @@ ggsave(
   height = 12,
   bg = "white"
 )
+
+
+# proportion of age groups ------------------------------------------------
+
+proportion_of_85_plus <-
+  deaths_by_age %>%
+  filter(age >= 85) %>%
+  group_by(year, sex) %>%
+  summarise(n_85plus = sum(n), .groups="drop") %>%
+  left_join(average_age_at_death, by = c("year","sex")) %>%
+  mutate(prop_85plus = n_85plus / n)
