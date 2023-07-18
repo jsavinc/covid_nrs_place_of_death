@@ -10,7 +10,11 @@ library(readxl)
 
 # download data -----------------------------------------------------------
 
-deaths_url <- "https://www.nrscotland.gov.uk/files//statistics/time-series/death-21/deaths-time-series-21-dt.3.xlsx"
+## age at death is available from the 'Time series' data on NRS website
+## as of 2023-07-18, data are available 1974-2021
+
+deaths_url <- 
+  "https://www.nrscotland.gov.uk/files//statistics/time-series/death-21/deaths-time-series-21-dt.3.xlsx"
 
 temp_file <- tempfile()
 download.file(url = deaths_url, destfile = temp_file, mode = "wb")  # mode = "wb" needed on Windows machine
