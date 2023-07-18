@@ -42,6 +42,8 @@ cell_ranges <- tribble(
   "female", "A309:AW364",
 )
 
+## load chunks of data from the above cell ranges, do some basic cleaning on
+## them, and stack them vertically into a single tibble
 deaths_by_age_raw <- pmap_dfr(
   .l = cell_ranges,
   .f = function(sex, cell_range) {
@@ -60,16 +62,16 @@ pivoting_function <- function(x) {
   pivot_longer(
     data = x,
     cols = x1974:x2021,  # janitor adds x in front of numbers so they are valid column names
-    names_to = "year",
-    values_to = "n",
-    names_transform = ~ as.integer(str_sub(.x, 2, 5)), 
-    values_transform = as.integer
+    names_to = "year",  # pivot year columns into rows
+    values_to = "n",  # n stands for number of deaths
+    names_transform = ~ as.integer(str_sub(.x, 2, 5)),  # transform years to integers
+    values_transform = as.integer  # also transform n to integer
   )
 }
 
 deaths_by_age <-
   deaths_by_age_raw %>%
-  filter(!age %in% c("All","NS")) %>%
+  filter(!age %in% c("All","NS")) %>%  # remove totals and age not specified
   pivoting_function %>%
   mutate(
     age = as.integer(age)
