@@ -323,7 +323,7 @@ fig_proportion_of_deaths_at_home_by_la <-
   left_join(merged_proportions_of_deaths_by_place %>% select(year, place_of_death, proportion_scotland = proportion_of_total), by = c("year","place_of_death")) %>%
   mutate(ref_area = factor(x = ref_area, levels = order_la_by_population)) %>%  # arrange la/la by population size
   pivot_longer(cols = c(proportion_of_total, proportion_scotland), names_to = "measure", values_to = "proportion_of_total") %>%
-  mutate(measure = if_else(measure == "proportion_of_total", true = "Health board", false = "Scotland")) %>%
+  mutate(measure = if_else(measure == "proportion_of_total", true = "Local Authority", false = "Scotland")) %>%
   ggplot(., aes(x=year, y=proportion_of_total, linetype = measure)) +
   geom_point() +
   geom_line() +
@@ -351,6 +351,9 @@ fig_proportion_of_deaths_at_home_by_la <-
 
 fig_proportion_of_deaths_at_home_by_la %>%
 save_output_file(filename = file.path(dir_paper, paste0(c("fig_proportion_of_deaths_at_home_by_la", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png", ".tiff"), plot = ., width = 30, height = 25, dpi = 300, units = "cm")
+
+fig_proportion_of_deaths_at_home_by_la %>%
+save_output_file(filename = file.path(dir_paper, paste0(c("fig_proportion_of_deaths_at_home_by_la_600dpi", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png", ".tiff"), plot = ., width = 30, height = 25, dpi = 600, units = "cm")
 
 fig_proportion_of_deaths_at_home_by_la_footnote <- c(
   "Local Authorities are shown in order of 2020 popoulation estimate.",
