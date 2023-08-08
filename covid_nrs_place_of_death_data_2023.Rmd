@@ -153,10 +153,17 @@ Note: the last sex & age split of the data provided by NRS was Week 9 of 2023, t
 sheet_covid_deaths_sex_and_age_data <- "1"
 sheet_all_cause_deaths_sex_and_age_data <- "4"
 
+# TODO: the data have changed again, now the most recent file no longer includes 2022 and 2023, but only 2023, so the cell ranges below are inaccurate and result in errors!
+# 
+# cell_ranges_for_sex_and_age_data <- list(
+#   "All" = "A6:K110",
+#   "Female" = "A113:K217",
+#   "Male" = "A220:K324"
+# )
 cell_ranges_for_sex_and_age_data <- list(
-  "All" = "A6:K110",
-  "Female" = "A113:K217",
-  "Male" = "A220:K324"
+  "All" = "A6:K58",
+  "Female" = "A61:K113",
+  "Male" = "A116:K168"
 )
 
 # TODO: this still doesn't split data by PoD...
@@ -361,22 +368,23 @@ Note that excess deaths and 5-year average deaths are computed differently betwe
 sheet_cause_of_death_data <- "8"
 
 ## updated for 2023 which contains both 2022 and 2023
-cell_ranges_for_causes_of_death_data <- list(
-  "All" = "A6:V110",
-  "Care home" = "A113:V217",
-  "Home & other non-institution" = "A220:V324",
-  "Hospital" = "A327:V431",
-  "Other" = "A434:V538"
-)
+# cell_ranges_for_causes_of_death_data <- list(
+#   "All" = "A6:V110",
+#   "Care home" = "A113:V217",
+#   "Home & other non-institution" = "A220:V324",
+#   "Hospital" = "A327:V431",
+#   "Other" = "A434:V538"
+# )
 
 ## this was for only 2022 data
-# cell_ranges_for_causes_of_death_data <- list(
-#   "All" = "A6:V58",
-#   "Care home" = "A61:V113",
-#   "Home & other non-institution" = "A116:V168",
-#   "Hospital" = "A171:V223",
-#   "Other" = "A226:V278"
-# )
+## ...and is correct again for 2023
+cell_ranges_for_causes_of_death_data <- list(
+  "All" = "A6:V58",
+  "Care home" = "A61:V113",
+  "Home & other non-institution" = "A116:V168",
+  "Hospital" = "A171:V223",
+  "Other" = "A226:V278"
+)
 
 # TODO: this will eventually only have 2023 data, change when that happens
 weekly_deaths_cause_of_death_2022_onwards <-
