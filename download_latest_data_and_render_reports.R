@@ -282,6 +282,7 @@ if (!any(fonttable()$FullName=="Calibri")) font_import(pattern = "calibri", prom
 dir_reports <- "./reports"
 if (!dir.exists(dir_reports)) dir.create(dir_reports)
 
+message("Rendering data .rmd file...")
 rmarkdown::render(
   input = "./covid_nrs_place_of_death_data_2023.Rmd",
   output_file = paste0("covid_nrs_place_of_death_data_",today()),
@@ -289,7 +290,9 @@ rmarkdown::render(
   envir = new.env(),
   quiet = TRUE
 )
+message("Done!")
 
+message("Rendering visualisations .rmd file...")
 rmarkdown::render(
   input = "./covid_nrs_place_of_death_visualisations_2023.Rmd",
   output_file = paste0("covid_nrs_place_of_death_visualisations",today()),
@@ -297,20 +300,24 @@ rmarkdown::render(
   envir = new.env(),
   quiet = TRUE
 )
-rmarkdown::render(
-  input = "./visualisations_for_short_paper_feb2023.qmd",
-  output_file = paste0("visualisations_for_short_paper_feb2023",today()),
-  output_dir = dir_reports,
-  envir = new.env(),
-  quiet = TRUE
-)
-rmarkdown::render(
-  input = "./visualisations_for_rse_curious_event.qmd",
-  output_file = paste0("visualisations_for_rse_curious_event",today()),
-  output_dir = dir_reports,
-  envir = new.env(),
-  quiet = TRUE
-)
+message("Done!")
+
+# rmarkdown::render(
+#   input = "./visualisations_for_short_paper_feb2023.qmd",
+#   output_file = paste0("visualisations_for_short_paper_feb2023",today()),
+#   output_dir = dir_reports,
+#   envir = new.env(),
+#   quiet = TRUE
+# )
+
+# rmarkdown::render(
+#   input = "./visualisations_for_rse_curious_event.qmd",
+#   output_file = paste0("visualisations_for_rse_curious_event",today()),
+#   output_dir = dir_reports,
+#   envir = new.env(),
+#   quiet = TRUE
+# )
+
 # 
 # render(
 #   input = "./paper_reporting_death_at_home_increase.Rmd",
