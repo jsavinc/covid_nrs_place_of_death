@@ -2,7 +2,7 @@
 
 library(tidyverse)
 library(mstate)
-library(msm)
+# library(msm)  # for intermittently observed data, ours is precise!
 
 
 # Create fake data --------------------------------------------------------
@@ -27,22 +27,55 @@ summarised_admissions <-
   )
 
 admissions <-
-  summarised_admissions %>% filter(n_admissions > 0) %>%
-  pmap_dfr(
-    .l = .,
-    .f = function(id, sex, age, n_admissions, total_los) {
-      tibble(id = id, los = as.vector(rmultinom(n = 1, size = total_los, prob = rep(1/n_admissions, n_admissions))))
-    }
-  ) %>%
+  # summarised_admissions %>% filter(n_admissions > 0) %>%
+  # pmap_dfr(
+  #   .l = .,
+  #   .f = function(id, sex, age, n_admissions, total_los) {
+  #     tibble(id = id, los = as.vector(rmultinom(n = 1, size = total_los, prob = rep(1/n_admissions, n_admissions))))
+  #   }
+  # ) %>%
   # TODO: work out how to randomly generate non-overlapping admissions
   # TODO: e.g. random non-overlapping integer sequences
   # maybe pick random integers, 0-365, 2x as many as admissions, sort in increasing order, then interpolate the resulting pairs
   # but then I lose the work of randomly defining the length of hospitalisations? I guess that's fine, I'm not after a particular distriburtion
+  summarised_admissions %>% filter(n_admissions > 0) %>%
+  pmap_dfr(
+    .l = .,
+    .f = function(id, sex, age, n_admissions, total_los) {
+      # tibble(id = id, los = as.vector(rmultinom(n = 1, size = total_los, prob = rep(1/n_admissions, n_admissions))))
+      tibble(
+        id = id,
+        id_admission = rep(1:n_admissions, each = 2),
+        date = sort(sample(x=0:365, size = 2*n_admissions, replace=FALSE)),
+        type = rep(c("start","end"), times = n_admissions)
+        ) %>%
+        pivot_wider(names_from = type, values_from = date, id_cols = c(id, id_admission))
+      
+    }
+  )
 
+# transition_matrix <- trans.illdeath(names = c("Home","Hospital","Death"))
+transition_matrix <- transMat(
+  list(
+    "Home" = c(2,3),
+    "Hospital" = c(1,3),
+    "Death" = c()
+  )
+)
+# paths(transition_matrix)  # will be error!
 
-x <- rmultinom(n = 1, size = 100, prob = rep(1/4, 4))
-x
-colSums(x)
+# msprep()
+
+data(ebmt3)
+
+covs <- c("dissub", "age", "drmatch", "tcd", "prtime")
+msbmt <- msprep(
+  time = c(NA, "prtime", "rfstime"),
+  status = c(NA,"prstat", "rfsstat"),
+  data = ebmt3,
+  trans = tmat,
+  keep = covs
+)
 
 
 # Example from training ---------------------------------------------------
