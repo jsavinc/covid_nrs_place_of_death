@@ -20,8 +20,35 @@ library(xml2)  # for the url_absolute() function
 
 # Find latest NRS weekly deaths spreadsheet URL ---------------------------
 
+# Note: as of 2024-02-02, the filename appears to change weekly again, so I'm
+# back to using a script to find the latest filename
+
+url_nrs_weekly_deaths <- "https://www.nrscotland.gov.uk/statistics-and-data/statistics/statistics-by-theme/vital-events/general-publications/weekly-deaths-registered-in-scotland"
+
+all_nrs_links <-
+  read_html(url_nrs_weekly_deaths) %>%
+  html_nodes("a") %>%
+  html_attr("href") %>%  # find all links on the page
+  tibble(links = .)
+
+nrs_filename_pattern <- "weekly-deaths-.*\\.xlsx"
+
+weekly_deaths_url_relative <-
+  all_nrs_links %>%
+  filter(str_detect(links, pattern = nrs_filename_pattern)) %>%
+  filter(!str_detect(links, pattern = "monthly")) %>%  # remove monthly data
+  pull(links)
+
+stopifnot(length(weekly_deaths_url_relative)==1)  # stop if more than one URL found
+
+## get absolute URL
+weekly_deaths_url_absolute <- url_absolute(weekly_deaths_url_relative, base = url_nrs_weekly_deaths)
+
+# 2023 notes below:
+
 ## fixed url now and filename no longer updated weekly, so I need to rename the file myself after it's downloaded
-url_nrs_weekly_deaths_2023 <- "https://www.nrscotland.gov.uk/files//statistics/vital-events/weekly-deaths/weekly-deaths-23.xlsx"
+
+# url_nrs_weekly_deaths_2023 <- "https://www.nrscotland.gov.uk/files//statistics/vital-events/weekly-deaths/weekly-deaths-23.xlsx"
 
 ## Note: previously the filename for the most recent spreadsheet reporting
 ## weekly deaths changed weekly and reflected the date of publication (week
@@ -81,7 +108,7 @@ if (file.exists(file_data_sources)) {
     short_name = c("main_report","sex_age","la","hb"),
     url = c(
       # weekly_deaths_url_absolute,  # found automatically above!
-      url_nrs_weekly_deaths_2023,  # fixed URL from March 2023
+      weekly_deaths_url_absolute,  # inferred latest URL
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-location-age-sex.xlsx",
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-council-area-location.xlsx",
       "https://www.nrscotland.gov.uk/files//statistics/covid19/weekly-deaths-by-date-health-board-location.xlsx"
@@ -141,7 +168,7 @@ if (file.exists(file_case_trends_data_sources)) {
 # download_file_if_newer_available <- function(url, filename, last_modified, directory, record_tbl) {
 download_file_if_newer_available <- function(url, short_name, filename=NULL, last_modified, directory, record_tbl) {  # note:removed filename argument, I can get it from the url!
   if (short_name == "main_report") {
-    url <- url_nrs_weekly_deaths_2023  # replace with latest url of main report 
+    url <- weekly_deaths_url_absolute  # replace with latest url of main report 
   }
   todays_file <- curl_fetch_disk(url, path = tempfile())
   message(paste0("Checking if we have latest file for: ",short_name))
@@ -284,7 +311,7 @@ if (!dir.exists(dir_reports)) dir.create(dir_reports)
 
 message("Rendering data .rmd file...")
 rmarkdown::render(
-  input = "./covid_nrs_place_of_death_data_2023.Rmd",
+  input = "./covid_nrs_place_of_death_data_2024.Rmd",
   output_file = paste0("covid_nrs_place_of_death_data_",today()),
   output_dir = dir_reports,
   envir = new.env(),
@@ -294,7 +321,7 @@ message("Done!")
 
 message("Rendering visualisations .rmd file...")
 rmarkdown::render(
-  input = "./covid_nrs_place_of_death_visualisations_2023.Rmd",
+  input = "./covid_nrs_place_of_death_visualisations_2024.Rmd",
   output_file = paste0("covid_nrs_place_of_death_visualisations",today()),
   output_dir = dir_reports,
   envir = new.env(),
