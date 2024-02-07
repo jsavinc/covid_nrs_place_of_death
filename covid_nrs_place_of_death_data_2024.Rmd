@@ -150,6 +150,8 @@ Note: the last sex & age split of the data provided by NRS was Week 9 of 2023, t
 # TODO: delete the below line, used for testing
 # files_weekly_deaths$main_report <- "./downloaded_data/2023-03-22_weekly-deaths-23.xlsx"
 
+# TODO: update this for 2024, probably the same cell ranges as previously?
+
 sheet_covid_deaths_sex_and_age_data <- "1"
 sheet_all_cause_deaths_sex_and_age_data <- "4"
 
