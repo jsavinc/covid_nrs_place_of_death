@@ -2,6 +2,10 @@
 
 library(tidyverse)
 library(mstate)
+library(ivs)  # for working with intervals
+library(survival) 
+
+
 # library(msm)  # for intermittently observed data, ours is precise!
 
 
@@ -53,6 +57,174 @@ admissions <-
       
     }
   )
+
+## now need to convert admissions to alternate transitions between home and
+## hospital! to do this, I find complementary intervals to the hospital
+## admissions - these are the home stays
+home_stays <-
+  admissions %>%
+  group_by(id) %>%
+  reframe(  # reframe allows to create multiple rows per group
+    ## using the iv_start/ed and iv_set_difference to find complementary
+    ## intervals:
+    start_home = iv_start(iv_set_difference(iv(0L, 365L), iv(start, end))),
+    end_home = iv_end(iv_set_difference(iv(0L, 365L), iv(start, end)))
+  )
+
+## a non-ivs implementation of finding complements
+## based on https://stackoverflow.com/a/77273509/2296603
+## note that this takes a somewhat different approach, and the resulting intervals are different!
+
+get_all_complementary_integers <- function(start, end, intervals) {
+  setdiff(seq.int(start,end,by=1), unlist(intervals))
+}
+
+get_contiguous_intervals_from_integers <- function(integers) {
+  split(integers, cumsum(c(1L, diff(integers) != 1L)))
+}
+
+home_stays2 <-
+  admissions %>%
+  group_by(id) %>%
+  mutate(
+    interval = 
+      map2(start, end, function(start,end) seq.int(from=start,to=end,by=1))
+    ) %>%
+  reframe(
+    complement = get_contiguous_intervals_from_integers(setdiff(0L:365L, unlist(interval))),
+    start = map_int(complement, ~head(.x, 1)),
+    end = map_int(complement, ~tail(.x, 1)),
+  )
+## these come out different - {ivs} uses right-open intervals; here we're using both-sides-closed intervals!
+
+## here I've named the states to make them less confusing: current_state is the
+## state the person was in between start and end; new_state is the transition at
+## end; I also convert the state to Death at end time of 365 to reflect the
+## person dying at the end of the period
+transitions <-
+  bind_rows(
+    admissions %>% select(id, start, end) %>%
+      mutate(current_state = "Hospital", new_state = "Home"),
+    home_stays %>% select(id, start= start_home, end = end_home) %>%
+      mutate(current_state = "Home", new_state = "Hospital")
+  ) %>%
+  arrange(id, start
+        ) %>%
+  mutate(
+    new_state = if_else(
+      condition = end == 365L,
+      true = "Death",
+      false = new_state
+    )
+  )
+
+## transitions can have added covariates; for some transitions the covariates
+## will change mid-transition (e.g. a policy coming into effect on a certain
+## date). Here I'll incorporate that by taking a subset of transitions at a
+## certain time, but in the actual study this would be based on an actual date
+## so the processing would need to happen before, probably
+
+## define random policy date for each individual; setting the same date separates the data perfectly into a before and after
+individuals$policy_date <- sample(x = 1L:365L, size = nrow(individuals), replace = TRUE)
+transitions <-
+  transitions %>%
+  left_join(individuals %>% select(id, policy_date), by = "id")
+
+## if a transition happens before policy change, it's unaffected
+## if a transition happens on date of policy change, it's fully 
+transitions_with_covariates_before_processing <-
+  transitions %>%
+  mutate(policy_flag = policy_date > start & policy_date < end)  # closed interval at both ends; 
+
+chunk_1_transitions_without_flag <-
+  transitions_with_covariates_before_processing %>%
+  filter(!policy_flag) %>%
+  mutate(
+    policy = if_else(
+      end < policy_date,
+      FALSE,
+      TRUE
+    )
+  )
+
+chunk_2_transitions_with_flag <-
+  transitions_with_covariates_before_processing %>%
+  filter(policy_flag) %>%
+  mutate(id_transition = 1L : nrow(.)) %>%  # create a temporary id for each row
+  group_by(id, id_transition) %>%
+  reframe(
+    tibble(  # create two new rows based on each transition
+      id = rep(id, 2),  # same id for both rows
+      start = c(start, policy_date),  # split the dates - start to policy change
+      end = c(policy_date, end),  # split the dates - policy change to end
+      policy = c(FALSE, TRUE),  # policy is FALSE, then changes to TRUE
+      current_state = rep(current_state, 2),  # current_state doesn't change
+      new_state = c("No change", new_state)  # new_state is set to "no change"/censored/reference level for the change in policy - state didn't change, just the covariate changes
+    )
+  ) %>% select(-id_transition)
+
+## merge the processed transitions
+transitions_with_covariates <-
+  bind_rows(chunk_1_transitions_without_flag, chunk_2_transitions_with_flag) %>%
+  select(-policy_flag) %>%
+  arrange(id, start) %>%
+  mutate(
+    across(c(start, end), as.numeric),
+    event = factor(new_state, levels = c("No change", "Home", "Hospital", "Death"))
+    ) %>%
+  left_join(individuals %>% select(id, sex), by = "id")
+
+## name the possible states
+states <- levels(transitions_with_covariates$event)[-1]
+
+cmat <- matrix(0L, 3,3,  dimnames = list(states, states))
+cmat[1,2:3] <- 1
+cmat[2,c(1,3)] <- 1
+statefig(layout = c(2,1), connect = cmat)
+
+## Note: the mstate::transMat() function uses different notation, but can be
+## converted
+transition_matrix <- mstate::transMat(
+  list(
+    "Home" = c(2,3),
+    "Hospital" = c(1,3),
+    "Death" = c()
+  )
+)
+statefig(layout = c(2,1), connect = (!is.na(transition_matrix))*1L)  # convert the matrix entries to 1 where not NA
+
+(check <- survcheck(formula = Surv(time = start, time2 = end, event = event, type = "mstate") ~ policy + sex, data = transitions_with_covariates, id = id, istate = current_state))
+check$flag  # for data entries that would produce an error fitting survival object
+
+
+fit1 <- survfit(formula = Surv(time = start, time2 = end, event = event, type = "mstate") ~ policy + sex, data = transitions_with_covariates, id = id, istate = current_state)
+plot(fit1, col = c(1,1,2,2,4,4), pch = "abcdef")
+summary(fit1)
+
+broom::tidy(fit1) %>%
+  ggplot(data = ., aes(x = time, y = estimate, color = strata)) +
+  geom_step() +
+  facet_wrap(~state)
+
+## cox model
+cfit1 <- coxph(Surv(time = start, time2 = end, event = event, type = "mstate") ~ policy + sex, data = transitions_with_covariates, id = id, istate = current_state)
+summary(cfit1)
+
+## check proportional hazards assumption
+cox.zph(cfit1)
+# results in error...
+# Error in solve.default(imat, u) : 
+#   system is computationally singular: reciprocal condition number = 1.19407e-16
+
+
+## creating predicted curves from cox model
+dummy <- expand.grid(policy = c(TRUE,FALSE), sex = c("F","M"))
+predicted1 <- survfit(cfit1, newdata = dummy)  # from here on you can plot both the original fit and the predicted fit and compare!
+
+
+# working through mstate example ------------------------------------------
+
+
 
 # transition_matrix <- trans.illdeath(names = c("Home","Hospital","Death"))
 transition_matrix <- transMat(
