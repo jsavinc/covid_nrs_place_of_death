@@ -147,21 +147,49 @@ chunk_1_transitions_without_flag <-
     )
   )
 
+## each transition that overlaps the policy date is split into exactly two, so
+## the below implementation using reframe() can be simplified as a bind_rows():
 chunk_2_transitions_with_flag <-
-  transitions_with_covariates_before_processing %>%
-  filter(policy_flag) %>%
-  mutate(id_transition = 1L : nrow(.)) %>%  # create a temporary id for each row
-  group_by(id, id_transition) %>%
-  reframe(
-    tibble(  # create two new rows based on each transition
-      id = rep(id, 2),  # same id for both rows
-      start = c(start, policy_date),  # split the dates - start to policy change
-      end = c(policy_date, end),  # split the dates - policy change to end
-      policy = c(FALSE, TRUE),  # policy is FALSE, then changes to TRUE
-      current_state = rep(current_state, 2),  # current_state doesn't change
-      new_state = c("No change", new_state)  # new_state is set to "no change"/censored/reference level for the change in policy - state didn't change, just the covariate changes
-    )
-  ) %>% select(-id_transition)
+  bind_rows(
+    # first split
+    transitions_with_covariates_before_processing %>%
+    filter(policy_flag) %>%
+    transmute(
+      id = id,
+      start = start,  # first split = start date stays the same
+      end = policy_date,  # end date is policy date
+      policy = FALSE,  # policy is not yet in effect
+      current_state = current_state,  # current state stays the same
+      new_state = "No change"  # censored at the end of first split
+    ),
+    # second split
+    transitions_with_covariates_before_processing %>%
+      filter(policy_flag) %>%
+      transmute(
+        id = id,
+        start = policy_date,  # start is policy date
+        end = end,  # end is actual end
+        policy = TRUE,  # policy TRUE in second split
+        current_state = current_state,  # current state stays the same
+        new_state = new_state  # new state is now the actual new state
+      )
+  ) %>%
+  arrange(id, start)
+  ## below is the slower implementation using reframe()
+  # transitions_with_covariates_before_processing %>%
+  # filter(policy_flag) %>%
+  # mutate(id_transition = 1L : nrow(.)) %>%  # create a temporary id for each row
+  # group_by(id, id_transition) %>%
+  # reframe(
+  #   tibble(  # create two new rows based on each transition
+  #     id = rep(id, 2),  # same id for both rows
+  #     start = c(start, policy_date),  # split the dates - start to policy change
+  #     end = c(policy_date, end),  # split the dates - policy change to end
+  #     policy = c(FALSE, TRUE),  # policy is FALSE, then changes to TRUE
+  #     current_state = rep(current_state, 2),  # current_state doesn't change
+  #     new_state = c("No change", new_state)  # new_state is set to "no change"/censored/reference level for the change in policy - state didn't change, just the covariate changes
+  #   )
+  # ) %>% select(-id_transition)
 
 ## merge the processed transitions
 transitions_with_covariates <-
