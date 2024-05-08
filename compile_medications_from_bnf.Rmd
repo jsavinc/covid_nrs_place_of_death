@@ -23,7 +23,7 @@ For the analysis of prescription/dispensing data, lists of specific medicines ar
 
 ## Source of BNF codes
 
-One source for a list of all BNF codes is the Information Services Portal of the NHS Business Services Authority, https://applications.nhsbsa.nhs.uk/infosystems/data/showDataSelector.do?reportId=126. This is available after putting in a captcha-like password, so I've downloaded the file manually.
+One source for a list of all BNF codes is the [Information Services Portal of the NHS Business Services Authority] (https://applications.nhsbsa.nhs.uk/infosystems/data/showDataSelector.do?reportId=126). This is available after putting in a captcha-like password, so I've downloaded the file manually.
 
 File used: `01-01-2023 : 84`
 
@@ -197,6 +197,21 @@ test_list <-
   unite(col = "code", c1:c4, sep = "", na.rm = TRUE, remove = TRUE)
 ```
 
+## Buscopan/Hyoscine Butylbromide injections
+
+In conversation with Jo Bowden, Sarah Mills, Sarah Bowers, we discussed using injectable buscopan/hyoscine butylbromide as a marker of palliative care.
+
+```{r}
+bnf_buscopan <-
+  bnf %>%
+  filter(str_detect(
+    string = bnf_chemical_substance,
+    pattern = regex("hyoscine", ignore_case = TRUE)
+  )) %>% filter(str_detect(bnf_presentation, pattern = regex("inj", ignore_case = TRUE))) %>%
+  select(bnf_section, bnf_section_code, bnf_product, bnf_presentation, bnf_presentation_code)
+```
+
+
 ## Test against BNF to see if I get the same substances
 
 Note: these need to be done in sections by how long the code given is - does it pick up a chapter, a section, a subsection, or specific medicines only?
@@ -241,4 +256,6 @@ We are now left with two files listing medicines used in dementia/AD and palliat
 write_csv(bnf_dementia, file = "./bnf/bnf_codes_dementia_alzheimers.csv")
 
 write_csv(bnf_palliative, file = "./bnf/bnf_codes_palliative_anticipatory.csv")
+
+write_csv(bnf_buscopan, file = "./bnf/bnf_codes_buscopan.csv")
 ```
