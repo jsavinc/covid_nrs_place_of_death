@@ -4,6 +4,7 @@
 compute_start_date_from_week_number <- function(week_number, year_number) {
   ## this assumes a valid week number! There are 52 or 53 weeks in a year
   isoweek_string <- glue::glue("{year_number}-W{str_pad(week_number, width=2, pad='0')}-1")
+  # isoweek_strings <- paste0(year_number,"-W",str_pad(week_number, width=2, pad='0'),"-1")
   # computed_dates <- ISOweek::ISOweek2date(isoweek_string)
   computed_dates <- rep(NA_Date_,times = length(week_number))
   computed_dates[which(!is.na(week_number))] <- ISOweek::ISOweek2date(isoweek_string[which(!is.na(week_number))])  # return NA instead of failing with ISOweek!
@@ -312,6 +313,33 @@ infer_year_range_for_calculating_covid_deaths <- function(year) {
   year_range <- seq.int(from = year-5L, to = year-1L)
   year_range <- year_range[year_range>=2020]
   return(year_range)
+}
+
+## helper function to create vertical lines in graph for start of each year
+## included
+add_vertical_lines_for_start_of_year <- function(years, linetype = "dashed", colour = "grey50") {
+  map(.x = years, .f = function(year) geom_vline(xintercept = compute_start_date_from_week_number(week_number = 1, year_number = year), linetype = linetype, colour = colour))
+}
+
+## helper function, same as above, but for annotations
+add_annotations_for_start_of_year <- function(years, y=30, colour="grey40", shorten_labels = TRUE) {
+  if (shorten_labels)
+    labels = paste0("'", str_sub(years, 3, 4))
+  else
+    labels = years
+  map2(
+    .x = years,
+    .y = labels,
+    .f = function(year, label)
+      annotate(
+        geom = "text",
+        x = compute_start_date_from_week_number(week_number = 1, year_number = year),
+        y = y,
+        label = label,
+        hjust = 0,
+        colour = colour
+      )
+  )
 }
 
 
