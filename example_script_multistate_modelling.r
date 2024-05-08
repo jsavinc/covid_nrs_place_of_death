@@ -250,6 +250,49 @@ dummy <- expand.grid(policy = c(TRUE,FALSE), sex = c("F","M"))
 predicted1 <- survfit(cfit1, newdata = dummy)  # from here on you can plot both the original fit and the predicted fit and compare!
 
 
+# example of same-day discharges ------------------------------------------
+
+# There is an issue with the admissions data: some people are discharged on the
+# same day as they are admitted. This would be less of an issue if we knew the
+# time as well as the date, as we could compute actual durations in that case.
+# In the absence of actual times, there are several solutions:
+
+# 3-day study period example
+dt_start <- ymd("2020-01-01")
+dt_end <- ymd("2020-01-03")
+
+transitions_3 <- 
+  bind_rows(
+    tibble(
+      id = 1L,
+      start = c(ymd("2020-01-01"),ymd("2020-01-02"),ymd("2020-01-03")),
+      end = c(c(ymd("2020-01-01"),ymd("2020-01-02"),ymd("2020-01-03")))
+    ),
+    tibble(
+      id = 2L,
+      start = c(ymd("2020-01-01"),ymd("2020-01-03")),
+      end = c(ymd("2020-01-03"),ymd("2020-01-03")),
+    )
+  ) %>%
+  ## using fake start and end times to generate 12-hour intervals
+  mutate(
+    start = ymd_h(paste0(start, " 06")),
+    end = ymd_h(paste0(end, " 18")),
+    interval = iv(start, end)
+  ) %>%
+  group_by(id) %>%
+  reframe(
+    interval = iv_set_difference(iv(ymd_hm("2020-01-01 06:00"), ymd_hm("2020-01-04 18:00")), iv(start, end)),
+    start_home = iv_start(interval),
+    end_home = iv_end(interval)
+  ) %>%
+  ## convert to time since start of study
+  mutate(across(c(start_home,end_home), ~(.x - ymd_hm("2020-01-01 06:00"))/ddays(1)))
+
+
+
+
+
 # working through mstate example ------------------------------------------
 
 
