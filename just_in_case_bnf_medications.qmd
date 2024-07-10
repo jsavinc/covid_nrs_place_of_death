@@ -1,0 +1,609 @@
+---
+title: "Just-in-case medications list"
+author: "Sarah Mills & Jan Savinc"
+format: html
+---
+
+# Introduction
+
+Here I'll compile the BNF codes corresponding to medicines Sarah Mills compiled as being "Just in case" for use in palliative care/end of life care.
+
+•       Strong opioids: Alfentanil, Buprenorphine, Diamorphine hydrochloride, Dihydrocodeine tartrate, Fentanyl, Hydromorphone hydrochloride, Meptazinol, Methadone hydrochloride, Morphine sulfate, Oxycodone hydrochloride, Tramadol hydrochloride
+•       Anti-muscarinics: Aclidinium bromide, Alverine citrate, Bupropion hydrochloride, Minims atropine sulfate, Atropine sulfate, Minims cyclopentolate hydrochloride, Cyclopentolate hydrochloride, Dicycloverine hydrochloride, Erdosteine, Fesoterodine fumarate, Flavoxate hydrochloride, Glycopyrrolate bromide, Hyoscine, Procyclidine hydrochloride, Propantheline bromide, Propiverine hydrochloride
+•       Anti-emetics: Betahistine hydrochloride, Cyclizine, Domperidone, Granisetron hydrochloride, Levomepromazine hydrochloride, Metoclopramide hydrochloride, Ondansetron hydrochloride, Prochlorperazine maleate
+•       Anxiolytics: Buspirone hydrochloride, Chlordiazepoxide hydrochloride, Clobazam, Clomethiazole, Clonazepam, Diazepam, Loprazolam, Lorazepam, Lormetazepam, Midazolam, Nitrazepam, Temazepam, Trazodone hydrochloride, Zopiclone, Zolpidem tartrate
+
+
+The strategy for these is to look at each medication, look at its formulations, and decide which to include.
+
+
+
+
+# BNF source
+
+One source for a list of all BNF codes is the [Information Services Portal of the NHS Business Services Authority] (https://applications.nhsbsa.nhs.uk/infosystems/data/showDataSelector.do?reportId=126). This is available after putting in a captcha-like password, so I've downloaded the file manually.
+
+File used: `01-01-2024 : 86`
+
+
+# Setup
+
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+# Compile codes for JIC medicines
+
+## Read BNF codes
+
+```{r}
+bnf_zip_file <- "./bnf/20240701_1719843096151_BNF_Code_Information.zip"  # manually downloaded to this location
+csv_file <- as.character(unzip(bnf_zip_file, list = TRUE)[1])  # get the filename from the zip
+temp_dir <- tempdir()  # create temporary directory for unzipping to
+unzip(zipfile = bnf_zip_file, exdir = temp_dir)  # extract csv file from zip
+
+bnf <- read_csv(file.path(temp_dir, csv_file)) %>% clean_names()  # read csv file
+```
+
+
+## Encode the list of medicines
+
+```{r}
+strong_opioids <- "Alfentanil, Buprenorphine, Diamorphine hydrochloride, Dihydrocodeine tartrate, Fentanyl, Hydromorphone hydrochloride, Meptazinol, Methadone hydrochloride, Morphine sulfate, Oxycodone hydrochloride, Tramadol hydrochloride"
+
+anti_muscarinics <- "Aclidinium bromide, Alverine citrate, Bupropion hydrochloride, Minims atropine sulfate, Atropine sulfate, Minims cyclopentolate hydrochloride, Cyclopentolate hydrochloride, Dicycloverine hydrochloride, Erdosteine, Fesoterodine fumarate, Flavoxate hydrochloride, Glycopyrrolate bromide, Hyoscine, Procyclidine hydrochloride, Propantheline bromide, Propiverine hydrochloride"
+
+anti_emetics <- "Betahistine hydrochloride, Cyclizine, Domperidone, Granisetron hydrochloride, Levomepromazine hydrochloride, Metoclopramide hydrochloride, Ondansetron hydrochloride, Prochlorperazine maleate"
+
+anxiolytics <- "Buspirone hydrochloride, Chlordiazepoxide hydrochloride, Clobazam, Clomethiazole, Clonazepam, Diazepam, Loprazolam, Lorazepam, Lormetazepam, Midazolam, Nitrazepam, Temazepam, Trazodone hydrochloride, Zopiclone, Zolpidem tartrate"
+
+
+jic <- map2(
+  .x = c(strong_opioids, anti_muscarinics, anti_emetics, anxiolytics),
+  .y = c("strong opioids", "anti-muscarinics", "anti-emetics", "anxiolytics"),
+  .f = function(meds, name) {
+    tibble(
+      group = name,
+      meds = 
+        str_split(string = meds, pattern = ",") %>%
+        unlist() %>%
+        str_trim() %>%
+        tolower()
+    )
+  }
+) %>% list_rbind()
+```
+
+## Check for non-matches in BNF
+
+A small number of medications don't have exact matches in the BNF when searching by substance:
+
+```{r}
+nonmatches <- 
+  jic %>%
+  anti_join(
+    bnf %>% mutate(bnf_chemical_substance = tolower(bnf_chemical_substance)), 
+    by = join_by(meds == bnf_chemical_substance)
+  )
+
+nonmatches %>% knitr::kable(caption = "Medications that don't match the BNF entries exactly")
+```
+
+Note that even exact matches need to be carefully checked as not all formualtions are relevant (specifically combination medicines, for example).
+
+
+## Adding medicines to the list
+
+```{r}
+## initialise the blank list of included medicines
+jic_medicines <- tibble()
+
+## helper function to subset the bnf list, finding a keyword in the product name
+## or chemical substance
+search_bnf <- function(keyword) {
+  bnf %>%
+    filter(
+      str_detect(paste0(bnf_product, bnf_chemical_substance), regex(keyword, ignore_case = TRUE))
+    )
+}
+
+## helper function to add medicines as I go along
+add_entries <- function(meds_to_add, bnf_to_add) {
+  bind_rows(
+    jic_medicines,
+    bind_cols(jic %>% filter(meds==meds_to_add), bnf_to_add)
+    ) %>%
+    distinct  # to precvent accidental duplication along the way
+}
+```
+
+## strong opioids
+
+### alfentanil
+
+All formulations make sense to me. Query `Alfentanil 0.1% nasal spray`?
+
+```{r}
+# search_bnf(keyword="alfentanil") %>% View()
+
+jic_medicines <- add_entries(meds = "alfentanil", bnf_to_add = search_bnf(keyword="alfentanil"))
+```
+
+### buprenorphine
+
+Keep only the analgesics section (0407), not the opioid dependence section (0410).
+
+```{r}
+# search_bnf(keyword="buprenorphine") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "buprenorphine", 
+  bnf_to_add = search_bnf(keyword="buprenorphine") %>%
+    filter(bnf_section_code == "0407")
+  )
+```
+
+### diamorphine hydrochloride
+
+Included both section cough suppressants and analgesics.
+
+```{r}
+# search_bnf(keyword="diamorphine hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "diamorphine hydrochloride", 
+  bnf_to_add = search_bnf(keyword="diamorphine hydrochloride")
+  )
+```
+
+### dihydrocodeine tartrate
+
+```{r}
+# search_bnf(keyword="dihydrocodeine tartrate") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "dihydrocodeine tartrate", 
+  bnf_to_add = search_bnf(keyword="dihydrocodeine tartrate")
+  )
+```
+
+### fentanyl
+
+Keep only the analgesics subsection (0407), not the general anaesthesia and local anaesthesia sections.
+
+```{r}
+# search_bnf(keyword="fentanyl") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "fentanyl", 
+  bnf_to_add = search_bnf(keyword="fentanyl") %>%
+    filter(bnf_section_code == "0407")
+  )
+```
+
+### hydromorphone hydrochloride
+
+```{r}
+# search_bnf(keyword="hydromorphone hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "hydromorphone hydrochloride", 
+  bnf_to_add = search_bnf(keyword="hydromorphone hydrochloride")
+  )
+```
+
+### meptazinol
+
+```{r}
+# search_bnf(keyword="meptazinol") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "meptazinol", 
+  bnf_to_add = search_bnf(keyword="meptazinol")
+  )
+```
+
+### methadone hydrochloride
+
+Kept the cough suppressants section (0309) and analgesics (0407), not drug dependence (0410).
+
+```{r}
+# search_bnf(keyword="methadone hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "methadone hydrochloride", 
+  bnf_to_add = search_bnf(keyword="methadone hydrochloride") %>%
+    filter(bnf_section_code %in% c("0309","0407"))
+  )
+```
+
+### morphine sulfate
+
+Query gel, intrasite gel?
+
+```{r}
+# search_bnf(keyword="morphine sulfate") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "morphine sulfate", 
+  bnf_to_add = search_bnf(keyword="morphine sulfate")
+  )
+```
+
+### oxycodone hydrochloride
+
+Query combination: Oxycodone hydrochloride/naloxone hydrochloride?
+
+```{r}
+# search_bnf(keyword="oxycodone hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "oxycodone hydrochloride", 
+  bnf_to_add = search_bnf(keyword="oxycodone hydrochloride")
+  )
+```
+
+### tramadol hydrochloride
+
+```{r}
+# search_bnf(keyword="tramadol hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "tramadol hydrochloride", 
+  bnf_to_add = search_bnf(keyword="tramadol hydrochloride")
+  )
+```
+
+## anti-muscarinics
+
+### aclidinium bromide
+
+Keep only paragraph code 030102 for antimuscarinic bronchodilators, not compound bronchodilator preparations 030104 (Aclidinium bromide/formoterol)
+
+```{r}
+# search_bnf(keyword="aclidinium bromide") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "aclidinium bromide", 
+  bnf_to_add = search_bnf(keyword="aclidinium bromide") %>%
+    filter(bnf_paragraph_code == "030102")
+  )
+```
+
+### alverine citrate
+
+included combination Alverine citrate/simethicone, as well as Alverine citrate compound preparations (Sterculia 62% / Alverine 0.5% granules and Spasmonal Fibre granules)
+
+```{r}
+# search_bnf(keyword="alverine citrate") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "alverine citrate", 
+  bnf_to_add = search_bnf(keyword="alverine citrate")
+  )
+```
+
+### bupropion hydrochloride
+
+```{r}
+# search_bnf(keyword="bupropion hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "bupropion hydrochloride", 
+  bnf_to_add = search_bnf(keyword="bupropion hydrochloride")
+  )
+```
+
+### minims atropine sulfate
+
+```{r}
+# search_bnf(keyword="minims atropine sulfate") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "minims atropine sulfate", 
+  bnf_to_add = search_bnf(keyword="minims atropine sulfate")
+  )
+```
+
+### atropine sulfate
+
+Query whether only eye drops, or oral/parenteral is also relevant here? Also "Co-phenotrope (Diphenox hydrochloride/atropine sulfate)" for acute diarrhea?
+
+```{r}
+# search_bnf(keyword="atropine sulfate") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "atropine sulfate", 
+  bnf_to_add = search_bnf(keyword="atropine sulfate") %>%
+    # minims already included by an above entry
+    filter(!str_detect(bnf_product, regex("minims", ignore_case=TRUE)))
+  )
+```
+
+### minims cyclopentolate hydrochloride
+
+```{r}
+# search_bnf(keyword="minims cyclopentolate hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "minims cyclopentolate hydrochloride", 
+  bnf_to_add = search_bnf(keyword="minims cyclopentolate hydrochloride")
+  )
+```
+
+### cyclopentolate hydrochloride
+
+```{r}
+# search_bnf(keyword="cyclopentolate hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "cyclopentolate hydrochloride", 
+  bnf_to_add = search_bnf(keyword="cyclopentolate hydrochloride") %>%
+    # minims already included by an above entry
+    filter(!str_detect(bnf_product, regex("minims", ignore_case=TRUE)))
+  )
+```
+
+### dicycloverine hydrochloride
+
+```{r}
+# search_bnf(keyword="dicycloverine hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "dicycloverine hydrochloride", 
+  bnf_to_add = search_bnf(keyword="dicycloverine hydrochloride")
+  )
+```
+
+### erdosteine
+
+```{r}
+# search_bnf(keyword="erdosteine") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "erdosteine", 
+  bnf_to_add = search_bnf(keyword="erdosteine")
+  )
+```
+
+### fesoterodine fumarate
+
+```{r}
+# search_bnf(keyword="fesoterodine fumarate") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "fesoterodine fumarate", 
+  bnf_to_add = search_bnf(keyword="fesoterodine fumarate")
+  )
+```
+
+### flavoxate hydrochloride
+
+```{r}
+# search_bnf(keyword="flavoxate hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "flavoxate hydrochloride", 
+  bnf_to_add = search_bnf(keyword="flavoxate hydrochloride")
+  )
+```
+
+### glycopyrrolate bromide
+
+Note: "glycopyrrolate" doesn't appear in the BNF, but "glycopyrronium" does.
+
+Query: this appears under chapters: gastro-intestinal, skin, respiratory, as well as anaesthesia - which ones are relevant?
+
+```{r}
+# search_bnf(keyword="glycopyrrolate bromide") %>% View()
+# search_bnf(keyword="glycopyrrolate") %>% View()
+# search_bnf(keyword="glycopyrr.* bromide") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "glycopyrrolate bromide", 
+  bnf_to_add = search_bnf(keyword="glycopyrr.* bromide")
+  )
+```
+
+### hyoscine
+
+Query:this occurs in 2 forms, butylbromide (antispasmodic) and hydrobromide (nausea and vertigo) – are both relevant? And in all formualtions (toral, injectable, transdermal patch)
+
+```{r}
+# search_bnf(keyword="hyoscine") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "hyoscine", 
+  bnf_to_add = search_bnf(keyword="hyoscine")
+  )
+```
+
+### procyclidine hydrochloride
+
+```{r}
+# search_bnf(keyword="procyclidine hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "procyclidine hydrochloride", 
+  bnf_to_add = search_bnf(keyword="procyclidine hydrochloride")
+  )
+```
+
+### propantheline bromide
+
+```{r}
+# search_bnf(keyword="propantheline bromide") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "propantheline bromide", 
+  bnf_to_add = search_bnf(keyword="propantheline bromide")
+  )
+```
+
+### propiverine hydrochloride
+
+```{r}
+# search_bnf(keyword="propiverine hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "propiverine hydrochloride", 
+  bnf_to_add = search_bnf(keyword="propiverine hydrochloride")
+  )
+```
+
+## anti-emetics
+
+### betahistine hydrochloride
+
+```{r}
+# search_bnf(keyword="betahistine hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "betahistine hydrochloride", 
+  bnf_to_add = search_bnf(keyword="betahistine hydrochloride")
+  )
+```
+
+### cyclizine
+
+Keeping cyclizine hydrochloride and lactate forms, but not the combination "Morphine tartrate and cyclizine tartrate" in the Analgesics section (0407)
+
+```{r}
+# search_bnf(keyword="cyclizine") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "cyclizine", 
+  bnf_to_add = search_bnf(keyword="cyclizine") %>%
+    filter(bnf_section_code != "0407")
+  )
+```
+
+### domperidone
+
+```{r}
+# search_bnf(keyword="domperidone") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "domperidone", 
+  bnf_to_add = search_bnf(keyword="domperidone")
+  )
+```
+
+### granisetron hydrochloride
+
+```{r}
+# search_bnf(keyword="granisetron hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "granisetron hydrochloride", 
+  bnf_to_add = search_bnf(keyword="granisetron hydrochloride")
+  )
+```
+
+### levomepromazine hydrochloride
+
+```{r}
+# search_bnf(keyword="levomepromazine hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "levomepromazine hydrochloride", 
+  bnf_to_add = search_bnf(keyword="levomepromazine hydrochloride")
+  )
+```
+
+### metoclopramide hydrochloride
+
+```{r}
+# search_bnf(keyword="metoclopramide hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "metoclopramide hydrochloride", 
+  bnf_to_add = search_bnf(keyword="metoclopramide hydrochloride")
+  )
+```
+
+### ondansetron hydrochloride
+
+```{r}
+# search_bnf(keyword="ondansetron hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "ondansetron hydrochloride", 
+  bnf_to_add = search_bnf(keyword="ondansetron hydrochloride")
+  )
+```
+
+### prochlorperazine maleate
+
+```{r}
+# search_bnf(keyword="prochlorperazine maleate") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "prochlorperazine maleate", 
+  bnf_to_add = search_bnf(keyword="prochlorperazine maleate")
+  )
+```
+
+## anxiolytics
+
+### buspirone hydrochloride
+
+```{r}
+# search_bnf(keyword="buspirone hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "buspirone hydrochloride", 
+  bnf_to_add = search_bnf(keyword="buspirone hydrochloride")
+  )
+```
+
+### chlordiazepoxide hydrochloride
+
+```{r}
+# search_bnf(keyword="chlordiazepoxide hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "chlordiazepoxide hydrochloride", 
+  bnf_to_add = search_bnf(keyword="chlordiazepoxide hydrochloride")
+  )
+```
+
+### clobazam
+
+```{r}
+# TODO: continue adding these, only the anxiolyitics left!
+```
+
+
+
+# delete below, scratch area
+
+```{r}
+
+
+search_bnf(keyword="alfentanil") %>% View()
+search_bnf(keyword="meptazinol") %>% View()
+search_bnf(keyword="minims atropine sulfate") %>% View()
+search_bnf(keyword="minims cyclopentolate hydrochloride") %>% View()
+# search_bnf(keyword="glycopyrrolate") %>% View()  # glycopyrronium rather than glycopyrrolate
+search_bnf(keyword="glycopyrronium") %>% View()  # lots, uprobably not all relevant
+search_bnf(keyword="cyclizine") %>% View()  # nto all relevant
+search_bnf(keyword="midazolam") %>% View()  # nto all relevant
+search_bnf(keyword="loprazolam") %>% View()  # nto all relevant
+
+
+## checking the ones that had matches...
+search_bnf(keyword="meptazinol") %>% View()  # nto all relevant
+
+
+search_bnf(keyword="alfentanil") %>% View()
+
+jic_medicines <-
+  bind_rows(
+    jic_medicines,
+    search_bnf(keyword="alfentanil")
+  )
+```
+
+
