@@ -4,7 +4,7 @@ author: "Sarah Mills & Jan Savinc"
 format: html
 ---
 
-# Introduction
+# Introduction {#sec-introduction}
 
 Here I'll compile the BNF codes corresponding to medicines Sarah Mills compiled as being "Just in case" for use in palliative care/end of life care.
 
@@ -16,6 +16,9 @@ Here I'll compile the BNF codes corresponding to medicines Sarah Mills compiled 
 
 The strategy for these is to look at each medication, look at its formulations, and decide which to include.
 
+Versions:
+
+- v1 is my first attempt at compiling the codes, without a clinician checking over the codes
 
 
 
@@ -90,7 +93,7 @@ nonmatches <-
 nonmatches %>% knitr::kable(caption = "Medications that don't match the BNF entries exactly")
 ```
 
-Note that even exact matches need to be carefully checked as not all formualtions are relevant (specifically combination medicines, for example).
+Note that even exact matches need to be carefully checked as not all formulations are relevant (specifically combination medicines, for example).
 
 
 ## Adding medicines to the list
@@ -132,7 +135,7 @@ jic_medicines <- add_entries(meds = "alfentanil", bnf_to_add = search_bnf(keywor
 
 ### buprenorphine
 
-Keep only the analgesics section (0407), not the opioid dependence section (0410).
+Keep only the analgesics section (0407), not the opioid dependence section (0410) - the latter uses buprenorphine hydrochloride and a buprenorphine hcl/naloxone combination.
 
 ```{r}
 # search_bnf(keyword="buprenorphine") %>% View()
@@ -408,7 +411,7 @@ jic_medicines <- add_entries(
 
 ### hyoscine
 
-Query:this occurs in 2 forms, butylbromide (antispasmodic) and hydrobromide (nausea and vertigo) – are both relevant? And in all formualtions (toral, injectable, transdermal patch)
+Query:this occurs in 2 forms, butylbromide (antispasmodic) and hydrobromide (nausea and vertigo) – are both relevant? And in all formulations (oral, injectable, transdermal patch)
 
 ```{r}
 # search_bnf(keyword="hyoscine") %>% View()
@@ -572,38 +575,175 @@ jic_medicines <- add_entries(
 ### clobazam
 
 ```{r}
-# TODO: continue adding these, only the anxiolyitics left!
-```
+# search_bnf(keyword="clobazam") %>% View()
 
-
-
-# delete below, scratch area
-
-```{r}
-
-
-search_bnf(keyword="alfentanil") %>% View()
-search_bnf(keyword="meptazinol") %>% View()
-search_bnf(keyword="minims atropine sulfate") %>% View()
-search_bnf(keyword="minims cyclopentolate hydrochloride") %>% View()
-# search_bnf(keyword="glycopyrrolate") %>% View()  # glycopyrronium rather than glycopyrrolate
-search_bnf(keyword="glycopyrronium") %>% View()  # lots, uprobably not all relevant
-search_bnf(keyword="cyclizine") %>% View()  # nto all relevant
-search_bnf(keyword="midazolam") %>% View()  # nto all relevant
-search_bnf(keyword="loprazolam") %>% View()  # nto all relevant
-
-
-## checking the ones that had matches...
-search_bnf(keyword="meptazinol") %>% View()  # nto all relevant
-
-
-search_bnf(keyword="alfentanil") %>% View()
-
-jic_medicines <-
-  bind_rows(
-    jic_medicines,
-    search_bnf(keyword="alfentanil")
+jic_medicines <- add_entries(
+  meds = "clobazam", 
+  bnf_to_add = search_bnf(keyword="clobazam")
   )
 ```
 
+### clomethiazole
+
+```{r}
+# search_bnf(keyword="clomethiazole") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "clomethiazole", 
+  bnf_to_add = search_bnf(keyword="clomethiazole")
+  )
+```
+
+### clonazepam
+
+Keeping only systemic clonazepam (BNF subparagraph “control of epilepsy”) and not parenteral (Clonazepam 1mg/1ml inj ampoules and diluent; subparagraph “drugs used in status epilepticus”)
+
+```{r}
+# search_bnf(keyword="clonazepam") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "clonazepam", 
+  bnf_to_add = search_bnf(keyword="clonazepam") %>%
+    filter(bnf_paragraph_code == "040801")
+  )
+```
+
+### diazepam
+
+Keeping all formulations, oral solution/suspension, rectal solution tube, suppositories, injection ampoules
+
+```{r}
+# search_bnf(keyword="diazepam") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "diazepam", 
+  bnf_to_add = search_bnf(keyword="diazepam")
+  )
+```
+
+### loprazolam
+
+```{r}
+# search_bnf(keyword="loprazolam") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "loprazolam", 
+  bnf_to_add = search_bnf(keyword="loprazolam")
+  )
+```
+
+### lorazepam
+
+Keeping all formulations, tablets, oral solution/suspension, injection ampoules
+
+```{r}
+# search_bnf(keyword="lorazepam") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "lorazepam", 
+  bnf_to_add = search_bnf(keyword="lorazepam")
+  )
+```
+
+### lormetazepam
+
+```{r}
+# search_bnf(keyword="lormetazepam") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "lormetazepam", 
+  bnf_to_add = search_bnf(keyword="lormetazepam")
+  )
+```
+
+### midazolam
+
+keeping only BNF section 0408 “antiepileptic drugs” and not 1501 ”General anaesthesia”; of 0408, keeping both midazolam maleate (tablets, oral liquid, oral syringe) and midazolam hydrochloride (oral syringe, oral solution); (note: 1501 has injection ampoules and infusion vials, as well as oral solution)
+
+```{r}
+# search_bnf(keyword="midazolam") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "midazolam", 
+  bnf_to_add = search_bnf(keyword="midazolam") %>%
+    filter(bnf_section_code == "0408")
+  )
+```
+
+### nitrazepam
+
+This picks up flunitrazepam (Rohypnol) also, but I didn't include that.
+
+```{r}
+# search_bnf(keyword="nitrazepam") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "nitrazepam", 
+  bnf_to_add = search_bnf(keyword="nitrazepam") %>%
+    filter(bnf_chemical_substance_code == "0401010R0")  # keep only nitrazepam, not flunitrazepam
+  )
+```
+
+### temazepam
+
+```{r}
+# search_bnf(keyword="temazepam") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "temazepam", 
+  bnf_to_add = search_bnf(keyword="temazepam")
+  )
+```
+
+### trazodone hydrochloride
+
+```{r}
+# search_bnf(keyword="trazodone hydrochloride") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "trazodone hydrochloride", 
+  bnf_to_add = search_bnf(keyword="trazodone hydrochloride")
+  )
+```
+
+### zopiclone
+
+```{r}
+# search_bnf(keyword="zopiclone") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "zopiclone", 
+  bnf_to_add = search_bnf(keyword="zopiclone")
+  )
+```
+
+### zolpidem tartrate
+
+```{r}
+# search_bnf(keyword="zolpidem tartrate") %>% View()
+
+jic_medicines <- add_entries(
+  meds = "zolpidem tartrate", 
+  bnf_to_add = search_bnf(keyword="zolpidem tartrate")
+  )
+```
+
+## Check I've included all of them
+
+```{r}
+stopifnot(
+  nrow(
+    ## this should be an empty table - findings meds that were listed in jic but not in jic_medicines
+    jic %>% anti_join(jic_medicines, by = "meds")
+  )==0
+)
+```
+
+# Save resulting file
+
+See @sec-introduction for version listing.
+
+```{r}
+write_csv(jic_medicines, file = "./bnf/bnf_codes_just_in_case_v1.csv")  # v1 before SM checked
+```
 
