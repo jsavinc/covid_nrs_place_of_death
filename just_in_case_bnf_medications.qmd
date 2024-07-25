@@ -8,10 +8,10 @@ format: html
 
 Here I'll compile the BNF codes corresponding to medicines Sarah Mills compiled as being "Just in case" for use in palliative care/end of life care.
 
-•       Strong opioids: Alfentanil, Buprenorphine, Diamorphine hydrochloride, Dihydrocodeine tartrate, Fentanyl, Hydromorphone hydrochloride, Meptazinol, Methadone hydrochloride, Morphine sulfate, Oxycodone hydrochloride, Tramadol hydrochloride
-•       Anti-muscarinics: Aclidinium bromide, Alverine citrate, Bupropion hydrochloride, Minims atropine sulfate, Atropine sulfate, Minims cyclopentolate hydrochloride, Cyclopentolate hydrochloride, Dicycloverine hydrochloride, Erdosteine, Fesoterodine fumarate, Flavoxate hydrochloride, Glycopyrrolate bromide, Hyoscine, Procyclidine hydrochloride, Propantheline bromide, Propiverine hydrochloride
-•       Anti-emetics: Betahistine hydrochloride, Cyclizine, Domperidone, Granisetron hydrochloride, Levomepromazine hydrochloride, Metoclopramide hydrochloride, Ondansetron hydrochloride, Prochlorperazine maleate
-•       Anxiolytics: Buspirone hydrochloride, Chlordiazepoxide hydrochloride, Clobazam, Clomethiazole, Clonazepam, Diazepam, Loprazolam, Lorazepam, Lormetazepam, Midazolam, Nitrazepam, Temazepam, Trazodone hydrochloride, Zopiclone, Zolpidem tartrate
+- Strong opioids: Alfentanil, Buprenorphine, Diamorphine hydrochloride, Dihydrocodeine tartrate, Fentanyl, Hydromorphone hydrochloride, Meptazinol, Methadone hydrochloride, Morphine sulfate, Oxycodone hydrochloride, Tramadol hydrochloride
+ - Anti-muscarinics: Aclidinium bromide, Alverine citrate, Bupropion hydrochloride, Minims atropine sulfate, Atropine sulfate, Minims cyclopentolate hydrochloride, Cyclopentolate hydrochloride, Dicycloverine hydrochloride, Erdosteine, Fesoterodine fumarate, Flavoxate hydrochloride, Glycopyrrolate bromide, Hyoscine, Procyclidine hydrochloride, Propantheline bromide, Propiverine hydrochloride
+ - Anti-emetics: Betahistine hydrochloride, Cyclizine, Domperidone, Granisetron hydrochloride, Levomepromazine hydrochloride, Metoclopramide hydrochloride, Ondansetron hydrochloride, Prochlorperazine maleate
+ - Anxiolytics: Buspirone hydrochloride, Chlordiazepoxide hydrochloride, Clobazam, Clomethiazole, Clonazepam, Diazepam, Loprazolam, Lorazepam, Lormetazepam, Midazolam, Nitrazepam, Temazepam, Trazodone hydrochloride, Zopiclone, Zolpidem tartrate
 
 
 The strategy for these is to look at each medication, look at its formulations, and decide which to include.
@@ -19,7 +19,7 @@ The strategy for these is to look at each medication, look at its formulations, 
 Versions:
 
 - v1 is my first attempt at compiling the codes, without a clinician checking over the codes
-
+- v2 includes amendments suggested by Sarah Mills, I've labelled these with 'SM' in the text
 
 
 # BNF source
@@ -125,7 +125,8 @@ add_entries <- function(meds_to_add, bnf_to_add) {
 
 ### alfentanil
 
-All formulations make sense to me. Query `Alfentanil 0.1% nasal spray`?
+- Alfentanil – I’ve included all formulations, including an “Alfentanil 0.1% nasal spray”
+- SM: agree
 
 ```{r}
 # search_bnf(keyword="alfentanil") %>% View()
@@ -135,7 +136,8 @@ jic_medicines <- add_entries(meds = "alfentanil", bnf_to_add = search_bnf(keywor
 
 ### buprenorphine
 
-Keep only the analgesics section (0407), not the opioid dependence section (0410) - the latter uses buprenorphine hydrochloride and a buprenorphine hcl/naloxone combination.
+- •	Burprenorphine – Keep only the analgesics section (0407), not the opioid dependence section (0410) - the latter uses buprenorphine hydrochloride and a buprenorphine hcl/naloxone combination. 
+- SM: agree
 
 ```{r}
 # search_bnf(keyword="buprenorphine") %>% View()
@@ -149,8 +151,9 @@ jic_medicines <- add_entries(
 
 ### diamorphine hydrochloride
 
-Included both section cough suppressants and analgesics.
-
+ - I’ve included both the cough suppressants and analgesics sections
+ - SM: agree
+ 
 ```{r}
 # search_bnf(keyword="diamorphine hydrochloride") %>% View()
 
@@ -173,7 +176,8 @@ jic_medicines <- add_entries(
 
 ### fentanyl
 
-Keep only the analgesics subsection (0407), not the general anaesthesia and local anaesthesia sections.
+- Keep only the analgesics subsection (0407), not the general anaesthesia and local anaesthesia sections.
+- SM: Agree (patches, which are in the analgesics subsection, should be included, and infusion bags/fentanyl citrate, which is in the anaesthesia sections, should be excluded)
 
 ```{r}
 # search_bnf(keyword="fentanyl") %>% View()
@@ -209,7 +213,8 @@ jic_medicines <- add_entries(
 
 ### methadone hydrochloride
 
-Kept the cough suppressants section (0309) and analgesics (0407), not drug dependence (0410).
+- Kept the cough suppressants section (0309) and analgesics (0407), not drug dependence (0410).
+- SM: agree
 
 ```{r}
 # search_bnf(keyword="methadone hydrochloride") %>% View()
@@ -223,7 +228,8 @@ jic_medicines <- add_entries(
 
 ### morphine sulfate
 
-Query gel, intrasite gel?
+- I’ve kept all formulations, including several gels/intrasite gels? 
+- SM: agree, gels often used for fungating tumours
 
 ```{r}
 # search_bnf(keyword="morphine sulfate") %>% View()
@@ -236,7 +242,8 @@ jic_medicines <- add_entries(
 
 ### oxycodone hydrochloride
 
-Query combination: Oxycodone hydrochloride/naloxone hydrochloride?
+- I’ve kept all formulations, except for the combination “Oxycodone hydrochloride/naloxone hydrochloride” 
+- SM: agree
 
 ```{r}
 # search_bnf(keyword="oxycodone hydrochloride") %>% View()
@@ -262,7 +269,8 @@ jic_medicines <- add_entries(
 
 ### aclidinium bromide
 
-Keep only paragraph code 030102 for antimuscarinic bronchodilators, not compound bronchodilator preparations 030104 (Aclidinium bromide/formoterol)
+- Keep only paragraph code 030102 for antimuscarinic bronchodilators, not compound bronchodilator preparations 030104 (Aclidinium bromide/formoterol)
+- SM: agree
 
 ```{r}
 # search_bnf(keyword="aclidinium bromide") %>% View()
@@ -276,14 +284,15 @@ jic_medicines <- add_entries(
 
 ### alverine citrate
 
-included combination Alverine citrate/simethicone, as well as Alverine citrate compound preparations (Sterculia 62% / Alverine 0.5% granules and Spasmonal Fibre granules)
+- SM: not familiar with combination Alverine citrate/simethicone, or Alverine citrate compound preparations (Sterculia 62% / Alverine 0.5% granules and Spasmonal Fibre granules)
+- therefore, removed those combinations, only kept preparations with only alverine citrate
 
 ```{r}
 # search_bnf(keyword="alverine citrate") %>% View()
 
 jic_medicines <- add_entries(
   meds = "alverine citrate", 
-  bnf_to_add = search_bnf(keyword="alverine citrate")
+  bnf_to_add = search_bnf(keyword="alverine citrate") %>% filter(bnf_chemical_substance == "Alverine citrate")  # only Alverine citrate
   )
 ```
 
@@ -311,7 +320,9 @@ jic_medicines <- add_entries(
 
 ### atropine sulfate
 
-Query whether only eye drops, or oral/parenteral is also relevant here? Also "Co-phenotrope (Diphenox hydrochloride/atropine sulfate)" for acute diarrhea?
+- Query whether only eye drops, or oral/parenteral is also relevant here? Also "Co-phenotrope (Diphenox hydrochloride/atropine sulfate)" for acute diarrhea?
+- SM: I’d restrict to eye drops (it’s an off licence use but recognosed for PEOLC use)
+
 
 ```{r}
 # search_bnf(keyword="atropine sulfate") %>% View()
@@ -320,7 +331,8 @@ jic_medicines <- add_entries(
   meds = "atropine sulfate", 
   bnf_to_add = search_bnf(keyword="atropine sulfate") %>%
     # minims already included by an above entry
-    filter(!str_detect(bnf_product, regex("minims", ignore_case=TRUE)))
+    filter(!str_detect(bnf_product, regex("minims", ignore_case=TRUE))) %>%
+    filter(bnf_chemical_substance_code == "1105000B0")  # eye drops only
   )
 ```
 
@@ -349,6 +361,9 @@ jic_medicines <- add_entries(
 ```
 
 ### dicycloverine hydrochloride
+
+- I’ve included all formulations, including “Dicycloverine hydrochloride compound preparations (Kolanticon gel)”
+- SM:agree
 
 ```{r}
 # search_bnf(keyword="dicycloverine hydrochloride") %>% View()
@@ -398,6 +413,11 @@ Note: "glycopyrrolate" doesn't appear in the BNF, but "glycopyrronium" does.
 
 Query: this appears under chapters: gastro-intestinal, skin, respiratory, as well as anaesthesia - which ones are relevant?
 
+- glycopyrrolate bromide (glycopyrronium bromide in BNF) – this spans multiple chapters – gastro-intestinal (oral preparations), respiratory (inhalation), skin (topical, powder), and general anaesthesia (parenteral) – which of these are relevant? (the anaesthesia section has a combination of Neostigmine metilsulfite/glycopyrronium bromide also) 
+
+- SM: in my experience only the oral and sub cutaneous form is used in palliative care.  Definitely wouldn’t include the inhalation and topical/powder versions as they are used for non-palliative considitons.
+- SM: don't include the Neostigmine metilsulfite/glycopyrronium bromide combination
+
 ```{r}
 # search_bnf(keyword="glycopyrrolate bromide") %>% View()
 # search_bnf(keyword="glycopyrrolate") %>% View()
@@ -405,13 +425,15 @@ Query: this appears under chapters: gastro-intestinal, skin, respiratory, as wel
 
 jic_medicines <- add_entries(
   meds = "glycopyrrolate bromide", 
-  bnf_to_add = search_bnf(keyword="glycopyrr.* bromide")
+  bnf_to_add = search_bnf(keyword="glycopyrr.* bromide") %>%
+    filter(bnf_chemical_substance_code %in% c("0102000L0", "1501030G0"))  # oral & parenteral, respectively
   )
 ```
 
 ### hyoscine
 
-Query:this occurs in 2 forms, butylbromide (antispasmodic) and hydrobromide (nausea and vertigo) – are both relevant? And in all formulations (oral, injectable, transdermal patch)
+- Query:this occurs in 2 forms, butylbromide (antispasmodic) and hydrobromide (nausea and vertigo) – are both relevant? And in all formulations (oral, injectable, transdermal patch)
+- SM: all formulations and forms are used for PEOLC
 
 ```{r}
 # search_bnf(keyword="hyoscine") %>% View()
@@ -470,15 +492,15 @@ jic_medicines <- add_entries(
 
 ### cyclizine
 
-Keeping cyclizine hydrochloride and lactate forms, but not the combination "Morphine tartrate and cyclizine tartrate" in the Analgesics section (0407)
+- Keeping cyclizine hydrochloride and lactate forms, but not the combination "Morphine tartrate and cyclizine tartrate" in the Analgesics section (0407)
+- SM: I’d include the combination version
 
 ```{r}
 # search_bnf(keyword="cyclizine") %>% View()
 
 jic_medicines <- add_entries(
   meds = "cyclizine", 
-  bnf_to_add = search_bnf(keyword="cyclizine") %>%
-    filter(bnf_section_code != "0407")
+  bnf_to_add = search_bnf(keyword="cyclizine")  # don't filter out the combination with morphine tartrate
   )
 ```
 
@@ -596,21 +618,22 @@ jic_medicines <- add_entries(
 
 ### clonazepam
 
-Keeping only systemic clonazepam (BNF subparagraph “control of epilepsy”) and not parenteral (Clonazepam 1mg/1ml inj ampoules and diluent; subparagraph “drugs used in status epilepticus”)
+- Keeping only systemic clonazepam (BNF subparagraph “control of epilepsy”) and not parenteral (Clonazepam 1mg/1ml inj ampoules and diluent; subparagraph “drugs used in status epilepticus”)
+- SM: sometimes parenteral can be used in terminal agitation or in brain tumours with seizures, so would include
 
 ```{r}
 # search_bnf(keyword="clonazepam") %>% View()
 
 jic_medicines <- add_entries(
   meds = "clonazepam", 
-  bnf_to_add = search_bnf(keyword="clonazepam") %>%
-    filter(bnf_paragraph_code == "040801")
+  bnf_to_add = search_bnf(keyword="clonazepam")  # don't remove parenteral
   )
 ```
 
 ### diazepam
 
-Keeping all formulations, oral solution/suspension, rectal solution tube, suppositories, injection ampoules
+- Keeping all formulations, oral solution/suspension, rectal solution tube, suppositories, injection ampoules
+- SM: agree
 
 ```{r}
 # search_bnf(keyword="diazepam") %>% View()
@@ -634,7 +657,8 @@ jic_medicines <- add_entries(
 
 ### lorazepam
 
-Keeping all formulations, tablets, oral solution/suspension, injection ampoules
+- Keeping all formulations, tablets, oral solution/suspension, injection ampoules
+- SM: agree
 
 ```{r}
 # search_bnf(keyword="lorazepam") %>% View()
@@ -658,7 +682,8 @@ jic_medicines <- add_entries(
 
 ### midazolam
 
-keeping only BNF section 0408 “antiepileptic drugs” and not 1501 ”General anaesthesia”; of 0408, keeping both midazolam maleate (tablets, oral liquid, oral syringe) and midazolam hydrochloride (oral syringe, oral solution); (note: 1501 has injection ampoules and infusion vials, as well as oral solution)
+- keeping only BNF section 0408 “antiepileptic drugs” and not 1501 ”General anaesthesia”; of 0408, keeping both midazolam maleate (tablets, oral liquid, oral syringe) and midazolam hydrochloride (oral syringe, oral solution); (note: 1501 has injection ampoules and infusion vials, as well as oral solution)
+- SM: agree
 
 ```{r}
 # search_bnf(keyword="midazolam") %>% View()
@@ -672,7 +697,8 @@ jic_medicines <- add_entries(
 
 ### nitrazepam
 
-This picks up flunitrazepam (Rohypnol) also, but I didn't include that.
+- This picks up flunitrazepam (Rohypnol) also, but I didn't include that.
+- SM: agree
 
 ```{r}
 # search_bnf(keyword="nitrazepam") %>% View()
@@ -744,6 +770,7 @@ stopifnot(
 See @sec-introduction for version listing.
 
 ```{r}
-write_csv(jic_medicines, file = "./bnf/bnf_codes_just_in_case_v1.csv")  # v1 before SM checked
+# write_csv(jic_medicines, file = "./bnf/bnf_codes_just_in_case_v1.csv")  # v1 before SM checked
+write_csv(jic_medicines, file = "./bnf/bnf_codes_just_in_case_v2.csv")  # v2 after SM checked
 ```
 
