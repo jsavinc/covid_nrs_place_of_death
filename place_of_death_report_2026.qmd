@@ -222,52 +222,11 @@ deaths_annual <-
 )
 ```
 
-
-```{r}
-(fig_weekly_home_deaths_2015_2019_range <-
-  deaths_current %>%
-  filter(place_of_death == "Home & other non-institution") %>%
-  left_join(deaths_range_2015_2019, join_by(place_of_death, cause_of_death, week_number)) %>%
-  ggplot(aes(x = as_date(date_w_c))) +
-  add_vertical_lines_for_start_of_year(years = 2020:2025) +
-  geom_text(
-    data = tibble(year = 2020:2025) %>%
-      mutate(date_w_c = map_vec(.x = year, ~compute_start_date_from_week_number(week_number = 1, year_number = .x))),
-    aes(x = date_w_c, y = 30, label = paste0("'",str_sub(year,3,4))), hjust = -0.5, angle = -30
-  ) +
-  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks") +
-  scale_y_continuous(breaks = scales::breaks_pretty(n = 6), limits = c(0,NA)) +
-  geom_line(aes(y = n_deaths)) +
-  geom_line(aes(y = mean_deaths), linetype = "dotted", colour = "grey20") +
-  geom_ribbon(aes(ymin = min_deaths, ymax = max_deaths), fill = "#4477aa", alpha = 0.5) +
-  # geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
-  # facet_grid(~place_of_death) +
-  # scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
-  #                     labels = c("All deaths", 
-  #                                "Non Covid-19 deaths"),
-  #                     guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
-  #                     ) +
-  theme_minimal() +
-  theme(
-    legend.position = "top",
-    legend.title = element_blank(),
-    plot.caption = element_text(size = 10, colour = "gray60"),
-    plot.margin = margin(5, 15, 5, 5),
-    axis.text.x = element_text(angle = 60, colour = "gray40", vjust=1, hjust=1)
-  ) +
-  labs(x = NULL,
-       y = "Deaths (N)",
-       # subtitle = date_range_text,
-       # caption = paste0(c(death_registrations_text,historic_period_2022_text,source_nrs_text), collapse="\n")
-       ))
-
-fig_weekly_home_deaths_2015_2019_range %>%
-save_output_file(filename = file.path(dir_outputs, paste0(c("fig_weekly_home_deaths_2015_2019_range", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png", ".svg"), plot = ., width = 28, height = 14, dpi = 300, units = "cm")
-```
-
 ## Annual deaths
 
 ```{r}
+# TODO: this is copied from 2025 file, which already wasn't working well...
+
 # uncomment to check that the assertion about Other being ~0.5% is true
 # deaths_annual %>%
 #   filter(place_of_death=="Other")
