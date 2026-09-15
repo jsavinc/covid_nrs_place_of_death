@@ -17,6 +17,7 @@ compute_start_date_from_week_number <- function(week_number, year_number) {
 # Place of death was named differently between datasets (location/place) and the different places were also named slightly differently, so we find all of them and recode them to the same:
 order_of_place_of_death_levels <- c("Hospital", "Care home", "Home & other non-institution", "Other", "All")
 
+# Note: as of 2026, there's now an additional category for Hospice, which was previously partly cactegorised as Hospital and partly as Care home, so data are not comparable directly
 recode_place_of_death <- function(data_tbl) {
   data_tbl %>%
     mutate(place_of_death = case_when(
@@ -25,12 +26,11 @@ recode_place_of_death <- function(data_tbl) {
       str_detect(place_of_death, pattern = regex(pattern = "(non.*institut)|home", ignore_case = TRUE)) ~ "Home & other non-institution",
       str_detect(place_of_death, pattern = regex(pattern = "hospital", ignore_case = TRUE)) ~ "Hospital",
       str_detect(place_of_death, pattern = regex(pattern = "other", ignore_case = TRUE)) ~ "Other",
-      TRUE ~ NA_character_
+      TRUE ~ place_of_death  # this will capture hospice
     ) %>%
       factor(x = ., levels = order_of_place_of_death_levels)
     )
 }
-
 
 ## Consistent Cause of death coding
 # The `opendatascot`-imported data distinguishes "all causes" deaths from "covid-related" deaths - the non-covid-related deaths are the difference between those. In contrast, the other weekly datasets code cause of death as either covid-related or non-covid-related, in which case we need to compute all cause deaths as the sum of the two.
