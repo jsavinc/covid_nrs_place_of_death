@@ -1,0 +1,304 @@
+---
+title: "Place of death trend in Scotland, 2026"
+author: "Jan Savinc"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+# Introduction
+
+As of 2025-03-03, the NRS Covid-specific updates on weekly death registrations are no longer published. The new publication at https://www.nrscotland.gov.uk/publications/deaths-registered-weekly-in-scotland/ is updated weekly, and Table 7 contains the breakdown by place of death ("location").
+
+> From 26 March 2026, we publish the tables only in the new format. The old-format tables have been archived and can be found here. A lookup table detailing the changes which were made to the way that weekly deaths statistics were published has been added to the new-format tables.
+
+The new format tables now list a `Table4`, which contains "Weekly provisional figures on death registrations involving COVID-19 and on selected underlying causes of death by location of death in Scotland"
+
+# Preliminaries
+
+## Load packages
+
+```{r}
+library(tidyverse)
+library(readxl)  # for reading excel files
+library(curl)  # for downloading files
+library(janitor)  # for cleaning datasets quickly
+library(rvest)  # for scraping NRS website
+library(ISOweek)  # for dealing with ISO 8601 weeks
+```
+
+## Load functions
+
+```{r}
+source("./functions.R")
+```
+
+
+## Find latest file
+
+```{r}
+url_nrs_weekly_deaths <- "https://www.nrscotland.gov.uk/publications/deaths-registered-weekly-in-scotland/"
+
+all_nrs_links <-
+  read_html(url_nrs_weekly_deaths) %>%
+  html_nodes("a") %>%
+  html_attr("href") %>%  # find all links on the page
+  tibble(links = .)
+
+nrs_filename_pattern <- "weekly-deaths-.*\\.xlsx"
+
+weekly_deaths_url_relative <-
+  all_nrs_links %>%
+  filter(str_detect(links, pattern = nrs_filename_pattern)) %>%
+  filter(!str_detect(links, pattern = "monthly")) %>%  # remove monthly data
+  filter(!str_detect(links, pattern = "excess")) %>%  # remove excess deaths data
+  filter(!str_detect(links, pattern = "influenz")) %>%  # remove influenza data
+  pull(links)
+
+## get absolute URL
+## take the first URL in the list - there's an annual file also
+weekly_deaths_url_absolute <- url_absolute(weekly_deaths_url_relative[1], base = url_nrs_weekly_deaths)
+```
+
+## Download file
+
+```{r}
+date_string <- strftime(today(), format = "%F")
+path_today <- file.path("./downloaded_data", date_string)
+path_to_downloaded_file <- file.path(path_today, basename(weekly_deaths_url_absolute))
+
+if (!dir.exists(path_today)) dir.create(path_today)
+
+# download.file(url = weekly_deaths_url_absolute, destfile = path_to_downloaded_file, quiet = TRUE)
+todays_file <- curl_fetch_disk(weekly_deaths_url_absolute, path = path_to_downloaded_file)
+```
+
+## Read file
+
+```{r}
+deaths_by_pod_raw <- 
+  # skip first 5 rows
+  read_excel(path = path_to_downloaded_file, sheet = "Table4", skip = 5) %>%
+  clean_names()
+```
+
+## Set up output directory
+
+Because data are updated on a weekly basis, we'll have a separate directory for every week the data are updated:
+
+```{r}
+latest_data_modified_date <- strftime(todays_file$modified, format="%F")
+latest_year <- year(latest_data_modified_date)
+
+dir_outputs <- file.path("./outputs", latest_year, latest_data_modified_date)
+if (!dir.exists(dir_outputs)) dir.create(dir_outputs, recursive = TRUE)
+```
+
+
+# Wrangle data
+
+## Convert new data to tidy (long) format
+
+```{r}
+deaths_by_pod_clean <-
+  deaths_by_pod_raw %>%
+  pivot_longer(cols = all_causes:covid_19_mentions, names_to = c("cause_of_death"), values_to = "n_deaths") %>%
+  # recode_place_of_death() %>%
+  transmute(
+    year = as.integer(registration_year),
+    week_number,
+    date_w_c = as_date(week_beginning),
+    place_of_death = location,
+    year = as.integer(registration_year),
+    # cause_of_death = case_when(
+    #   type_of_cause == "all_causes" ~ "All",
+    #   type_of_cause == "covid_19_mentioned" ~ "Covid-19 mentioned",
+    #   TRUE ~ NA_character_
+    # )
+    cause_of_death,
+    n_deaths
+  )
+```
+
+
+## Data 2020-2025
+
+There's a new file provided for historical context, combining 2020-2025 data for Covid, and 2000-2025 for influenza. Unfortunately only the Covid (2020-) data include data on location, so that's what I can work with.
+
+Note: from 2026, there is a new place of death code for Hospice, which was previously partly Care home and partly Hospital. The data are labelled for whether the Hospital or Care Home is pre-2026 or 2026 and onwards.
+
+```{r}
+historical_weekly_deaths_url_absolute <- url_absolute(weekly_deaths_url_relative[2], base = url_nrs_weekly_deaths)
+
+path_to_downloaded_historical_file <- file.path("./downloaded_data", basename(historical_weekly_deaths_url_absolute))
+
+historical_file <- curl_fetch_disk(historical_weekly_deaths_url_absolute, path = path_to_downloaded_historical_file)
+
+deaths_by_pod_2020_2025 <-
+  # skip first 5 lines
+  read_excel(path = path_to_downloaded_historical_file, sheet = "Table4", skip = 5) %>%
+  clean_names %>%
+  pivot_longer(cols = all_causes:covid_19_mentions, names_to = c("cause_of_death"), values_to = "n_deaths", values_transform = as.integer) %>%
+  transmute(
+    year = as.integer(registration_year),
+    week_number,
+    date_w_c = as_date(week_beginning),
+    place_of_death = location,
+    year = as.integer(registration_year),
+    cause_of_death,
+    n_deaths
+  ) %>%
+  recode_place_of_death()
+```
+
+## Data 2015-2019
+
+```{r}
+deaths_2015_to_2019 <- 
+  read_csv("./historical_data/2020-04-30_weekly-deaths-by-location-2015-2019.csv", skip = 2) %>%
+  rename(year = 1) %>%  # rename first column
+  mutate(
+    place_of_death = if_else(is.na(`1`), true = year, NA_character_)
+  ) %>%
+  fill(place_of_death, .direction="down") %>%  # LOCF on place_of_death
+  drop_na(`1`) %>%
+  pivot_longer(cols = all_of(as.character(1:53)), values_to = "n_deaths", names_to = "week_number") %>%
+  mutate(week_number=as.integer(week_number)) %>%
+  recode_place_of_death() %>%
+  mutate(cause_of_death = "all_causes")
+```
+
+
+## Annual totals so far
+
+```{r}
+deaths_annual <-
+  bind_rows(
+    deaths_2015_to_2019 %>% filter(year!="average" & place_of_death!="average") %>% mutate(year=as.integer(year), cause_of_death="All"),
+    deaths_current %>% filter(cause_of_death=="All")
+  ) %>%
+  count(year, place_of_death, cause_of_death, wt = n_deaths, name = "n_deaths") %>%
+  group_by(year, place_of_death != "All") %>%
+  mutate(  # add percentage
+    prop_deaths = n_deaths / sum(n_deaths)
+  ) %>%
+  ungroup %>%
+  mutate(year = if_else(  # rename current year so it's clear when the data end
+    year == max(deaths_current$year),
+    paste0(year, " up to W", deaths_current %>% filter(year==max(deaths_current$year)) %>% pull(week_number) %>% max),
+    as.character(year)
+  ))
+```
+
+
+# Analyses
+
+## Home deaths plot
+
+```{r}
+# TODO: separate the data wrangling into separate section
+# TODO: add both the 2015-2019 historical range as a ribbon, and 2020-2025 as another ribbon, overlapping and transparent
+# TODO: fix the week 51/52 anomaly at the end
+# TODO: make consistent object names and variables and places of death and causes of death between years
+# TODO: use the ADR-S colour scheme, make a theme for it
+# TODO: label the ribbons accordingly, maybe add averages?
+(ggplot(
+  data = bind_rows(deaths_by_pod_clean, deaths_by_pod_2020_2025) %>%
+    mutate(year = factor(year)) %>%
+    filter(str_detect(place_of_death, "Home \\/ Non-institution")) %>%
+    filter(cause_of_death %in% c("all_causes")) %>%
+    filter(year==2026),
+  aes(group = year, x = week_number, y = n_deaths)
+) +
+  ## ribbon for 2015-2019 data
+  geom_ribbon(data = deaths_2015_to_2019 %>% filter(year!="average") %>% filter(place_of_death == "Home & other non-institution") %>% mutate(deaths_min=min(n_deaths),deaths_max=max(n_deaths),.by=c(place_of_death,cause_of_death,week_number)), aes(x=week_number,ymin=deaths_min,ymax=deaths_max), fill = "grey60", alpha = 0.3) +
+  geom_ribbon(data = deaths_by_pod_2020_2025 %>% filter(cause_of_death == "all_causes") %>% filter(place_of_death == "Home / Non-institution (pre-2026)") %>% mutate(deaths_min=min(n_deaths),deaths_max=max(n_deaths),.by=c(place_of_death,cause_of_death,week_number)), aes(x=week_number,ymin=deaths_min,ymax=deaths_max), fill = "coral", alpha = 0.2) +
+  geom_line(linewidth = 1, aes(colour=year)) +
+  theme_minimal() +
+  scale_colour_grey() +
+  labs(y = "N deaths at home", x = "Week number", title = "Deaths at home continue at Covid-19 pandemic levels") +
+  # scale_linewidth_manual(values = c(1,rep(0.5, times=5),1)) +
+  NULL
+)
+```
+
+
+```{r}
+(fig_weekly_home_deaths_2015_2019_range <-
+  deaths_current %>%
+  filter(place_of_death == "Home & other non-institution") %>%
+  left_join(deaths_range_2015_2019, join_by(place_of_death, cause_of_death, week_number)) %>%
+  ggplot(aes(x = as_date(date_w_c))) +
+  add_vertical_lines_for_start_of_year(years = 2020:2025) +
+  geom_text(
+    data = tibble(year = 2020:2025) %>%
+      mutate(date_w_c = map_vec(.x = year, ~compute_start_date_from_week_number(week_number = 1, year_number = .x))),
+    aes(x = date_w_c, y = 30, label = paste0("'",str_sub(year,3,4))), hjust = -0.5, angle = -30
+  ) +
+  scale_x_date(date_labels = "%d-%m-%y", date_breaks = "12 weeks") +
+  scale_y_continuous(breaks = scales::breaks_pretty(n = 6), limits = c(0,NA)) +
+  geom_line(aes(y = n_deaths)) +
+  geom_line(aes(y = mean_deaths), linetype = "dotted", colour = "grey20") +
+  geom_ribbon(aes(ymin = min_deaths, ymax = max_deaths), fill = "#4477aa", alpha = 0.5) +
+  # geom_line(aes(y = deaths_mean), linetype = "dashed", colour="grey20") +
+  # facet_grid(~place_of_death) +
+  # scale_colour_manual(values = c("red","blue"),  # custom legend for the two lines
+  #                     labels = c("All deaths", 
+  #                                "Non Covid-19 deaths"),
+  #                     guide = guide_legend(label.hjust = 0.5, override.aes = list(size = 5))
+  #                     ) +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    legend.title = element_blank(),
+    plot.caption = element_text(size = 10, colour = "gray60"),
+    plot.margin = margin(5, 15, 5, 5),
+    axis.text.x = element_text(angle = 60, colour = "gray40", vjust=1, hjust=1)
+  ) +
+  labs(x = NULL,
+       y = "Deaths (N)",
+       # subtitle = date_range_text,
+       # caption = paste0(c(death_registrations_text,historic_period_2022_text,source_nrs_text), collapse="\n")
+       ))
+
+fig_weekly_home_deaths_2015_2019_range %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_weekly_home_deaths_2015_2019_range", latest_data_modified_date), collapse = "_")), extensions = c(".pdf",".png", ".svg"), plot = ., width = 28, height = 14, dpi = 300, units = "cm")
+```
+
+## Annual deaths
+
+```{r}
+# uncomment to check that the assertion about Other being ~0.5% is true
+# deaths_annual %>%
+#   filter(place_of_death=="Other")
+
+(fig_proportion_deaths_by_place_annual <- 
+  deaths_annual %>%
+  filter(place_of_death!="All") %>%
+  filter(!str_starts(year, "2025")) %>%
+  filter(place_of_death != "Other") %>%
+  ggplot(aes(x=year, y=prop_deaths, colour=place_of_death, shape=place_of_death)) +
+  geom_point(size = rel(3)) +
+  geom_line(aes(group = place_of_death)) +
+  geom_text(
+    data = . %>% filter(!year %in% as.character(2015:2018)) %>%
+      mutate(y = if_else(place_of_death=="Care home", prop_deaths - 0.03, prop_deaths + 0.03)),
+    aes(
+      x = year,
+      y = y,
+      label = scales::label_percent(accuracy = 0.1)(prop_deaths)
+    ), 
+    show.legend = FALSE
+  ) +
+  theme_minimal() +
+  theme(legend.title = element_blank(), legend.position = "top") +
+  scale_colour_manual(values = viridisLite::viridis(n=4, option = "D")[1:3]) +
+  # scale_colour_manual(values = RColorBrewer::brewer.pal(3, "Dark2")) +
+  # scale_colour_manual(values = scales::pal_dichromat(name = "Categorical.12")(3)) +
+  scale_y_continuous(labels = scales::label_percent(accuracy = 1), limits = c(0, NA)) +
+  labs(x = NULL, y = "Deaths (%)", caption = '"Other institutions" represent ~0.5% of annual deaths and are not shown.'))
+
+fig_proportion_deaths_by_place_annual %>%
+save_output_file(filename = file.path(dir_outputs, paste0(c("fig_proportion_deaths_by_place_annual", latest_data_modified_date), collapse = "_")), extensions = c(".png"), plot = ., width = 20, height = 10, dpi = 300, units = "cm")
+```
+
