@@ -25,6 +25,7 @@ library(curl)  # for downloading files
 library(janitor)  # for cleaning datasets quickly
 library(rvest)  # for scraping NRS website
 library(ISOweek)  # for dealing with ISO 8601 weeks
+library(ggtext)  # for fancier annotations
 ```
 
 ## Load functions
@@ -190,6 +191,21 @@ deaths_annual <-
   ))
 ```
 
+## New ADR S theme
+
+```{r}
+adr_s_colours_leading <- c("#F8667D", # coral
+                           "#3E0D22", # dark coral
+                           "#FFFFFF"  # white
+                           )
+
+adr_s_colours_supporting <- c("#C5406E", # medium coral
+                           "#32D2A7", # teal
+                           "#121212",  # dark grey
+                           "#F0F0F0"  # light grey
+                           )
+```
+
 
 # Analyses
 
@@ -198,10 +214,33 @@ deaths_annual <-
 ```{r}
 # TODO: separate the data wrangling into separate section
 # TODO: add both the 2015-2019 historical range as a ribbon, and 2020-2025 as another ribbon, overlapping and transparent
-# TODO: fix the week 51/52 anomaly at the end
+# TODO: fix the week 52/53 anomaly at the end
 # TODO: make consistent object names and variables and places of death and causes of death between years
 # TODO: use the ADR-S colour scheme, make a theme for it
 # TODO: label the ribbons accordingly, maybe add averages?
+range_2015_2019 <-
+  deaths_2015_to_2019 %>% 
+  filter(year!="average") %>% 
+  filter(place_of_death == "Home & other non-institution") %>% 
+  mutate(
+    deaths_min=min(n_deaths),
+    deaths_max=max(n_deaths),
+    .by=c(place_of_death,cause_of_death,week_number)
+    )
+
+range_2020_2025 <-
+  deaths_by_pod_2020_2025 %>% 
+  filter(cause_of_death == "all_causes") %>% 
+  filter(place_of_death == "Home & other non-institution") %>% 
+  mutate(
+    deaths_min=min(n_deaths),
+    deaths_max=max(n_deaths),
+    .by=c(place_of_death,cause_of_death,week_number)
+    )
+
+week_in_2026 <- max(deaths_by_pod_clean$week_number)
+all_cause_home_deaths_last <- deaths_by_pod_clean %>% filter(cause_of_death=="all_causes" & str_detect(place_of_death,"Home \\/") & week_number == week_in_2026) %>% pull(n_deaths)
+
 (ggplot(
   data = bind_rows(deaths_by_pod_clean, deaths_by_pod_2020_2025) %>%
     mutate(year = factor(year)) %>%
@@ -211,13 +250,35 @@ deaths_annual <-
   aes(group = year, x = week_number, y = n_deaths)
 ) +
   ## ribbon for 2015-2019 data
-  geom_ribbon(data = deaths_2015_to_2019 %>% filter(year!="average") %>% filter(place_of_death == "Home & other non-institution") %>% mutate(deaths_min=min(n_deaths),deaths_max=max(n_deaths),.by=c(place_of_death,cause_of_death,week_number)), aes(x=week_number,ymin=deaths_min,ymax=deaths_max), fill = "grey60", alpha = 0.3) +
-  geom_ribbon(data = deaths_by_pod_2020_2025 %>% filter(cause_of_death == "all_causes") %>% filter(place_of_death == "Home / Non-institution (pre-2026)") %>% mutate(deaths_min=min(n_deaths),deaths_max=max(n_deaths),.by=c(place_of_death,cause_of_death,week_number)), aes(x=week_number,ymin=deaths_min,ymax=deaths_max), fill = "coral", alpha = 0.2) +
+  geom_ribbon(data = range_2015_2019, aes(x=week_number,ymin=deaths_min,ymax=deaths_max, fill = "2015-2019"), alpha = 0.3) +
+  geom_ribbon(data = range_2020_2025, aes(x=week_number,ymin=deaths_min,ymax=deaths_max, fill = "2020-2025"), alpha = 0.2) +
   geom_line(linewidth = 1, aes(colour=year)) +
-  theme_minimal() +
-  scale_colour_grey() +
-  labs(y = "N deaths at home", x = "Week number", title = "Deaths at home continue at Covid-19 pandemic levels") +
+  theme_minimal(base_size = 14) +
+  scale_fill_manual(labels = c("2015-2019","2020-2025"), values = c(adr_s_colours_leading[1], adr_s_colours_supporting[2]), guide = guide_legend(title = "Historical range", override.aes=list(alpha=0.8))) +
+  scale_colour_grey(guide = guide_legend(title=NULL)) +
+  scale_x_continuous(limits = c(NA,51), n.breaks = 6) +
+  # 2020-2026 range
+  annotate(geom="label", x = 30, y = 450, label="Current range, 2020-2026", hjust=0, fill = adr_s_colours_supporting[2], alpha = 0.4, angle = 20) +
+  # 2015-2019 range
+  annotate(geom="label", x = 5, y = 220, label="Pre-pandemic range, 2015-2019", hjust=0, fill = adr_s_colours_leading[1], alpha = 0.6, angle = -20) +
+  # label for 2026
+  annotate(geom="text", x = week_in_2026+0.5, y = all_cause_home_deaths_last, label="2026", hjust=0, vjust=0, angle = 0) +
+  ylim(c(0,NA)) +
+    labs(y = "N deaths at home", 
+         x = "Week number", 
+         title = "Deaths at home continue at Covid-19 pandemic levels",
+         # subtitle =
+         #   paste("Weekly deaths at home in 2026 (solid line) are within the range seen in",
+         #          "<span style='background-color: coral;'>2020-2025,</span>", "approximately 30% higher than the range in",  "<span style='background-color: #F8667D;'>2015-2019.</span>"
+         #   )
+         subtitle = "Weekly deaths in 2026 (solid line) are within the 2020-2025 range, elevated about 30% above the 2015-2019 range."
+         ) +
   # scale_linewidth_manual(values = c(1,rep(0.5, times=5),1)) +
+  theme(
+    plot.title = element_textbox_simple(),
+    plot.subtitle = element_textbox_simple(),
+    legend.position = "none"
+    ) +
   NULL
 )
 ```
@@ -230,6 +291,7 @@ deaths_annual <-
 # uncomment to check that the assertion about Other being ~0.5% is true
 # deaths_annual %>%
 #   filter(place_of_death=="Other")
+
 
 (fig_proportion_deaths_by_place_annual <- 
   deaths_annual %>%
