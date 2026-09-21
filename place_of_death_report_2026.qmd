@@ -173,22 +173,23 @@ deaths_2015_to_2019 <-
 ## Annual totals so far
 
 ```{r}
-deaths_annual <-
-  bind_rows(
-    deaths_2015_to_2019 %>% filter(year!="average" & place_of_death!="average") %>% mutate(year=as.integer(year), cause_of_death="All"),
-    deaths_current %>% filter(cause_of_death=="All")
-  ) %>%
-  count(year, place_of_death, cause_of_death, wt = n_deaths, name = "n_deaths") %>%
-  group_by(year, place_of_death != "All") %>%
-  mutate(  # add percentage
-    prop_deaths = n_deaths / sum(n_deaths)
-  ) %>%
-  ungroup %>%
-  mutate(year = if_else(  # rename current year so it's clear when the data end
-    year == max(deaths_current$year),
-    paste0(year, " up to W", deaths_current %>% filter(year==max(deaths_current$year)) %>% pull(week_number) %>% max),
-    as.character(year)
-  ))
+# TODO: update this using the newer data, 'deaths_current' no longer exists
+# deaths_annual <-
+#   bind_rows(
+#     deaths_2015_to_2019 %>% filter(year!="average" & place_of_death!="average") %>% mutate(year=as.integer(year), cause_of_death="All"),
+#     deaths_current %>% filter(cause_of_death=="All")
+#   ) %>%
+#   count(year, place_of_death, cause_of_death, wt = n_deaths, name = "n_deaths") %>%
+#   group_by(year, place_of_death != "All") %>%
+#   mutate(  # add percentage
+#     prop_deaths = n_deaths / sum(n_deaths)
+#   ) %>%
+#   ungroup %>%
+#   mutate(year = if_else(  # rename current year so it's clear when the data end
+#     year == max(deaths_current$year),
+#     paste0(year, " up to W", deaths_current %>% filter(year==max(deaths_current$year)) %>% pull(week_number) %>% max),
+#     as.character(year)
+#   ))
 ```
 
 ## New ADR S theme
@@ -258,7 +259,7 @@ all_cause_home_deaths_last <- deaths_by_pod_clean %>% filter(cause_of_death=="al
   scale_colour_grey(guide = guide_legend(title=NULL)) +
   scale_x_continuous(limits = c(NA,51), n.breaks = 6) +
   # 2020-2026 range
-  annotate(geom="label", x = 30, y = 450, label="Current range, 2020-2026", hjust=0, fill = adr_s_colours_supporting[2], alpha = 0.4, angle = 20) +
+  annotate(geom="label", x = 30, y = 450, label="Post-pandemic range, 2020-2025", hjust=0, fill = adr_s_colours_supporting[2], alpha = 0.4, angle = 20) +
   # 2015-2019 range
   annotate(geom="label", x = 5, y = 220, label="Pre-pandemic range, 2015-2019", hjust=0, fill = adr_s_colours_leading[1], alpha = 0.6, angle = -20) +
   # label for 2026
